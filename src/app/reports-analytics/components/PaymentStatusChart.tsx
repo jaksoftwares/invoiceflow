@@ -6,6 +6,7 @@ interface PaymentStatusData {
   name: string;
   value: number;
   color: string;
+  [key: string]: any;
 }
 
 interface PaymentStatusChartProps {
@@ -22,7 +23,7 @@ const PaymentStatusChart = ({ data }: PaymentStatusChartProps) => {
             cx="50%"
             cy="50%"
             labelLine={false}
-            label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+            label={({ name, percent }) => `${name}: ${percent ? (percent * 100).toFixed(0) : 0}%`}
             outerRadius={100}
             fill="#8884d8"
             dataKey="value"
@@ -31,14 +32,14 @@ const PaymentStatusChart = ({ data }: PaymentStatusChartProps) => {
               <Cell key={`cell-${index}`} fill={entry.color} />
             ))}
           </Pie>
-          <Tooltip 
+          <Tooltip
             contentStyle={{
               backgroundColor: 'var(--color-card)',
               border: '1px solid var(--color-border)',
               borderRadius: '8px',
               color: 'var(--color-foreground)'
             }}
-            formatter={(value: number) => `$${value.toLocaleString()}`}
+            formatter={(value: number | undefined) => value !== undefined ? `$${value.toLocaleString()}` : '$0'}
           />
           <Legend 
             verticalAlign="bottom" 

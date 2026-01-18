@@ -28,14 +28,14 @@ const RevenueChart = ({ data }: RevenueChartProps) => {
             style={{ fontSize: '14px' }}
             tickFormatter={(value) => `$${value.toLocaleString()}`}
           />
-          <Tooltip 
+          <Tooltip
             contentStyle={{
               backgroundColor: 'var(--color-card)',
               border: '1px solid var(--color-border)',
               borderRadius: '8px',
               color: 'var(--color-foreground)'
             }}
-            formatter={(value: number) => `$${value.toLocaleString()}`}
+            formatter={(value: number | undefined) => value !== undefined ? `$${value.toLocaleString()}` : '$0'}
           />
           <Legend 
             wrapperStyle={{ paddingTop: '20px' }}
