@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Icon from '@/components/ui/AppIcon';
+import { useAuth } from '@/components/providers/SupabaseAuthProvider';
 import { useSettings } from '@/lib/hooks/useSettings';
 import ProfileTab from './ProfileTab';
 import BusinessTab from './BusinessTab';
@@ -76,7 +77,7 @@ const SettingsInteractive = () => {
   const [activeTab, setActiveTab] = useState<TabType>('profile');
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
-  const user = useUser();
+  const { user } = useAuth();
   const { settings, profile, loading, error, updateProfile, updateBusinessSettings, updateNotificationSettings } = useSettings();
 
   const [profileData, setProfileData] = useState<ProfileData>({

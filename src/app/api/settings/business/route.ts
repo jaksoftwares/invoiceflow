@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/api';
 import { z } from 'zod';
 
+export const dynamic = 'force-dynamic';
+
 const businessSchema = z.object({
   company_logo_url: z.string().url().optional(),
   default_template: z.string().min(1),
