@@ -1,18 +1,16 @@
 import AppImage from '@/components/ui/AppImage';
 import Icon from '@/components/ui/AppIcon';
+import type { ClientActivity } from '@/types/database';
 
-interface ClientActivity {
-  id: string;
-  clientName: string;
-  clientImage: string;
-  clientImageAlt: string;
-  activity: string;
-  timestamp: string;
-  type: 'new' | 'communication' | 'payment';
+interface ActivityWithClient extends ClientActivity {
+  clients?: {
+    company_name: string;
+    avatar_url?: string;
+  };
 }
 
 interface RecentClientActivityProps {
-  activities: ClientActivity[];
+  activities: ActivityWithClient[];
 }
 
 const RecentClientActivity = ({ activities }: RecentClientActivityProps) => {
@@ -51,8 +49,8 @@ const RecentClientActivity = ({ activities }: RecentClientActivityProps) => {
             <div className="relative flex-shrink-0">
               <div className="w-12 h-12 rounded-full overflow-hidden bg-muted">
                 <AppImage
-                  src={activity.clientImage}
-                  alt={activity.clientImageAlt}
+                  src={activity.clients?.avatar_url || '/assets/images/no_image.png'}
+                  alt={activity.clients?.company_name || 'Client'}
                   className="w-full h-full object-cover"
                 />
               </div>
@@ -61,9 +59,9 @@ const RecentClientActivity = ({ activities }: RecentClientActivityProps) => {
               </div>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-foreground mb-1">{activity.clientName}</p>
+              <p className="text-sm font-medium text-foreground mb-1">{activity.clients?.company_name || 'Unknown Client'}</p>
               <p className="text-sm text-muted-foreground mb-2">{activity.activity}</p>
-              <p className="text-xs text-muted-foreground">{activity.timestamp}</p>
+              <p className="text-xs text-muted-foreground">{new Date(activity.timestamp).toLocaleString()}</p>
             </div>
           </div>
         ))}

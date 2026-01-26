@@ -1,4 +1,5 @@
 import Icon from '@/components/ui/AppIcon';
+import type { Client } from '@/types/database';
 
 interface SummaryCard {
   title: string;
@@ -9,37 +10,47 @@ interface SummaryCard {
   bgColor: string;
 }
 
-const ClientSummaryCards = () => {
+interface ClientSummaryCardsProps {
+  clients: Client[];
+}
+
+const ClientSummaryCards = ({ clients }: ClientSummaryCardsProps) => {
+  const totalClients = clients.length;
+  const activeClients = clients.filter(client => client.status === 'active').length;
+  const totalBilled = clients.reduce((sum, client) => sum + client.total_billed, 0);
+  const averageInvoiceValue = totalClients > 0 ? totalBilled / totalClients : 0;
+  const outstandingBalances = clients.reduce((sum, client) => sum + client.outstanding_balance, 0);
+
   const summaryData: SummaryCard[] = [
     {
       title: 'Total Clients',
-      value: '248',
-      trend: 12,
-      trendLabel: 'vs last month',
+      value: totalClients.toString(),
+      trend: 0, // Would need historical data for trends
+      trendLabel: 'total',
       icon: 'UsersIcon',
       bgColor: 'bg-primary',
     },
     {
       title: 'Active Relationships',
-      value: '186',
-      trend: 8,
-      trendLabel: 'vs last month',
+      value: activeClients.toString(),
+      trend: 0,
+      trendLabel: 'active',
       icon: 'CheckCircleIcon',
       bgColor: 'bg-success',
     },
     {
       title: 'Average Invoice Value',
-      value: '$2,847',
-      trend: -3,
-      trendLabel: 'vs last month',
+      value: `$${averageInvoiceValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
+      trend: 0,
+      trendLabel: 'average',
       icon: 'CurrencyDollarIcon',
       bgColor: 'bg-accent',
     },
     {
       title: 'Outstanding Balances',
-      value: '$45,230',
-      trend: -15,
-      trendLabel: 'vs last month',
+      value: `$${outstandingBalances.toLocaleString()}`,
+      trend: 0,
+      trendLabel: 'total outstanding',
       icon: 'ExclamationTriangleIcon',
       bgColor: 'bg-warning',
     },

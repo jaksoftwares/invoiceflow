@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useReports } from '@/lib/hooks';
 import RevenueChart from './RevenueChart';
 import PaymentStatusChart from './PaymentStatusChart';
 import ClientPerformanceChart from './ClientPerformanceChart';
@@ -59,55 +60,27 @@ const ReportsAnalyticsInteractive = () => {
     clientFilter: 'all'
   });
 
+  const { data, loading, error, refetch } = useReports({
+    dateRange: filters.dateRange
+  });
+
   useEffect(() => {
     setIsHydrated(true);
   }, []);
 
-  const revenueData: RevenueData[] = [
-    { month: 'Jul', revenue: 65000, expenses: 42000 },
-    { month: 'Aug', revenue: 72000, expenses: 45000 },
-    { month: 'Sep', revenue: 68000, expenses: 43000 },
-    { month: 'Oct', revenue: 85000, expenses: 48000 },
-    { month: 'Nov', revenue: 92000, expenses: 52000 },
-    { month: 'Dec', revenue: 103000, expenses: 55000 }
-  ];
-
-  const paymentStatusData: PaymentStatusData[] = [
-    { name: 'Paid', value: 325000, color: 'var(--color-success)' },
-    { name: 'Pending', value: 85000, color: 'var(--color-warning)' },
-    { name: 'Overdue', value: 35000, color: 'var(--color-error)' }
-  ];
-
-  const clientPerformanceData: ClientPerformanceData[] = [
-    { month: 'Jul', newClients: 8, activeClients: 45 },
-    { month: 'Aug', newClients: 12, activeClients: 52 },
-    { month: 'Sep', newClients: 6, activeClients: 54 },
-    { month: 'Oct', newClients: 15, activeClients: 63 },
-    { month: 'Nov', newClients: 10, activeClients: 68 },
-    { month: 'Dec', newClients: 14, activeClients: 75 }
-  ];
-
-  const kpiData: KPIData[] = [
-    { title: 'Total Revenue', value: '$485,000', change: 18.5, icon: 'CurrencyDollarIcon', trend: 'up' },
-    { title: 'Average Invoice Value', value: '$1,418', change: 5.2, icon: 'DocumentTextIcon', trend: 'up' },
-    { title: 'Collection Rate', value: '94.5%', change: 3.8, icon: 'CheckCircleIcon', trend: 'up' },
-    { title: 'Outstanding Amount', value: '$35,000', change: 12.3, icon: 'ExclamationCircleIcon', trend: 'down' }
-  ];
-
-  const reportsTableData: ReportRow[] = [
-    { id: 1, client: 'Acme Corporation', invoiceCount: 24, totalRevenue: 85000, avgInvoiceValue: 3542, paymentRate: 96, outstanding: 3400 },
-    { id: 2, client: 'TechStart Solutions', invoiceCount: 18, totalRevenue: 62000, avgInvoiceValue: 3444, paymentRate: 94, outstanding: 3720 },
-    { id: 3, client: 'Global Enterprises', invoiceCount: 32, totalRevenue: 125000, avgInvoiceValue: 3906, paymentRate: 98, outstanding: 2500 },
-    { id: 4, client: 'Digital Innovations', invoiceCount: 15, totalRevenue: 48000, avgInvoiceValue: 3200, paymentRate: 92, outstanding: 3840 },
-    { id: 5, client: 'Creative Studios', invoiceCount: 21, totalRevenue: 72000, avgInvoiceValue: 3429, paymentRate: 95, outstanding: 3600 },
-    { id: 6, client: 'Business Partners LLC', invoiceCount: 28, totalRevenue: 93000, avgInvoiceValue: 3321, paymentRate: 91, outstanding: 8370 }
-  ];
+  // Use real data or fallback to empty arrays
+  const revenueData = data?.revenueChart || [];
+  const paymentStatusData = data?.paymentStatusChart || [];
+  const clientPerformanceData = data?.clientPerformanceChart || [];
+  const kpiData = data?.kpis || [];
+  const reportsTableData = data?.reportsTable || [];
 
   const handleFilterChange = (newFilters: FilterState) => {
     setFilters(newFilters);
+    // Refetch will be triggered by the useEffect in useReports when dateRange changes
   };
 
-  if (!isHydrated) {
+  if (!isHydrated || loading) {
     return (
       <div className="min-h-screen bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -119,6 +92,27 @@ const ReportsAnalyticsInteractive = () => {
               ))}
             </div>
             <div className="h-96 bg-muted rounded-lg" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="text-center">
+            <h1 className="text-3xl font-heading font-bold text-foreground mb-4">
+              Reports & Analytics
+            </h1>
+            <p className="text-destructive mb-4">Error loading reports data: {error}</p>
+            <button
+              onClick={() => refetch()}
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
+            >
+              Try Again
+            </button>
           </div>
         </div>
       </div>
@@ -144,7 +138,7 @@ const ReportsAnalyticsInteractive = () => {
         </div>
 
         <div className="mb-8">
-          <ReportFilters onFilterChange={handleFilterChange} />
+          <ReportFilters filters={filters} onFilterChange={handleFilterChange} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">

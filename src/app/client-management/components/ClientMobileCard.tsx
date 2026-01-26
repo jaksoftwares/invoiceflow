@@ -1,19 +1,5 @@
 import Icon from '@/components/ui/AppIcon';
-
-interface Client {
-  id: string;
-  companyName: string;
-  contactPerson: string;
-  email: string;
-  phone: string;
-  totalBilled: number;
-  lastInvoiceDate: string;
-  status: 'active' | 'inactive' | 'pending';
-  outstandingBalance: number;
-  avatar: string;
-  avatarAlt: string;
-  billingFrequency: string;
-}
+import type { Client } from '@/types/database';
 
 interface ClientMobileCardProps {
   client: Client;
@@ -48,8 +34,8 @@ const ClientMobileCard = ({
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
           <img
-            src={client.avatar}
-            alt={client.avatarAlt}
+            src={client.avatar_url || '/assets/images/no_image.png'}
+            alt={client.contact_person || client.company_name}
             className="w-12 h-12 rounded-full object-cover"
           />
           <div>
@@ -78,18 +64,20 @@ const ClientMobileCard = ({
         <div className="flex justify-between">
           <span className="text-sm text-muted-foreground">Total Billed:</span>
           <span className="text-sm font-medium text-foreground">
-            ${client.totalBilled.toLocaleString()}
+            ${client.total_billed.toLocaleString()}
           </span>
         </div>
         <div className="flex justify-between">
           <span className="text-sm text-muted-foreground">Last Invoice:</span>
-          <span className="text-sm text-foreground">{client.lastInvoiceDate}</span>
+          <span className="text-sm text-foreground">
+            {client.last_invoice_date ? new Date(client.last_invoice_date).toLocaleDateString() : 'No invoices'}
+          </span>
         </div>
-        {client.outstandingBalance > 0 && (
+        {client.outstanding_balance > 0 && (
           <div className="flex justify-between">
             <span className="text-sm text-muted-foreground">Outstanding:</span>
             <span className="text-sm font-medium text-warning">
-              ${client.outstandingBalance.toLocaleString()}
+              ${client.outstanding_balance.toLocaleString()}
             </span>
           </div>
         )}

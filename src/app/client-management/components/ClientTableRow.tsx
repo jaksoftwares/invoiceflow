@@ -1,19 +1,5 @@
 import Icon from '@/components/ui/AppIcon';
-
-interface Client {
-  id: string;
-  companyName: string;
-  contactPerson: string;
-  email: string;
-  phone: string;
-  totalBilled: number;
-  lastInvoiceDate: string;
-  status: 'active' | 'inactive' | 'pending';
-  outstandingBalance: number;
-  avatar: string;
-  avatarAlt: string;
-  billingFrequency: string;
-}
+import type { Client } from '@/types/database';
 
 interface ClientTableRowProps {
   client: Client;
@@ -48,13 +34,13 @@ const ClientTableRow = ({
       <td className="px-4 py-4">
         <div className="flex items-center gap-3">
           <img
-            src={client.avatar}
-            alt={client.avatarAlt}
+            src={client.avatar_url || '/assets/images/no_image.png'}
+            alt={client.contact_person || client.company_name}
             className="w-10 h-10 rounded-full object-cover"
           />
           <div>
-            <p className="font-medium text-foreground">{client.companyName}</p>
-            <p className="text-sm text-muted-foreground">{client.contactPerson}</p>
+            <p className="font-medium text-foreground">{client.company_name}</p>
+            <p className="text-sm text-muted-foreground">{client.contact_person}</p>
           </div>
         </div>
       </td>
@@ -66,11 +52,13 @@ const ClientTableRow = ({
       </td>
       <td className="px-4 py-4">
         <p className="text-sm font-medium text-foreground">
-          ${client.totalBilled.toLocaleString()}
+          ${client.total_billed.toLocaleString()}
         </p>
       </td>
       <td className="px-4 py-4">
-        <p className="text-sm text-foreground">{client.lastInvoiceDate}</p>
+        <p className="text-sm text-foreground">
+          {client.last_invoice_date ? new Date(client.last_invoice_date).toLocaleDateString() : 'No invoices'}
+        </p>
       </td>
       <td className="px-4 py-4">
         <span

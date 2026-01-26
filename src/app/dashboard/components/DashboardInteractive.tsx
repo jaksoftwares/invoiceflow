@@ -2,128 +2,76 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useDashboard } from '@/lib/hooks/useDashboard';
+import type { Invoice, ClientActivity } from '@/types/database';
 import MetricCard from './MetricCard';
 import QuickActionButton from './QuickActionButton';
 import RecentInvoicesTable from './RecentInvoicesTable';
 import RevenueChart from './RevenueChart';
 import RecentClientActivity from './RecentClientActivity';
+import { CardSkeleton } from '@/components/ui/CardSkeleton';
+import { ChartSkeleton } from '@/components/ui/ChartSkeleton';
+import { TableSkeleton } from '@/components/ui/TableSkeleton';
 
-interface Invoice {
-  id: string;
-  clientName: string;
-  amount: string;
-  dueDate: string;
-  status: 'paid' | 'pending' | 'overdue';
+interface InvoiceWithClient extends Invoice {
+  clients?: {
+    company_name: string;
+  };
 }
 
-interface ChartDataPoint {
-  month: string;
+interface ActivityWithClient extends ClientActivity {
+  clients?: {
+    company_name: string;
+    avatar_url?: string;
+  };
+}
+
+interface RevenueChartData {
+  period: string;
   revenue: number;
 }
 
-interface ClientActivity {
-  id: string;
-  clientName: string;
-  clientImage: string;
-  clientImageAlt: string;
-  activity: string;
-  timestamp: string;
-  type: 'new' | 'communication' | 'payment';
+interface DashboardMetrics {
+  totalInvoices: number;
+  paidInvoices: number;
+  pendingInvoices: number;
+  totalRevenue: number;
 }
 
-const DashboardInteractive = () => {
+interface InitialData {
+  metrics: DashboardMetrics;
+  recentInvoices: InvoiceWithClient[];
+  recentActivities: ActivityWithClient[];
+  revenueChart: RevenueChartData[];
+}
+
+interface DashboardInteractiveProps {
+  initialData?: InitialData | null;
+}
+
+
+const DashboardInteractive = ({ initialData }: DashboardInteractiveProps) => {
   const router = useRouter();
   const [isHydrated, setIsHydrated] = useState(false);
+
+  const {
+    metrics: hookMetrics,
+    recentInvoices: hookInvoices,
+    recentActivities: hookActivities,
+    revenueChart: hookChart,
+    loading,
+    error,
+  } = useDashboard({ autoFetch: !initialData });
+
+  // Use initial data if available, otherwise use hook data
+  const metrics = initialData?.metrics || hookMetrics;
+  const recentInvoices = initialData?.recentInvoices || hookInvoices;
+  const recentActivities = initialData?.recentActivities || hookActivities;
+  const revenueChart = initialData?.revenueChart || hookChart;
 
   useEffect(() => {
     setIsHydrated(true);
   }, []);
-
-  const mockInvoices: Invoice[] = [
-  {
-    id: "INV-2026-001",
-    clientName: "Acme Corporation",
-    amount: "$12,500.00",
-    dueDate: "01/25/2026",
-    status: "paid"
-  },
-  {
-    id: "INV-2026-002",
-    clientName: "TechStart Solutions",
-    amount: "$8,750.00",
-    dueDate: "01/28/2026",
-    status: "pending"
-  },
-  {
-    id: "INV-2026-003",
-    clientName: "Global Enterprises",
-    amount: "$15,200.00",
-    dueDate: "01/20/2026",
-    status: "overdue"
-  },
-  {
-    id: "INV-2026-004",
-    clientName: "Innovation Labs",
-    amount: "$6,300.00",
-    dueDate: "02/05/2026",
-    status: "pending"
-  },
-  {
-    id: "INV-2026-005",
-    clientName: "Digital Dynamics",
-    amount: "$9,800.00",
-    dueDate: "01/22/2026",
-    status: "paid"
-  }];
-
-
-  const revenueChartData: ChartDataPoint[] = [
-  { month: "Jul", revenue: 45000 },
-  { month: "Aug", revenue: 52000 },
-  { month: "Sep", revenue: 48000 },
-  { month: "Oct", revenue: 61000 },
-  { month: "Nov", revenue: 58000 },
-  { month: "Dec", revenue: 67000 },
-  { month: "Jan", revenue: 72000 }];
-
-
-  const clientActivities: ClientActivity[] = [
-  {
-    id: "1",
-    clientName: "Sarah Mitchell",
-    clientImage: "https://img.rocket.new/generatedImages/rocket_gen_img_1a9e8814c-1763296696290.png",
-    clientImageAlt: "Professional woman with brown hair in business attire smiling at camera",
-    activity: "New client added to the system",
-    timestamp: "2 hours ago",
-    type: "new"
-  },
-  {
-    id: "2",
-    clientName: "Marcus Chen",
-    clientImage: "https://img.rocket.new/generatedImages/rocket_gen_img_126462a6a-1763296203627.png",
-    clientImageAlt: "Asian businessman in navy suit with confident expression",
-    activity: "Sent payment confirmation email",
-    timestamp: "5 hours ago",
-    type: "communication"
-  },
-  {
-    id: "3",
-    clientName: "Elena Rodriguez",
-    clientImage: "https://img.rocket.new/generatedImages/rocket_gen_img_1d11c76b3-1763294269112.png",
-    clientImageAlt: "Hispanic professional with dark hair in modern office setting",
-    activity: "Payment received for Invoice INV-2026-001",
-    timestamp: "1 day ago",
-    type: "payment"
-  },
-  {
-    id: "4",
-    clientName: "James Thompson",
-    clientImage: "https://img.rocket.new/generatedImages/rocket_gen_img_162b998fb-1763294956622.png",
-    clientImageAlt: "Caucasian man with glasses in casual business attire",
-    activity: "Requested invoice modification",
-    timestamp: "2 days ago",
-    type: "communication"
-  }];
 
 
   const handleViewInvoice = (id: string) => {
@@ -146,17 +94,25 @@ const DashboardInteractive = () => {
     router.push('/reports-analytics');
   };
 
-  if (!isHydrated) {
+  const isLoading = !isHydrated || (!initialData && (loading.metrics || loading.recentInvoices || loading.recentActivities || loading.revenueChart));
+  const hasErrors = error.metrics || error.recentInvoices || error.recentActivities || error.revenueChart;
+
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="animate-pulse space-y-8">
-            <div className="h-8 bg-muted rounded w-48"></div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {[1, 2, 3, 4].map((i) =>
-              <div key={i} className="h-48 bg-muted rounded-lg"></div>
-              )}
+          <div className="space-y-8">
+            <div className="h-8 bg-muted rounded w-48 animate-pulse"></div>
+            <CardSkeleton count={4} />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-2">
+                <ChartSkeleton />
+              </div>
+              <div>
+                <TableSkeleton rows={5} columns={3} />
+              </div>
             </div>
+            <TableSkeleton rows={5} columns={4} />
           </div>
         </div>
       </div>);
@@ -166,6 +122,18 @@ const DashboardInteractive = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {hasErrors && (
+          <div className="mb-6 p-4 bg-error/10 border border-error/20 rounded-lg">
+            <h3 className="text-error font-medium mb-2">Some data could not be loaded:</h3>
+            <ul className="text-sm text-error/80 space-y-1">
+              {error.metrics && <li>• Dashboard metrics: {error.metrics}</li>}
+              {error.recentInvoices && <li>• Recent invoices: {error.recentInvoices}</li>}
+              {error.recentActivities && <li>• Recent activities: {error.recentActivities}</li>}
+              {error.revenueChart && <li>• Revenue chart: {error.revenueChart}</li>}
+            </ul>
+          </div>
+        )}
+
         <div className="mb-8">
           <h1 className="text-3xl font-heading font-bold text-foreground mb-2">Dashboard</h1>
           <p className="text-muted-foreground">Welcome back! Here's your business overview.</p>
@@ -174,7 +142,7 @@ const DashboardInteractive = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <MetricCard
             title="Total Revenue"
-            value="$72,450"
+            value={metrics ? `$${metrics.totalRevenue.toLocaleString()}` : '$0'}
             change="+12.5%"
             trend="up"
             icon="💰"
@@ -182,7 +150,7 @@ const DashboardInteractive = () => {
 
           <MetricCard
             title="Outstanding Payments"
-            value="$24,050"
+            value={metrics ? `$${metrics.pendingInvoices.toString()}` : '0'}
             change="-8.3%"
             trend="down"
             icon="⏳"
@@ -190,7 +158,7 @@ const DashboardInteractive = () => {
 
           <MetricCard
             title="Recent Invoices"
-            value="47"
+            value={metrics ? metrics.totalInvoices.toString() : '0'}
             change="+15.2%"
             trend="up"
             icon="📄"
@@ -229,14 +197,14 @@ const DashboardInteractive = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
           <div className="lg:col-span-2">
-            <RevenueChart data={revenueChartData} />
+            <RevenueChart data={revenueChart} />
           </div>
           <div>
-            <RecentClientActivity activities={clientActivities} />
+            <RecentClientActivity activities={recentActivities} />
           </div>
         </div>
 
-        <RecentInvoicesTable invoices={mockInvoices} onViewInvoice={handleViewInvoice} />
+        <RecentInvoicesTable invoices={recentInvoices} onViewInvoice={handleViewInvoice} />
       </div>
     </div>);
 

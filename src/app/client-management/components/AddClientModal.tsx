@@ -10,23 +10,24 @@ interface AddClientModalProps {
 }
 
 interface ClientFormData {
-  companyName: string;
-  contactPerson: string;
-  email: string;
-  phone: string;
-  address: string;
-  billingFrequency: string;
-  status: string;
+  company_name: string;
+  contact_person?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  billing_frequency: 'monthly' | 'quarterly' | 'annually' | 'one-time';
+  status: 'active' | 'inactive' | 'pending';
+  avatar_url?: string;
 }
 
 const AddClientModal = ({ isOpen, onClose, onSubmit }: AddClientModalProps) => {
   const [formData, setFormData] = useState<ClientFormData>({
-    companyName: '',
-    contactPerson: '',
+    company_name: '',
+    contact_person: '',
     email: '',
     phone: '',
     address: '',
-    billingFrequency: 'monthly',
+    billing_frequency: 'monthly',
     status: 'active',
   });
 
@@ -34,12 +35,12 @@ const AddClientModal = ({ isOpen, onClose, onSubmit }: AddClientModalProps) => {
     e.preventDefault();
     onSubmit(formData);
     setFormData({
-      companyName: '',
-      contactPerson: '',
+      company_name: '',
+      contact_person: '',
       email: '',
       phone: '',
       address: '',
-      billingFrequency: 'monthly',
+      billing_frequency: 'monthly',
       status: 'active',
     });
     onClose();
@@ -85,8 +86,8 @@ const AddClientModal = ({ isOpen, onClose, onSubmit }: AddClientModalProps) => {
                 </label>
                 <input
                   type="text"
-                  name="companyName"
-                  value={formData.companyName}
+                  name="company_name"
+                  value={formData.company_name}
                   onChange={handleChange}
                   required
                   className="w-full px-3 py-2 bg-background border border-input rounded-md text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-smooth"
@@ -100,8 +101,8 @@ const AddClientModal = ({ isOpen, onClose, onSubmit }: AddClientModalProps) => {
                 </label>
                 <input
                   type="text"
-                  name="contactPerson"
-                  value={formData.contactPerson}
+                  name="contact_person"
+                  value={formData.contact_person || ''}
                   onChange={handleChange}
                   required
                   className="w-full px-3 py-2 bg-background border border-input rounded-md text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-smooth"
@@ -158,8 +159,8 @@ const AddClientModal = ({ isOpen, onClose, onSubmit }: AddClientModalProps) => {
                   Billing Frequency
                 </label>
                 <select
-                  name="billingFrequency"
-                  value={formData.billingFrequency}
+                  name="billing_frequency"
+                  value={formData.billing_frequency}
                   onChange={handleChange}
                   className="w-full px-3 py-2 bg-background border border-input rounded-md text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-smooth"
                 >

@@ -1,15 +1,14 @@
 import Icon from '@/components/ui/AppIcon';
+import type { Invoice } from '@/types/database';
 
-interface Invoice {
-  id: string;
-  clientName: string;
-  amount: string;
-  dueDate: string;
-  status: 'paid' | 'pending' | 'overdue';
+interface InvoiceWithClient extends Invoice {
+  clients?: {
+    company_name: string;
+  };
 }
 
 interface RecentInvoicesTableProps {
-  invoices: Invoice[];
+  invoices: InvoiceWithClient[];
   onViewInvoice: (id: string) => void;
 }
 
@@ -48,10 +47,10 @@ const RecentInvoicesTable = ({ invoices, onViewInvoice }: RecentInvoicesTablePro
           <tbody className="divide-y divide-border">
             {invoices.map((invoice) => (
               <tr key={invoice.id} className="hover:bg-muted/30 transition-smooth">
-                <td className="px-6 py-4 text-sm text-foreground font-medium">{invoice.id}</td>
-                <td className="px-6 py-4 text-sm text-foreground">{invoice.clientName}</td>
-                <td className="px-6 py-4 text-sm text-foreground font-semibold">{invoice.amount}</td>
-                <td className="px-6 py-4 text-sm text-muted-foreground">{invoice.dueDate}</td>
+                <td className="px-6 py-4 text-sm text-foreground font-medium">{invoice.invoice_number}</td>
+                <td className="px-6 py-4 text-sm text-foreground">{invoice.clients?.company_name || 'Unknown Client'}</td>
+                <td className="px-6 py-4 text-sm text-foreground font-semibold">${invoice.total_amount.toLocaleString()}</td>
+                <td className="px-6 py-4 text-sm text-muted-foreground">{new Date(invoice.due_date).toLocaleDateString()}</td>
                 <td className="px-6 py-4">
                   <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusStyles(invoice.status)}`}>
                     {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
@@ -76,8 +75,8 @@ const RecentInvoicesTable = ({ invoices, onViewInvoice }: RecentInvoicesTablePro
           <div key={invoice.id} className="p-4 hover:bg-muted/30 transition-smooth">
             <div className="flex items-start justify-between mb-3">
               <div>
-                <p className="text-sm font-medium text-foreground mb-1">{invoice.id}</p>
-                <p className="text-sm text-muted-foreground">{invoice.clientName}</p>
+                <p className="text-sm font-medium text-foreground mb-1">{invoice.invoice_number}</p>
+                <p className="text-sm text-muted-foreground">{invoice.clients?.company_name || 'Unknown Client'}</p>
               </div>
               <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusStyles(invoice.status)}`}>
                 {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
@@ -85,8 +84,8 @@ const RecentInvoicesTable = ({ invoices, onViewInvoice }: RecentInvoicesTablePro
             </div>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-lg font-semibold text-foreground">{invoice.amount}</p>
-                <p className="text-xs text-muted-foreground mt-1">Due: {invoice.dueDate}</p>
+                <p className="text-lg font-semibold text-foreground">${invoice.total_amount.toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground mt-1">Due: {new Date(invoice.due_date).toLocaleDateString()}</p>
               </div>
               <button
                 onClick={() => onViewInvoice(invoice.id)}

@@ -1,15 +1,9 @@
 'use client';
 
-interface LineItem {
-  id: string;
-  description: string;
-  quantity: number;
-  rate: number;
-  amount: number;
-}
+import type { InvoiceItem } from '@/types/database';
 
 interface InvoiceCalculationsProps {
-  items: LineItem[];
+  items: InvoiceItem[];
   taxRate: number;
   discount: number;
   currency: string;

@@ -3,13 +3,13 @@
 import { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-interface ChartDataPoint {
-  month: string;
+interface RevenueChartData {
+  period: string;
   revenue: number;
 }
 
 interface RevenueChartProps {
-  data: ChartDataPoint[];
+  data: RevenueChartData[];
 }
 
 const RevenueChart = ({ data }: RevenueChartProps) => {
@@ -37,8 +37,8 @@ const RevenueChart = ({ data }: RevenueChartProps) => {
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(100, 116, 139, 0.2)" />
-            <XAxis 
-              dataKey="month" 
+            <XAxis
+              dataKey="period"
               stroke="rgba(100, 116, 139, 0.5)"
               style={{ fontSize: '14px' }}
             />

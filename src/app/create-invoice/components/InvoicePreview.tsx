@@ -1,14 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-
-
-interface Client {
-  id: string;
-  name: string;
-  email: string;
-  company: string;
-}
+import type { Client, InvoiceItem } from '@/types/database';
 
 interface InvoiceDetails {
   invoiceNumber: string;
@@ -17,18 +10,10 @@ interface InvoiceDetails {
   paymentTerms: string;
 }
 
-interface LineItem {
-  id: string;
-  description: string;
-  quantity: number;
-  rate: number;
-  amount: number;
-}
-
 interface InvoicePreviewProps {
   client: Client | null;
   details: InvoiceDetails;
-  items: LineItem[];
+  items: InvoiceItem[];
   taxRate: number;
   discount: number;
   currency: string;

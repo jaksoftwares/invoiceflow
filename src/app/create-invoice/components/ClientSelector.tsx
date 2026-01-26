@@ -2,36 +2,25 @@
 
 import { useState } from 'react';
 import Icon from '@/components/ui/AppIcon';
-
-interface Client {
-  id: string;
-  name: string;
-  email: string;
-  company: string;
-}
+import type { Client } from '@/types/database';
 
 interface ClientSelectorProps {
+  clients: Client[];
   selectedClient: Client | null;
   onClientSelect: (client: Client | null) => void;
   onAddNewClient: () => void;
+  loading?: boolean;
+  error?: string | null;
 }
 
-const ClientSelector = ({ selectedClient, onClientSelect, onAddNewClient }: ClientSelectorProps) => {
+const ClientSelector = ({ clients, selectedClient, onClientSelect, onAddNewClient, loading, error }: ClientSelectorProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const mockClients: Client[] = [
-    { id: '1', name: 'Sarah Johnson', email: 'sarah.johnson@techcorp.com', company: 'TechCorp Solutions' },
-    { id: '2', name: 'Michael Chen', email: 'michael.chen@designstudio.com', company: 'Design Studio Pro' },
-    { id: '3', name: 'Emily Rodriguez', email: 'emily.r@marketingplus.com', company: 'Marketing Plus Agency' },
-    { id: '4', name: 'David Thompson', email: 'david.t@consulting.com', company: 'Thompson Consulting' },
-    { id: '5', name: 'Lisa Anderson', email: 'lisa.anderson@retailco.com', company: 'RetailCo International' },
-  ];
-
-  const filteredClients = mockClients.filter(client =>
-    client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    client.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    client.email.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredClients = clients.filter(client =>
+    (client.contact_person?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false) ||
+    client.company_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (client.email?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false)
   );
 
   const handleClientSelect = (client: Client) => {
@@ -52,8 +41,8 @@ const ClientSelector = ({ selectedClient, onClientSelect, onAddNewClient }: Clie
       >
         {selectedClient ? (
           <div>
-            <p className="text-sm font-medium text-foreground">{selectedClient.name}</p>
-            <p className="text-xs text-muted-foreground">{selectedClient.company}</p>
+            <p className="text-sm font-medium text-foreground">{selectedClient.contact_person || selectedClient.company_name}</p>
+            <p className="text-xs text-muted-foreground">{selectedClient.company_name}</p>
           </div>
         ) : (
           <span className="text-muted-foreground">Select a client</span>
@@ -80,44 +69,63 @@ const ClientSelector = ({ selectedClient, onClientSelect, onAddNewClient }: Clie
             </div>
 
             <div className="overflow-y-auto max-h-60">
-              <button
-                type="button"
-                onClick={() => {
-                  onAddNewClient();
-                  setIsOpen(false);
-                }}
-                className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted transition-smooth border-b border-border"
-              >
-                <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center">
-                  <Icon name="PlusIcon" size={18} className="text-accent-foreground" />
+              {loading && (
+                <div className="px-4 py-3 text-center">
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                    <span className="text-sm text-muted-foreground">Loading clients...</span>
+                  </div>
                 </div>
-                <span className="text-sm font-medium text-accent">Add New Client</span>
-              </button>
+              )}
 
-              {filteredClients.length > 0 ? (
-                filteredClients.map((client) => (
-                  <button
-                    key={client.id}
-                    type="button"
-                    onClick={() => handleClientSelect(client)}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted transition-smooth"
-                  >
-                    <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-                      <span className="text-sm font-medium text-primary-foreground">
-                        {client.name.charAt(0)}
-                      </span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground truncate">{client.name}</p>
-                      <p className="text-xs text-muted-foreground truncate">{client.company}</p>
-                    </div>
-                  </button>
-                ))
-              ) : (
-                <div className="px-4 py-8 text-center">
-                  <Icon name="UserGroupIcon" size={32} className="mx-auto text-muted-foreground mb-2" />
-                  <p className="text-sm text-muted-foreground">No clients found</p>
+              {error && (
+                <div className="px-4 py-3 text-center">
+                  <p className="text-sm text-error">{error}</p>
                 </div>
+              )}
+
+              {!loading && !error && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onAddNewClient();
+                      setIsOpen(false);
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted transition-smooth border-b border-border"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center">
+                      <Icon name="PlusIcon" size={18} className="text-accent-foreground" />
+                    </div>
+                    <span className="text-sm font-medium text-accent">Add New Client</span>
+                  </button>
+
+                  {filteredClients.length > 0 ? (
+                    filteredClients.map((client) => (
+                      <button
+                        key={client.id}
+                        type="button"
+                        onClick={() => handleClientSelect(client)}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted transition-smooth"
+                      >
+                        <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+                          <span className="text-sm font-medium text-primary-foreground">
+                            {(client.contact_person || client.company_name).charAt(0)}
+                          </span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-foreground truncate">{client.contact_person || client.company_name}</p>
+                          <p className="text-xs text-muted-foreground truncate">{client.company_name}</p>
+                        </div>
+                      </button>
+                    ))
+                  ) : (
+                    <div className="px-4 py-8 text-center">
+                      <Icon name="UserGroupIcon" size={32} className="mx-auto text-muted-foreground mb-2" />
+                      <p className="text-sm text-muted-foreground">No clients found</p>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>

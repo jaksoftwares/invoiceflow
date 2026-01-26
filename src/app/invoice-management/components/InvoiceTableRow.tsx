@@ -2,19 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import Icon from '@/components/ui/AppIcon';
+import type { Invoice } from '@/types/database';
 
-interface Invoice {
-  id: string;
-  invoiceNumber: string;
-  clientName: string;
-  amount: number;
-  issueDate: string;
-  dueDate: string;
-  status: 'paid' | 'pending' | 'overdue';
+interface InvoiceWithClient extends Invoice {
+  clients?: {
+    company_name: string;
+  };
 }
 
 interface InvoiceTableRowProps {
-  invoice: Invoice;
+  invoice: InvoiceWithClient;
   isSelected: boolean;
   onSelect: (id: string) => void;
   onEdit: (id: string) => void;
@@ -78,19 +75,19 @@ const InvoiceTableRow = ({
           />
         </td>
         <td className="px-4 py-4">
-          <span className="text-sm font-medium text-foreground data-text">{invoice.invoiceNumber}</span>
+          <span className="text-sm font-medium text-foreground data-text">{invoice.invoice_number}</span>
         </td>
         <td className="px-4 py-4">
-          <span className="text-sm text-foreground">{invoice.clientName}</span>
+          <span className="text-sm text-foreground">{invoice.clients?.company_name || 'Unknown Client'}</span>
         </td>
         <td className="px-4 py-4">
-          <span className="text-sm font-medium text-foreground data-text">${invoice.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          <span className="text-sm font-medium text-foreground data-text">${invoice.total_amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
         </td>
         <td className="px-4 py-4">
-          <span className="text-sm text-muted-foreground">{invoice.issueDate}</span>
+          <span className="text-sm text-muted-foreground">{new Date(invoice.issue_date).toLocaleDateString()}</span>
         </td>
         <td className="px-4 py-4">
-          <span className="text-sm text-muted-foreground">{invoice.dueDate}</span>
+          <span className="text-sm text-muted-foreground">{new Date(invoice.due_date).toLocaleDateString()}</span>
         </td>
         <td className="px-4 py-4">
           <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium caption ${getStatusColor(invoice.status)}`}>
@@ -121,19 +118,19 @@ const InvoiceTableRow = ({
         />
       </td>
       <td className="px-4 py-4">
-        <span className="text-sm font-medium text-foreground data-text">{invoice.invoiceNumber}</span>
+        <span className="text-sm font-medium text-foreground data-text">{invoice.invoice_number}</span>
       </td>
       <td className="px-4 py-4">
-        <span className="text-sm text-foreground">{invoice.clientName}</span>
+        <span className="text-sm text-foreground">{invoice.clients?.company_name || 'Unknown Client'}</span>
       </td>
       <td className="px-4 py-4">
-        <span className="text-sm font-medium text-foreground data-text">${invoice.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+        <span className="text-sm font-medium text-foreground data-text">${invoice.total_amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
       </td>
       <td className="px-4 py-4">
-        <span className="text-sm text-muted-foreground">{invoice.issueDate}</span>
+        <span className="text-sm text-muted-foreground">{new Date(invoice.issue_date).toLocaleDateString()}</span>
       </td>
       <td className="px-4 py-4">
-        <span className="text-sm text-muted-foreground">{invoice.dueDate}</span>
+        <span className="text-sm text-muted-foreground">{new Date(invoice.due_date).toLocaleDateString()}</span>
       </td>
       <td className="px-4 py-4">
         <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium caption ${getStatusColor(invoice.status)}`}>

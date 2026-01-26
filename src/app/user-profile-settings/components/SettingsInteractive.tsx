@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Icon from '@/components/ui/AppIcon';
+import { useSettings } from '@/lib/hooks/useSettings';
 import ProfileTab from './ProfileTab';
 import BusinessTab from './BusinessTab';
 import NotificationsTab from './NotificationsTab';
@@ -75,6 +76,8 @@ const SettingsInteractive = () => {
   const [activeTab, setActiveTab] = useState<TabType>('profile');
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const user = useUser();
+  const { settings, profile, loading, error, updateProfile, updateBusinessSettings, updateNotificationSettings } = useSettings();
 
   const [profileData, setProfileData] = useState<ProfileData>({
     firstName: 'John',

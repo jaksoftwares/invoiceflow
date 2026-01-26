@@ -2,19 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import Icon from '@/components/ui/AppIcon';
+import type { Invoice } from '@/types/database';
 
-interface Invoice {
-  id: string;
-  invoiceNumber: string;
-  clientName: string;
-  amount: number;
-  issueDate: string;
-  dueDate: string;
-  status: 'paid' | 'pending' | 'overdue';
+interface InvoiceWithClient extends Invoice {
+  clients?: {
+    company_name: string;
+  };
 }
 
 interface InvoiceCardProps {
-  invoice: Invoice;
+  invoice: InvoiceWithClient;
   isSelected: boolean;
   onSelect: (id: string) => void;
   onEdit: (id: string) => void;
@@ -79,8 +76,8 @@ const InvoiceCard = ({
               disabled
             />
             <div>
-              <h3 className="text-base font-heading font-semibold text-foreground data-text">{invoice.invoiceNumber}</h3>
-              <p className="text-sm text-muted-foreground mt-1">{invoice.clientName}</p>
+              <h3 className="text-base font-heading font-semibold text-foreground data-text">{invoice.invoice_number}</h3>
+              <p className="text-sm text-muted-foreground mt-1">{invoice.clients?.company_name || 'Unknown Client'}</p>
             </div>
           </div>
           <button
@@ -94,7 +91,7 @@ const InvoiceCard = ({
         <div className="space-y-2 mb-3">
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">Amount:</span>
-            <span className="text-base font-medium text-foreground data-text">${invoice.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            <span className="text-base font-medium text-foreground data-text">${invoice.total_amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">Status:</span>
@@ -127,8 +124,8 @@ const InvoiceCard = ({
             className="mt-1 w-4 h-4 rounded border-input text-primary focus:ring-2 focus:ring-ring cursor-pointer"
           />
           <div>
-            <h3 className="text-base font-heading font-semibold text-foreground data-text">{invoice.invoiceNumber}</h3>
-            <p className="text-sm text-muted-foreground mt-1">{invoice.clientName}</p>
+            <h3 className="text-base font-heading font-semibold text-foreground data-text">{invoice.invoice_number}</h3>
+            <p className="text-sm text-muted-foreground mt-1">{invoice.clients?.company_name || 'Unknown Client'}</p>
           </div>
         </div>
         <div className="relative">
@@ -207,7 +204,7 @@ const InvoiceCard = ({
       <div className="space-y-2 mb-3">
         <div className="flex items-center justify-between">
           <span className="text-sm text-muted-foreground">Amount:</span>
-          <span className="text-base font-medium text-foreground data-text">${invoice.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          <span className="text-base font-medium text-foreground data-text">${invoice.total_amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
         </div>
         <div className="flex items-center justify-between">
           <span className="text-sm text-muted-foreground">Status:</span>
@@ -230,11 +227,11 @@ const InvoiceCard = ({
         <div className="mt-3 pt-3 border-t border-border space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">Issue Date:</span>
-            <span className="text-sm text-foreground">{invoice.issueDate}</span>
+            <span className="text-sm text-foreground">{new Date(invoice.issue_date).toLocaleDateString()}</span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">Due Date:</span>
-            <span className="text-sm text-foreground">{invoice.dueDate}</span>
+            <span className="text-sm text-foreground">{new Date(invoice.due_date).toLocaleDateString()}</span>
           </div>
         </div>
       )}

@@ -8,15 +8,13 @@ import InvoiceSearch from './InvoiceSearch';
 import BulkActionToolbar from './BulkActionToolbar';
 import InvoiceTableRow from './InvoiceTableRow';
 import InvoiceCard from './InvoiceCard';
+import { useInvoices } from '@/lib/hooks/useInvoices';
+import type { Invoice } from '@/types/database';
 
-interface Invoice {
-  id: string;
-  invoiceNumber: string;
-  clientName: string;
-  amount: number;
-  issueDate: string;
-  dueDate: string;
-  status: 'paid' | 'pending' | 'overdue';
+interface InvoiceWithClient extends Invoice {
+  clients?: {
+    company_name: string;
+  };
 }
 
 interface FilterState {
@@ -26,7 +24,11 @@ interface FilterState {
   amountRange: { min: string; max: string };
 }
 
-const InvoiceManagementInteractive = () => {
+interface InvoiceManagementInteractiveProps {
+  initialInvoices: InvoiceWithClient[];
+}
+
+const InvoiceManagementInteractive = ({ initialInvoices }: InvoiceManagementInteractiveProps) => {
   const router = useRouter();
   const [isHydrated, setIsHydrated] = useState(false);
   const [selectedInvoices, setSelectedInvoices] = useState<string[]>([]);
@@ -39,99 +41,47 @@ const InvoiceManagementInteractive = () => {
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [sortConfig, setSortConfig] = useState<{ key: keyof Invoice; direction: 'asc' | 'desc' } | null>(null);
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
+
+  const {
+    invoices,
+    loading,
+    error,
+    pagination,
+    refetch,
+    updateInvoice,
+    deleteInvoice,
+    bulkDeleteInvoices,
+    bulkUpdateStatus,
+  } = useInvoices({
+    page: currentPage,
+    limit: itemsPerPage,
+    status: filters.paymentStatus !== 'all' ? filters.paymentStatus as Invoice['status'] : undefined,
+    search: searchQuery || undefined,
+    issue_date_from: filters.dateRange.start || undefined,
+    issue_date_to: filters.dateRange.end || undefined,
+    autoFetch: false, // We'll manage fetching manually
+  });
 
   useEffect(() => {
     setIsHydrated(true);
   }, []);
 
-  const mockInvoices: Invoice[] = [
-    {
-      id: '1',
-      invoiceNumber: 'INV-2026-001',
-      clientName: 'Acme Corporation',
-      amount: 5250.00,
-      issueDate: '01/05/2026',
-      dueDate: '01/20/2026',
-      status: 'paid'
-    },
-    {
-      id: '2',
-      invoiceNumber: 'INV-2026-002',
-      clientName: 'Tech Solutions Inc',
-      amount: 3800.00,
-      issueDate: '01/08/2026',
-      dueDate: '01/23/2026',
-      status: 'pending'
-    },
-    {
-      id: '3',
-      invoiceNumber: 'INV-2026-003',
-      clientName: 'Global Retail Group',
-      amount: 7500.00,
-      issueDate: '01/10/2026',
-      dueDate: '01/15/2026',
-      status: 'overdue'
-    },
-    {
-      id: '4',
-      invoiceNumber: 'INV-2026-004',
-      clientName: 'Creative Agency LLC',
-      amount: 4200.00,
-      issueDate: '01/12/2026',
-      dueDate: '01/27/2026',
-      status: 'pending'
-    },
-    {
-      id: '5',
-      invoiceNumber: 'INV-2026-005',
-      clientName: 'Acme Corporation',
-      amount: 6800.00,
-      issueDate: '01/14/2026',
-      dueDate: '01/29/2026',
-      status: 'paid'
-    },
-    {
-      id: '6',
-      invoiceNumber: 'INV-2026-006',
-      clientName: 'Tech Solutions Inc',
-      amount: 2950.00,
-      issueDate: '01/15/2026',
-      dueDate: '01/30/2026',
-      status: 'pending'
-    },
-    {
-      id: '7',
-      invoiceNumber: 'INV-2026-007',
-      clientName: 'Global Retail Group',
-      amount: 8900.00,
-      issueDate: '01/16/2026',
-      dueDate: '01/31/2026',
-      status: 'paid'
-    },
-    {
-      id: '8',
-      invoiceNumber: 'INV-2026-008',
-      clientName: 'Creative Agency LLC',
-      amount: 5600.00,
-      issueDate: '01/17/2026',
-      dueDate: '02/01/2026',
-      status: 'pending'
-    }
-  ];
+  // Use invoices from hook, fallback to initial data if not loaded yet
+  const displayInvoices = invoices.length > 0 ? invoices : initialInvoices;
 
-  const filteredInvoices = mockInvoices.filter(invoice => {
-    const matchesSearch = searchQuery === '' || 
-      invoice.invoiceNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      invoice.clientName.toLowerCase().includes(searchQuery.toLowerCase());
+  const filteredInvoices = displayInvoices.filter(invoice => {
+    const matchesSearch = searchQuery === '' ||
+      invoice.invoice_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (invoice.clients?.company_name || '').toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesStatus = filters.paymentStatus === 'all' || invoice.status === filters.paymentStatus;
 
-    const matchesClient = filters.client === 'all'|| invoice.clientName.toLowerCase().replace(/\s+/g,'-') === filters.client;
+    const matchesClient = filters.client === 'all' || (invoice.clients?.company_name || '').toLowerCase().replace(/\s+/g,'-') === filters.client;
 
-    const matchesAmount = 
-      (filters.amountRange.min === '' || invoice.amount >= parseFloat(filters.amountRange.min)) &&
-      (filters.amountRange.max === '' || invoice.amount <= parseFloat(filters.amountRange.max));
+    const matchesAmount =
+      (filters.amountRange.min === '' || invoice.total_amount >= parseFloat(filters.amountRange.min)) &&
+      (filters.amountRange.max === '' || invoice.total_amount <= parseFloat(filters.amountRange.max));
 
     return matchesSearch && matchesStatus && matchesClient && matchesAmount;
   });
@@ -139,17 +89,37 @@ const InvoiceManagementInteractive = () => {
   const sortedInvoices = [...filteredInvoices].sort((a, b) => {
     if (!sortConfig) return 0;
 
-    const aValue = a[sortConfig.key];
-    const bValue = b[sortConfig.key];
+    let aValue: any;
+    let bValue: any;
+
+    if (sortConfig.key === 'clientName') {
+      aValue = a.clients?.company_name || '';
+      bValue = b.clients?.company_name || '';
+    } else if (sortConfig.key === 'amount') {
+      aValue = a.total_amount;
+      bValue = b.total_amount;
+    } else if (sortConfig.key === 'issueDate') {
+      aValue = a.issue_date;
+      bValue = b.issue_date;
+    } else if (sortConfig.key === 'dueDate') {
+      aValue = a.due_date;
+      bValue = b.due_date;
+    } else if (sortConfig.key === 'invoiceNumber') {
+      aValue = a.invoice_number;
+      bValue = b.invoice_number;
+    } else {
+      aValue = (a as any)[sortConfig.key];
+      bValue = (b as any)[sortConfig.key];
+    }
 
     if (typeof aValue === 'string' && typeof bValue === 'string') {
-      return sortConfig.direction === 'asc' 
+      return sortConfig.direction === 'asc'
         ? aValue.localeCompare(bValue)
         : bValue.localeCompare(aValue);
     }
 
     if (typeof aValue === 'number' && typeof bValue === 'number') {
-      return sortConfig.direction === 'asc' 
+      return sortConfig.direction === 'asc'
         ? aValue - bValue
         : bValue - aValue;
     }
@@ -157,11 +127,11 @@ const InvoiceManagementInteractive = () => {
     return 0;
   });
 
-  const totalPages = Math.ceil(sortedInvoices.length / itemsPerPage);
+  const totalPages = pagination ? pagination.totalPages : Math.ceil(sortedInvoices.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedInvoices = sortedInvoices.slice(startIndex, startIndex + itemsPerPage);
 
-  const handleSort = (key: keyof Invoice) => {
+  const handleSort = (key: string) => {
     setSortConfig(current => {
       if (!current || current.key !== key) {
         return { key, direction: 'asc' };
@@ -189,24 +159,32 @@ const InvoiceManagementInteractive = () => {
     }
   };
 
-  const handleMarkPaid = () => {
-    console.log('Mark paid:', selectedInvoices);
-    setSelectedInvoices([]);
+  const handleMarkPaid = async () => {
+    if (selectedInvoices.length === 0) return;
+    const result = await bulkUpdateStatus(selectedInvoices, 'paid');
+    if (result) {
+      setSelectedInvoices([]);
+    }
   };
 
   const handleSendReminders = () => {
+    // TODO: Implement send reminders functionality
     console.log('Send reminders:', selectedInvoices);
     setSelectedInvoices([]);
   };
 
   const handleExportPDF = () => {
+    // TODO: Implement export PDF functionality
     console.log('Export PDF:', selectedInvoices);
     setSelectedInvoices([]);
   };
 
-  const handleBulkDelete = () => {
-    console.log('Delete invoices:', selectedInvoices);
-    setSelectedInvoices([]);
+  const handleBulkDelete = async () => {
+    if (selectedInvoices.length === 0) return;
+    const result = await bulkDeleteInvoices(selectedInvoices);
+    if (result) {
+      setSelectedInvoices([]);
+    }
   };
 
   const handleEdit = (id: string) => {
@@ -214,19 +192,25 @@ const InvoiceManagementInteractive = () => {
   };
 
   const handleDuplicate = (id: string) => {
+    // TODO: Implement duplicate functionality
     console.log('Duplicate invoice:', id);
   };
 
   const handleDownload = (id: string) => {
+    // TODO: Implement download functionality
     console.log('Download invoice:', id);
   };
 
   const handleSend = (id: string) => {
+    // TODO: Implement send functionality
     console.log('Send invoice:', id);
   };
 
-  const handleDelete = (id: string) => {
-    console.log('Delete invoice:', id);
+  const handleDelete = async (id: string) => {
+    const success = await deleteInvoice(id);
+    if (success) {
+      // Invoice removed from list via optimistic update
+    }
   };
 
   if (!isHydrated) {
@@ -241,7 +225,7 @@ const InvoiceManagementInteractive = () => {
           </div>
 
           <InvoiceSearch onSearch={() => {}} />
-          <InvoiceFilters onFilterChange={() => {}} totalResults={mockInvoices.length} />
+          <InvoiceFilters onFilterChange={() => {}} totalResults={displayInvoices.length} />
 
           <div className="bg-card rounded-lg shadow-elevation-1 overflow-hidden">
             <div className="overflow-x-auto">
@@ -261,7 +245,7 @@ const InvoiceManagementInteractive = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {mockInvoices.slice(0, 5).map(invoice => (
+                  {initialInvoices.slice(0, 5).map(invoice => (
                     <InvoiceTableRow
                       key={invoice.id}
                       invoice={invoice}
@@ -302,6 +286,19 @@ const InvoiceManagementInteractive = () => {
 
         <InvoiceSearch onSearch={setSearchQuery} />
         <InvoiceFilters onFilterChange={setFilters} totalResults={filteredInvoices.length} />
+
+        {loading && (
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <span className="ml-2 text-muted-foreground">Loading invoices...</span>
+          </div>
+        )}
+
+        {error && (
+          <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 mb-4">
+            <p className="text-destructive text-sm">{error}</p>
+          </div>
+        )}
 
         <div className="hidden lg:block bg-card rounded-lg shadow-elevation-1 overflow-hidden">
           <div className="overflow-x-auto">

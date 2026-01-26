@@ -7,6 +7,7 @@ interface BulkActionsBarProps {
   onExport: () => void;
   onSendCommunication: () => void;
   onUpdateStatus: () => void;
+  onDelete: () => void;
   onClearSelection: () => void;
 }
 
@@ -15,6 +16,7 @@ const BulkActionsBar = ({
   onExport,
   onSendCommunication,
   onUpdateStatus,
+  onDelete,
   onClearSelection,
 }: BulkActionsBarProps) => {
   if (selectedCount === 0) return null;
@@ -52,6 +54,14 @@ const BulkActionsBar = ({
           >
             <Icon name="PencilSquareIcon" size={18} />
             <span>Update Status</span>
+          </button>
+
+          <button
+            onClick={onDelete}
+            className="flex items-center gap-2 px-4 py-2 bg-destructive hover:bg-destructive/80 text-destructive-foreground rounded-md text-sm font-medium transition-smooth"
+          >
+            <Icon name="TrashIcon" size={18} />
+            <span>Delete</span>
           </button>
         </div>
 

@@ -2,8 +2,11 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import Icon from '@/components/ui/AppIcon';
+import { useAuth } from '@/components/providers/SupabaseAuthProvider';
+import { supabase } from '@/lib/supabase/client';
+import { toast } from 'sonner';
 
 interface NavigationItem {
   label: string;
@@ -17,6 +20,8 @@ interface HeaderProps {
 
 const Header = ({ onMobileMenuToggle }: HeaderProps) => {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
@@ -35,6 +40,21 @@ const Header = ({ onMobileMenuToggle }: HeaderProps) => {
 
   const handleUserMenuToggle = () => {
     setIsUserMenuOpen(!isUserMenuOpen);
+  };
+
+  const handleLogout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        toast.error('Failed to log out: ' + error.message);
+      } else {
+        toast.success('Logged out successfully');
+        router.push('/auth/login');
+      }
+    } catch (err) {
+      toast.error('An unexpected error occurred during logout');
+    }
+    setIsUserMenuOpen(false);
   };
 
   const isActivePath = (path: string) => {
@@ -135,15 +155,15 @@ const Header = ({ onMobileMenuToggle }: HeaderProps) => {
                     <Icon name="CogIcon" size={18} />
                     <span>Settings</span>
                   </Link>
-                  <button
-                    className="flex items-center gap-3 px-4 py-2 text-sm text-foreground hover:bg-muted transition-smooth w-full"
-                    onClick={() => {
-                      setIsUserMenuOpen(false);
-                    }}
-                  >
-                    <Icon name="ArrowRightOnRectangleIcon" size={18} />
-                    <span>Logout</span>
-                  </button>
+                  {user && (
+                    <button
+                      className="flex items-center gap-3 px-4 py-2 text-sm text-foreground hover:bg-muted transition-smooth w-full"
+                      onClick={handleLogout}
+                    >
+                      <Icon name="ArrowRightOnRectangleIcon" size={18} />
+                      <span>Logout</span>
+                    </button>
+                  )}
                 </div>
               </>
             )}

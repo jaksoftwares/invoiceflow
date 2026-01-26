@@ -9,20 +9,11 @@ import ClientTableRow from './ClientTableRow';
 import ClientMobileCard from './ClientMobileCard';
 import BulkActionsBar from './BulkActionsBar';
 import AddClientModal from './AddClientModal';
+import { useClients } from '@/lib/hooks/useClients';
+import type { Client } from '@/types/database';
 
-interface Client {
-  id: string;
-  companyName: string;
-  contactPerson: string;
-  email: string;
-  phone: string;
-  totalBilled: number;
-  lastInvoiceDate: string;
-  status: 'active' | 'inactive' | 'pending';
-  outstandingBalance: number;
-  avatar: string;
-  avatarAlt: string;
-  billingFrequency: string;
+interface ClientManagementInteractiveProps {
+  initialClients?: Client[];
 }
 
 interface FilterState {
@@ -32,20 +23,18 @@ interface FilterState {
 }
 
 interface ClientFormData {
-  companyName: string;
-  contactPerson: string;
-  email: string;
-  phone: string;
-  address: string;
-  billingFrequency: string;
-  status: string;
+  company_name: string;
+  contact_person?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  billing_frequency: 'monthly' | 'quarterly' | 'annually' | 'one-time';
+  status: 'active' | 'inactive' | 'pending';
+  avatar_url?: string;
 }
 
-const ClientManagementInteractive = () => {
+const ClientManagementInteractive = ({ initialClients = [] }: ClientManagementInteractiveProps) => {
   const router = useRouter();
-  const [isHydrated, setIsHydrated] = useState(false);
-  const [clients, setClients] = useState<Client[]>([]);
-  const [filteredClients, setFilteredClients] = useState<Client[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState<FilterState>({
     status: 'all',
@@ -59,193 +48,72 @@ const ClientManagementInteractive = () => {
     direction: 'asc' | 'desc';
   }>({ key: null, direction: 'asc' });
 
-  useEffect(() => {
-    setIsHydrated(true);
-  }, []);
+  const {
+    clients,
+    loading,
+    error,
+    createClient,
+    updateClient,
+    deleteClient,
+    bulkDeleteClients,
+  } = useClients({
+    search: searchTerm,
+    status: filters.status !== 'all' ? filters.status as 'active' | 'inactive' | 'pending' : undefined,
+    autoFetch: true,
+  });
+
+  // Use initial clients if provided, otherwise use hook data
+  const currentClients = initialClients.length > 0 ? initialClients : clients;
+  const [filteredClients, setFilteredClients] = useState<Client[]>(currentClients);
 
   useEffect(() => {
-    if (isHydrated) {
-      const mockClients: Client[] = [
-      {
-        id: '1',
-        companyName: 'TechCorp Solutions',
-        contactPerson: 'Sarah Johnson',
-        email: 'sarah.johnson@techcorp.com',
-        phone: '+1 (555) 123-4567',
-        totalBilled: 45230.50,
-        lastInvoiceDate: '01/15/2026',
-        status: 'active',
-        outstandingBalance: 8500.00,
-        avatar: "https://img.rocket.new/generatedImages/rocket_gen_img_1a9e8814c-1763296696290.png",
-        avatarAlt: 'Professional woman with brown hair in business attire smiling at camera',
-        billingFrequency: 'monthly'
-      },
-      {
-        id: '2',
-        companyName: 'Global Marketing Inc',
-        contactPerson: 'Michael Chen',
-        email: 'michael.chen@globalmarketing.com',
-        phone: '+1 (555) 234-5678',
-        totalBilled: 67890.25,
-        lastInvoiceDate: '01/10/2026',
-        status: 'active',
-        outstandingBalance: 0,
-        avatar: "https://img.rocket.new/generatedImages/rocket_gen_img_1bef32e3c-1763294452425.png",
-        avatarAlt: 'Asian businessman in navy suit with confident smile in office setting',
-        billingFrequency: 'quarterly'
-      },
-      {
-        id: '3',
-        companyName: 'Creative Design Studio',
-        contactPerson: 'Emily Rodriguez',
-        email: 'emily.rodriguez@creativedesign.com',
-        phone: '+1 (555) 345-6789',
-        totalBilled: 32150.75,
-        lastInvoiceDate: '12/28/2025',
-        status: 'active',
-        outstandingBalance: 5200.00,
-        avatar: "https://img.rocket.new/generatedImages/rocket_gen_img_1c557787b-1763299182093.png",
-        avatarAlt: 'Hispanic woman with long dark hair wearing glasses in creative workspace',
-        billingFrequency: 'monthly'
-      },
-      {
-        id: '4',
-        companyName: 'Financial Advisors LLC',
-        contactPerson: 'David Thompson',
-        email: 'david.thompson@financialadvisors.com',
-        phone: '+1 (555) 456-7890',
-        totalBilled: 89450.00,
-        lastInvoiceDate: '01/05/2026',
-        status: 'active',
-        outstandingBalance: 12000.00,
-        avatar: "https://img.rocket.new/generatedImages/rocket_gen_img_1c39b130a-1763292262638.png",
-        avatarAlt: 'Middle-aged man with gray hair in formal business suit at desk',
-        billingFrequency: 'annually'
-      },
-      {
-        id: '5',
-        companyName: 'Healthcare Partners',
-        contactPerson: 'Dr. Lisa Anderson',
-        email: 'lisa.anderson@healthcarepartners.com',
-        phone: '+1 (555) 567-8901',
-        totalBilled: 54320.90,
-        lastInvoiceDate: '01/12/2026',
-        status: 'active',
-        outstandingBalance: 0,
-        avatar: "https://img.rocket.new/generatedImages/rocket_gen_img_1d62bcfbd-1767104198321.png",
-        avatarAlt: 'Professional woman doctor with stethoscope in white coat smiling',
-        billingFrequency: 'monthly'
-      },
-      {
-        id: '6',
-        companyName: 'Construction Builders Co',
-        contactPerson: 'James Wilson',
-        email: 'james.wilson@constructionbuilders.com',
-        phone: '+1 (555) 678-9012',
-        totalBilled: 125670.40,
-        lastInvoiceDate: '12/20/2025',
-        status: 'inactive',
-        outstandingBalance: 25000.00,
-        avatar: "https://img.rocket.new/generatedImages/rocket_gen_img_1b0d71d0d-1767199715587.png",
-        avatarAlt: 'Man in construction hard hat and safety vest at building site',
-        billingFrequency: 'quarterly'
-      },
-      {
-        id: '7',
-        companyName: 'Legal Services Group',
-        contactPerson: 'Jennifer Martinez',
-        email: 'jennifer.martinez@legalservices.com',
-        phone: '+1 (555) 789-0123',
-        totalBilled: 98760.15,
-        lastInvoiceDate: '01/08/2026',
-        status: 'active',
-        outstandingBalance: 15000.00,
-        avatar: "https://img.rocket.new/generatedImages/rocket_gen_img_1b122faa0-1763299715536.png",
-        avatarAlt: 'Professional woman lawyer in black blazer with law books background',
-        billingFrequency: 'monthly'
-      },
-      {
-        id: '8',
-        companyName: 'E-Commerce Solutions',
-        contactPerson: 'Robert Kim',
-        email: 'robert.kim@ecommercesolutions.com',
-        phone: '+1 (555) 890-1234',
-        totalBilled: 43210.60,
-        lastInvoiceDate: '01/14/2026',
-        status: 'pending',
-        outstandingBalance: 3500.00,
-        avatar: "https://img.rocket.new/generatedImages/rocket_gen_img_18f41607b-1763301308071.png",
-        avatarAlt: 'Young Asian man in casual business attire with laptop in modern office',
-        billingFrequency: 'monthly'
-      }];
+    let result = [...clients]; // Use clients from hook since API handles search and status
 
-      setClients(mockClients);
-      setFilteredClients(mockClients);
+    // Local filtering for billing frequency and outstanding balance
+    if (filters.billingFrequency !== 'all') {
+      result = result.filter(
+        (client) => client.billing_frequency === filters.billingFrequency
+      );
     }
-  }, [isHydrated]);
 
-  useEffect(() => {
-    if (isHydrated) {
-      let result = [...clients];
-
-      if (searchTerm) {
-        result = result.filter(
-          (client) =>
-          client.companyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          client.contactPerson.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          client.email.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-      }
-
-      if (filters.status !== 'all') {
-        result = result.filter((client) => client.status === filters.status);
-      }
-
-      if (filters.billingFrequency !== 'all') {
-        result = result.filter(
-          (client) => client.billingFrequency === filters.billingFrequency
-        );
-      }
-
-      if (filters.outstandingBalance !== 'all') {
-        result = result.filter((client) => {
-          switch (filters.outstandingBalance) {
-            case 'none':
-              return client.outstandingBalance === 0;
-            case 'low':
-              return client.outstandingBalance > 0 && client.outstandingBalance < 1000;
-            case 'medium':
-              return client.outstandingBalance >= 1000 && client.outstandingBalance <= 5000;
-            case 'high':
-              return client.outstandingBalance > 5000;
-            default:
-              return true;
-          }
-        });
-      }
-
-      if (sortConfig.key) {
-        result.sort((a, b) => {
-          const aValue = a[sortConfig.key!];
-          const bValue = b[sortConfig.key!];
-
-          if (typeof aValue === 'number' && typeof bValue === 'number') {
-            return sortConfig.direction === 'asc' ? aValue - bValue : bValue - aValue;
-          }
-
-          if (typeof aValue === 'string' && typeof bValue === 'string') {
-            return sortConfig.direction === 'asc' ?
-            aValue.localeCompare(bValue) :
-            bValue.localeCompare(aValue);
-          }
-
-          return 0;
-        });
-      }
-
-      setFilteredClients(result);
+    if (filters.outstandingBalance !== 'all') {
+      result = result.filter((client) => {
+        switch (filters.outstandingBalance) {
+          case 'none':
+            return client.outstanding_balance === 0;
+          case 'low':
+            return client.outstanding_balance > 0 && client.outstanding_balance < 1000;
+          case 'medium':
+            return client.outstanding_balance >= 1000 && client.outstanding_balance <= 5000;
+          case 'high':
+            return client.outstanding_balance > 5000;
+          default:
+            return true;
+        }
+      });
     }
-  }, [searchTerm, filters, sortConfig, clients, isHydrated]);
+
+    if (sortConfig.key) {
+      result.sort((a, b) => {
+        const aValue = a[sortConfig.key!];
+        const bValue = b[sortConfig.key!];
+
+        if (typeof aValue === 'number' && typeof bValue === 'number') {
+          return sortConfig.direction === 'asc' ? aValue - bValue : bValue - aValue;
+        }
+
+        if (typeof aValue === 'string' && typeof bValue === 'string') {
+          return sortConfig.direction === 'asc' ?
+          aValue.localeCompare(bValue) :
+          bValue.localeCompare(aValue);
+        }
+
+        return 0;
+      });
+    }
+
+    setFilteredClients(result);
+  }, [filters.billingFrequency, filters.outstandingBalance, sortConfig, clients]);
 
   const handleSort = (key: keyof Client) => {
     setSortConfig({
@@ -299,11 +167,21 @@ const ClientManagementInteractive = () => {
     console.log('Update status for:', selectedClients);
   };
 
-  const handleAddClient = (clientData: ClientFormData) => {
-    console.log('Add new client:', clientData);
+  const handleBulkDelete = async () => {
+    if (selectedClients.length === 0) return;
+
+    const result = await bulkDeleteClients(selectedClients);
+    if (result) {
+      setSelectedClients([]);
+    }
   };
 
-  if (!isHydrated) {
+  const handleAddClient = async (clientData: ClientFormData) => {
+    await createClient(clientData);
+    setIsAddModalOpen(false);
+  };
+
+  if (loading && currentClients.length === 0) {
     return (
       <div className="min-h-screen bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -319,7 +197,20 @@ const ClientManagementInteractive = () => {
           </div>
         </div>
       </div>);
+  }
 
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="text-center py-12">
+            <Icon name="ExclamationTriangleIcon" size={48} className="mx-auto text-destructive mb-4" />
+            <p className="text-foreground font-medium mb-2">Error loading clients</p>
+            <p className="text-sm text-muted-foreground">{error}</p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -343,7 +234,7 @@ const ClientManagementInteractive = () => {
           </button>
         </div>
 
-        <ClientSummaryCards />
+        <ClientSummaryCards clients={clients} />
 
         <ClientSearchFilters
           onSearch={setSearchTerm}
@@ -368,7 +259,7 @@ const ClientManagementInteractive = () => {
                   </th>
                   <th className="px-4 py-3 text-left">
                     <button
-                      onClick={() => handleSort('companyName')}
+                      onClick={() => handleSort('company_name')}
                       className="flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary transition-smooth">
 
                       <span>Company / Contact</span>
@@ -383,7 +274,7 @@ const ClientManagementInteractive = () => {
                   </th>
                   <th className="px-4 py-3 text-left">
                     <button
-                      onClick={() => handleSort('totalBilled')}
+                      onClick={() => handleSort('total_billed')}
                       className="flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary transition-smooth">
 
                       <span>Total Billed</span>
@@ -392,7 +283,7 @@ const ClientManagementInteractive = () => {
                   </th>
                   <th className="px-4 py-3 text-left">
                     <button
-                      onClick={() => handleSort('lastInvoiceDate')}
+                      onClick={() => handleSort('last_invoice_date')}
                       className="flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary transition-smooth">
 
                       <span>Last Invoice</span>
@@ -470,6 +361,7 @@ const ClientManagementInteractive = () => {
           onExport={handleExport}
           onSendCommunication={handleSendCommunication}
           onUpdateStatus={handleUpdateStatus}
+          onDelete={handleBulkDelete}
           onClearSelection={() => setSelectedClients([])} />
 
 

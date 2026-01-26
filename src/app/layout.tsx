@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import '../styles/index.css';
+import { SupabaseAuthProvider } from '../components/providers/SupabaseAuthProvider';
+import { ToastProvider } from '../components/providers/ToastProvider';
 
 export const metadata: Metadata = {
   title: 'Invoice Flow',
@@ -13,7 +15,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <ToastProvider>
+          <SupabaseAuthProvider>
+            {children}
+          </SupabaseAuthProvider>
+        </ToastProvider>
+      </body>
     </html>
   );
 }

@@ -10,19 +10,13 @@ interface FilterState {
 }
 
 interface ReportFiltersProps {
+  filters: FilterState;
   onFilterChange: (filters: FilterState) => void;
 }
 
-const ReportFilters = ({ onFilterChange }: ReportFiltersProps) => {
-  const [filters, setFilters] = useState<FilterState>({
-    dateRange: 'last-6-months',
-    reportType: 'revenue',
-    clientFilter: 'all'
-  });
-
+const ReportFilters = ({ filters, onFilterChange }: ReportFiltersProps) => {
   const handleFilterChange = (key: keyof FilterState, value: string) => {
     const newFilters = { ...filters, [key]: value };
-    setFilters(newFilters);
     onFilterChange(newFilters);
   };
 

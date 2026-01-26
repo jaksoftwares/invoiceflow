@@ -2,18 +2,11 @@
 
 import { useState } from 'react';
 import Icon from '@/components/ui/AppIcon';
-
-interface LineItem {
-  id: string;
-  description: string;
-  quantity: number;
-  rate: number;
-  amount: number;
-}
+import type { InvoiceItem } from '@/types/database';
 
 interface LineItemsTableProps {
-  items: LineItem[];
-  onItemsChange: (items: LineItem[]) => void;
+  items: InvoiceItem[];
+  onItemsChange: (items: InvoiceItem[]) => void;
   currency: string;
 }
 
@@ -21,18 +14,18 @@ const LineItemsTable = ({ items, onItemsChange, currency }: LineItemsTableProps)
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const addNewItem = () => {
-    const newItem: LineItem = {
-      id: `item-${Date.now()}`,
+    const newItem: Omit<InvoiceItem, 'invoice_id' | 'created_at'> = {
+      id: `temp-${Date.now()}`,
       description: '',
       quantity: 1,
       rate: 0,
       amount: 0,
     };
-    onItemsChange([...items, newItem]);
+    onItemsChange([...items, newItem as InvoiceItem]);
     setEditingId(newItem.id);
   };
 
-  const updateItem = (id: string, field: keyof LineItem, value: string | number) => {
+  const updateItem = (id: string, field: keyof Omit<InvoiceItem, 'id' | 'invoice_id' | 'created_at'>, value: string | number) => {
     const updatedItems = items.map((item) => {
       if (item.id === id) {
         const updated = { ...item, [field]: value };

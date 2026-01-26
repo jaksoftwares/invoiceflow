@@ -6,28 +6,29 @@ import Icon from '@/components/ui/AppIcon';
 interface AddClientModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onClientAdded: (client: { id: string; name: string; email: string; company: string }) => void;
+  onClientAdded: (clientData: { company_name: string; contact_person?: string; email?: string; phone?: string; address?: string }) => void;
 }
 
 const AddClientModal = ({ isOpen, onClose, onClientAdded }: AddClientModalProps) => {
   const [formData, setFormData] = useState({
-    name: '',
+    contact_person: '',
     email: '',
-    company: '',
+    company_name: '',
     phone: '',
     address: '',
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const newClient = {
-      id: `client-${Date.now()}`,
-      name: formData.name,
-      email: formData.email,
-      company: formData.company,
+    const clientData = {
+      company_name: formData.company_name,
+      contact_person: formData.contact_person || undefined,
+      email: formData.email || undefined,
+      phone: formData.phone || undefined,
+      address: formData.address || undefined,
     };
-    onClientAdded(newClient);
-    setFormData({ name: '', email: '', company: '', phone: '', address: '' });
+    onClientAdded(clientData);
+    setFormData({ contact_person: '', email: '', company_name: '', phone: '', address: '' });
     onClose();
   };
 
@@ -63,8 +64,8 @@ const AddClientModal = ({ isOpen, onClose, onClientAdded }: AddClientModalProps)
                 <input
                   id="clientName"
                   type="text"
-                  value={formData.name}
-                  onChange={(e) => handleChange('name', e.target.value)}
+                  value={formData.contact_person}
+                  onChange={(e) => handleChange('contact_person', e.target.value)}
                   placeholder="John Doe"
                   className="w-full px-4 py-2.5 bg-background border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-smooth"
                   required
@@ -93,8 +94,8 @@ const AddClientModal = ({ isOpen, onClose, onClientAdded }: AddClientModalProps)
                 <input
                   id="clientCompany"
                   type="text"
-                  value={formData.company}
-                  onChange={(e) => handleChange('company', e.target.value)}
+                  value={formData.company_name}
+                  onChange={(e) => handleChange('company_name', e.target.value)}
                   placeholder="Acme Corporation"
                   className="w-full px-4 py-2.5 bg-background border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-smooth"
                   required
