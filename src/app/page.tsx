@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import LandingPageLayout from '@/components/landing/LandingPageLayout'
 import HeroSection from '@/components/landing/HeroSection';
 import FeaturesSection from '@/components/landing/FeaturesSection';
 import HowItWorksSection from '@/components/landing/HowItWorksSection';
@@ -7,7 +8,7 @@ import ScreenshotsSection from '@/components/landing/ScreenshotsSection';
 import PricingSection from '@/components/landing/PricingSection';
 import TestimonialsSection from '@/components/landing/TestimonialsSection';
 import FAQSection from '@/components/landing/FAQSection';
-import FooterSection from '@/components/landing/FooterSection';
+
 
 export const metadata: Metadata = {
   title: 'Invoiceflow - Business Invoice Creation, Tracking & Management',
@@ -27,7 +28,7 @@ export const metadata: Metadata = {
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-background">
+    <LandingPageLayout>
       <HeroSection />
       <FeaturesSection />
       <HowItWorksSection />
@@ -36,7 +37,6 @@ export default function LandingPage() {
       <PricingSection />
       <TestimonialsSection />
       <FAQSection />
-      <FooterSection />
-    </div>
+    </LandingPageLayout>
   );
 }
