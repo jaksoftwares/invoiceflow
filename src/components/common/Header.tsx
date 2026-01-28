@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import Icon from '@/components/ui/AppIcon';
 import { useAuth } from '@/components/providers/SupabaseAuthProvider';
+import { useSettings } from '@/lib/hooks/useSettings';
 import { supabase } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 
@@ -22,6 +23,7 @@ const Header = ({ onMobileMenuToggle }: HeaderProps) => {
   const pathname = usePathname();
   const router = useRouter();
   const { user } = useAuth();
+  const { profile, loading } = useSettings();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
@@ -63,6 +65,52 @@ const Header = ({ onMobileMenuToggle }: HeaderProps) => {
     }
     return pathname === path;
   };
+
+  if (!user) {
+    // Landing page header for non-authenticated users
+    return (
+      <header className="fixed top-0 left-0 right-0 z-[1000] bg-card shadow-elevation-2">
+        <div className="flex items-center justify-between h-16 px-4 lg:px-6">
+          <Link href="/" className="flex items-center gap-2 transition-smooth hover:opacity-80">
+            <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect width="40" height="40" rx="8" fill="var(--color-primary)" />
+              <path
+                d="M12 20L16 16L20 20L24 16L28 20"
+                stroke="var(--color-primary-foreground)"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M12 26H28"
+                stroke="var(--color-accent)"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+              />
+            </svg>
+            <span className="text-xl font-heading font-semibold text-foreground hidden sm:block">
+              InvoiceFlow
+            </span>
+          </Link>
+
+          <div className="flex items-center gap-3">
+            <Link
+              href="/auth/login"
+              className="px-4 py-2 text-foreground hover:bg-muted rounded-md transition-smooth"
+            >
+              Login
+            </Link>
+            <Link
+              href="/auth/signup"
+              className="px-6 py-2 bg-primary text-primary-foreground rounded-md font-medium transition-smooth hover:bg-primary/90"
+            >
+              Sign Up
+            </Link>
+          </div>
+        </div>
+      </header>
+    );
+  }
 
   return (
     <header className="fixed top-0 left-0 right-0 z-[1000] bg-card shadow-elevation-2">
@@ -144,8 +192,14 @@ const Header = ({ onMobileMenuToggle }: HeaderProps) => {
                 />
                 <div className="absolute right-0 top-full mt-2 w-56 bg-popover rounded-md shadow-elevation-3 py-2 z-[1200] animate-scale-in">
                   <div className="px-4 py-3 border-b border-border">
-                    <p className="text-sm font-medium text-foreground">Business Owner</p>
-                    <p className="text-xs text-muted-foreground mt-1">owner@invoiceflow.com</p>
+                    <p className="text-sm font-medium text-foreground">
+                      {loading.profile ? 'Loading...' : profile?.first_name && profile?.last_name
+                        ? `${profile.first_name} ${profile.last_name}`
+                        : profile?.business_name || 'Business Owner'}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {user?.email || 'owner@invoiceflow.com'}
+                    </p>
                   </div>
                   <Link
                     href="/user-profile-settings"

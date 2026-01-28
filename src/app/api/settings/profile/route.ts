@@ -32,13 +32,38 @@ export async function GET(request: NextRequest) {
       .eq('id', user.id)
       .single();
 
-    if (error) {
+    if (error && error.code !== 'PGRST116') {
       console.error('Database error:', error);
       return NextResponse.json({ error: 'Failed to fetch profile' }, { status: 500 });
     }
 
     if (!profile) {
-      return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
+      // Create default profile if it doesn't exist
+      const defaultProfile = {
+        id: user.id,
+        first_name: null,
+        last_name: null,
+        phone: null,
+        business_name: null,
+        business_address: null,
+        city: null,
+        state: null,
+        zip_code: null,
+        country: null,
+      };
+
+      const { data: newProfile, error: insertError } = await supabase
+        .from('profiles')
+        .insert(defaultProfile)
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error('Failed to create default profile:', insertError);
+        return NextResponse.json({ error: 'Failed to create default profile' }, { status: 500 });
+      }
+
+      return NextResponse.json(newProfile);
     }
 
     return NextResponse.json(profile);

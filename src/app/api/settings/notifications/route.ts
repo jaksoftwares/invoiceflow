@@ -39,13 +39,46 @@ export async function GET(request: NextRequest) {
       .eq('user_id', user.id)
       .single();
 
-    if (error) {
+    if (error && error.code !== 'PGRST116') {
       console.error('Database error:', error);
       return NextResponse.json({ error: 'Failed to fetch notification settings' }, { status: 500 });
     }
 
     if (!settings) {
-      return NextResponse.json({ error: 'Notification settings not found' }, { status: 404 });
+      // Create default notification settings if they don't exist
+      const defaultNotificationSettings = {
+        user_id: user.id,
+        email_notifications: {
+          paymentReceived: true,
+          invoiceOverdue: true,
+          paymentReminder: true,
+          newClient: true,
+          weeklyReport: true,
+          monthlyReport: true,
+        },
+        push_notifications: {
+          paymentReceived: true,
+          invoiceOverdue: true,
+          systemUpdates: true,
+        },
+        reminder_settings: {
+          daysBeforeDue: '7',
+          overdueFrequency: 'daily',
+        },
+      };
+
+      const { data: newSettings, error: insertError } = await supabase
+        .from('user_settings')
+        .insert(defaultNotificationSettings)
+        .select('email_notifications, push_notifications, reminder_settings, security_settings, subscription_plan, usage_stats')
+        .single();
+
+      if (insertError) {
+        console.error('Failed to create default notification settings:', insertError);
+        return NextResponse.json({ error: 'Failed to create default notification settings' }, { status: 500 });
+      }
+
+      return NextResponse.json(newSettings);
     }
 
     return NextResponse.json(settings);

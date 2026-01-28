@@ -81,16 +81,16 @@ const SettingsInteractive = () => {
   const { settings, profile, loading, error, updateProfile, updateBusinessSettings, updateNotificationSettings } = useSettings();
 
   const [profileData, setProfileData] = useState<ProfileData>({
-    firstName: 'John',
-    lastName: 'Doe',
-    email: 'owner@invoiceflow.com',
-    phone: '+1 (555) 123-4567',
-    businessName: 'Acme Consulting LLC',
-    businessAddress: '123 Business Street',
-    city: 'New York',
-    state: 'NY',
-    zipCode: '10001',
-    country: 'United States',
+    firstName: profile?.first_name || '',
+    lastName: profile?.last_name || '',
+    email: user?.email || '',
+    phone: profile?.phone || '',
+    businessName: profile?.business_name || '',
+    businessAddress: profile?.business_address || '',
+    city: profile?.city || '',
+    state: profile?.state || '',
+    zipCode: profile?.zip_code || '',
+    country: profile?.country || '',
   });
 
   const [businessSettings, setBusinessSettings] = useState<BusinessSettings>({
@@ -104,7 +104,7 @@ const SettingsInteractive = () => {
   });
 
   const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>({
-    emailNotifications: {
+    emailNotifications: settings?.email_notifications || {
       paymentReceived: true,
       invoiceOverdue: true,
       paymentReminder: true,
@@ -112,12 +112,12 @@ const SettingsInteractive = () => {
       weeklyReport: true,
       monthlyReport: true,
     },
-    pushNotifications: {
+    pushNotifications: settings?.push_notifications || {
       paymentReceived: true,
       invoiceOverdue: true,
       systemUpdates: false,
     },
-    reminderSettings: {
+    reminderSettings: settings?.reminder_settings || {
       daysBeforeDue: '3',
       overdueFrequency: 'weekly',
     },
@@ -154,6 +154,59 @@ const SettingsInteractive = () => {
     setIsHydrated(true);
   }, []);
 
+  // Update profile data when profile loads
+  useEffect(() => {
+    if (profile) {
+      setProfileData({
+        firstName: profile.first_name || '',
+        lastName: profile.last_name || '',
+        email: user?.email || '',
+        phone: profile.phone || '',
+        businessName: profile.business_name || '',
+        businessAddress: profile.business_address || '',
+        city: profile.city || '',
+        state: profile.state || '',
+        zipCode: profile.zip_code || '',
+        country: profile.country || '',
+      });
+    }
+  }, [profile, user]);
+
+  // Update settings data when settings load
+  useEffect(() => {
+    if (settings) {
+      setBusinessSettings({
+        companyLogo: settings.company_logo_url || '',
+        defaultTemplate: settings.default_template || 'modern',
+        paymentTerms: settings.default_payment_terms || 'net30',
+        taxRate: settings.default_tax_rate?.toString() || '8.50',
+        taxLabel: settings.tax_label || 'Tax',
+        invoicePrefix: settings.invoice_prefix || 'INV-',
+        invoiceFooter: settings.invoice_footer || '',
+      });
+
+      setNotificationSettings({
+        emailNotifications: settings.email_notifications || {
+          paymentReceived: true,
+          invoiceOverdue: true,
+          paymentReminder: true,
+          newClient: false,
+          weeklyReport: true,
+          monthlyReport: true,
+        },
+        pushNotifications: settings.push_notifications || {
+          paymentReceived: true,
+          invoiceOverdue: true,
+          systemUpdates: false,
+        },
+        reminderSettings: settings.reminder_settings || {
+          daysBeforeDue: '3',
+          overdueFrequency: 'weekly',
+        },
+      });
+    }
+  }, [settings]);
+
   const tabs: { id: TabType; label: string; icon: string }[] = [
     { id: 'profile', label: 'Profile', icon: 'UserIcon' },
     { id: 'business', label: 'Business', icon: 'BuildingOfficeIcon' },
@@ -170,14 +223,44 @@ const SettingsInteractive = () => {
     }, 3000);
   };
 
-  const handleProfileSave = (data: ProfileData) => {
-    setProfileData(data);
-    showSuccess('Profile updated successfully!');
+  const handleProfileSave = async (data: ProfileData) => {
+    const profileUpdateData = {
+      first_name: data.firstName,
+      last_name: data.lastName,
+      phone: data.phone,
+      business_name: data.businessName,
+      business_address: data.businessAddress,
+      city: data.city,
+      state: data.state,
+      zip_code: data.zipCode,
+      country: data.country,
+    };
+
+    const result = await updateProfile(profileUpdateData);
+    if (result) {
+      showSuccess('Profile updated successfully!');
+    } else {
+      // Error is handled by the hook
+    }
   };
 
-  const handleBusinessSave = (data: BusinessSettings) => {
-    setBusinessSettings(data);
-    showSuccess('Business settings updated successfully!');
+  const handleBusinessSave = async (data: BusinessSettings) => {
+    const businessUpdateData = {
+      company_logo_url: data.companyLogo || undefined,
+      default_template: data.defaultTemplate,
+      default_payment_terms: data.paymentTerms,
+      default_tax_rate: parseFloat(data.taxRate),
+      tax_label: data.taxLabel,
+      invoice_prefix: data.invoicePrefix,
+      invoice_footer: data.invoiceFooter || undefined,
+    };
+
+    const result = await updateBusinessSettings(businessUpdateData);
+    if (result) {
+      showSuccess('Business settings updated successfully!');
+    } else {
+      // Error is handled by the hook
+    }
   };
 
   const handleNotificationsSave = (data: NotificationSettings) => {

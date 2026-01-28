@@ -29,13 +29,36 @@ export async function GET(request: NextRequest) {
       .eq('user_id', user.id)
       .single();
 
-    if (error) {
+    if (error && error.code !== 'PGRST116') {
       console.error('Database error:', error);
       return NextResponse.json({ error: 'Failed to fetch business settings' }, { status: 500 });
     }
 
     if (!settings) {
-      return NextResponse.json({ error: 'Business settings not found' }, { status: 404 });
+      // Create default business settings if they don't exist
+      const defaultBusinessSettings = {
+        user_id: user.id,
+        company_logo_url: null,
+        default_template: 'professional',
+        default_payment_terms: 'net30',
+        default_tax_rate: 0,
+        tax_label: 'Tax',
+        invoice_prefix: 'INV-',
+        invoice_footer: null,
+      };
+
+      const { data: newSettings, error: insertError } = await supabase
+        .from('user_settings')
+        .insert(defaultBusinessSettings)
+        .select('company_logo_url, default_template, default_payment_terms, default_tax_rate, tax_label, invoice_prefix, invoice_footer')
+        .single();
+
+      if (insertError) {
+        console.error('Failed to create default business settings:', insertError);
+        return NextResponse.json({ error: 'Failed to create default business settings' }, { status: 500 });
+      }
+
+      return NextResponse.json(newSettings);
     }
 
     return NextResponse.json(settings);
