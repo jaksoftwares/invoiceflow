@@ -9,15 +9,9 @@ interface NavigationWrapperProps {
 }
 
 const NavigationWrapper = ({ children }: NavigationWrapperProps) => {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
   return (
     <>
-      <Header onMobileMenuToggle={setIsMobileMenuOpen} />
-      <MobileMenu isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} />
-      <div className="pt-16">
-        {children}
-      </div>
+      {children}
     </>
   );
 };
