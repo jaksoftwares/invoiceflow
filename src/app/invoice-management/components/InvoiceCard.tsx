@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Icon from '@/components/ui/AppIcon';
 import type { Invoice } from '@/types/database';
 
@@ -33,6 +33,8 @@ const InvoiceCard = ({
 }: InvoiceCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showActions, setShowActions] = useState(false);
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, right: 0 });
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
@@ -65,6 +67,43 @@ const InvoiceCard = ({
     }
   };
 
+  const toggleActions = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (showActions) {
+      setShowActions(false);
+      return;
+    }
+
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const dropdownHeight = 220; // Approximate height
+      
+      const openUpwards = spaceBelow < dropdownHeight && rect.top > dropdownHeight;
+      const top = openUpwards
+        ? rect.top - dropdownHeight
+        : rect.bottom + 4;
+
+      setDropdownPos({
+        top,
+        right: window.innerWidth - rect.right,
+      });
+      setShowActions(true);
+    }
+  };
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (showActions) setShowActions(false);
+    };
+    window.addEventListener('scroll', handleScroll, true);
+    window.addEventListener('resize', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll, true);
+      window.removeEventListener('resize', handleScroll);
+    };
+  }, [showActions]);
+
   if (!isHydrated) {
     return (
       <div className="bg-card rounded-lg shadow-elevation-1 p-4 border border-border">
@@ -91,7 +130,9 @@ const InvoiceCard = ({
         <div className="space-y-2 mb-3">
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">Amount:</span>
-            <span className="text-base font-medium text-foreground data-text">${invoice.total_amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            <span className="text-base font-medium text-foreground data-text">
+              {new Intl.NumberFormat('en-US', { style: 'currency', currency: invoice.currency || 'KES' }).format(invoice.total_amount)}
+            </span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">Status:</span>
@@ -130,7 +171,8 @@ const InvoiceCard = ({
         </div>
         <div className="relative">
           <button
-            onClick={() => setShowActions(!showActions)}
+            ref={buttonRef}
+            onClick={toggleActions}
             className="p-2 hover:bg-muted rounded-md transition-smooth"
             aria-label="Invoice actions"
           >
@@ -140,12 +182,22 @@ const InvoiceCard = ({
           {showActions && (
             <>
               <div
-                className="fixed inset-0 z-10"
-                onClick={() => setShowActions(false)}
+                className="fixed inset-0 z-40"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowActions(false);
+                }}
               />
-              <div className="absolute right-0 top-full mt-1 w-48 bg-popover rounded-lg shadow-elevation-3 py-2 z-20">
+              <div 
+                className="fixed w-48 bg-card border border-border rounded-lg shadow-elevation-3 py-1 z-50 text-foreground"
+                style={{ 
+                  top: dropdownPos.top, 
+                  right: dropdownPos.right
+                }}
+              >
                 <button
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation();
                     onEdit(invoice.id);
                     setShowActions(false);
                   }}
@@ -155,7 +207,8 @@ const InvoiceCard = ({
                   <span>Edit</span>
                 </button>
                 <button
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation();
                     onDuplicate(invoice.id);
                     setShowActions(false);
                   }}
@@ -165,7 +218,8 @@ const InvoiceCard = ({
                   <span>Duplicate</span>
                 </button>
                 <button
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation();
                     onDownload(invoice.id);
                     setShowActions(false);
                   }}
@@ -175,7 +229,8 @@ const InvoiceCard = ({
                   <span>Download PDF</span>
                 </button>
                 <button
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation();
                     onSend(invoice.id);
                     setShowActions(false);
                   }}
@@ -184,9 +239,10 @@ const InvoiceCard = ({
                   <Icon name="PaperAirplaneIcon" size={18} />
                   <span>Send</span>
                 </button>
-                <div className="h-px bg-border my-2" />
+                <div className="h-px bg-border my-1" />
                 <button
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation();
                     onDelete(invoice.id);
                     setShowActions(false);
                   }}
@@ -204,7 +260,9 @@ const InvoiceCard = ({
       <div className="space-y-2 mb-3">
         <div className="flex items-center justify-between">
           <span className="text-sm text-muted-foreground">Amount:</span>
-          <span className="text-base font-medium text-foreground data-text">${invoice.total_amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          <span className="text-base font-medium text-foreground data-text">
+            {new Intl.NumberFormat('en-US', { style: 'currency', currency: invoice.currency || 'KES' }).format(invoice.total_amount)}
+          </span>
         </div>
         <div className="flex items-center justify-between">
           <span className="text-sm text-muted-foreground">Status:</span>

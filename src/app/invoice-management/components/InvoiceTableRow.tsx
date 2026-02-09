@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Icon from '@/components/ui/AppIcon';
 import type { Invoice } from '@/types/database';
 
@@ -32,6 +32,8 @@ const InvoiceTableRow = ({
   onDelete
 }: InvoiceTableRowProps) => {
   const [showActions, setShowActions] = useState(false);
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, right: 0 });
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
@@ -64,6 +66,55 @@ const InvoiceTableRow = ({
     }
   };
 
+  const toggleActions = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (showActions) {
+      setShowActions(false);
+      return;
+    }
+
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const dropdownHeight = 220; // Approximate height of the dropdown
+      
+      // Decide whether to open up or down
+      // If there isn't enough space below (less than dropdown height) and there is more space above, open upwards
+      const openUpwards = spaceBelow < dropdownHeight && rect.top > dropdownHeight;
+
+      const top = openUpwards
+        ? rect.top - dropdownHeight // Open upwards (relative to viewport top, but we need to account for height)
+           // Correction: if fixed positioning, strictly top = rect.top - height
+           // But let's verify exact alignment. 
+           // rect.top is distance from top of viewport to top of button.
+           // We want bottom of dropdown to be at top of button? Or aligned with button?
+           // Usually aligned with bottom of button if down, top of button if up.
+           // Let's refine:
+           // Upwards: top = rect.top - dropdownHeight
+           // Downwards: top = rect.bottom + 4
+        : rect.bottom + 4;
+
+      setDropdownPos({
+        top,
+        right: window.innerWidth - rect.right,
+      });
+      setShowActions(true);
+    }
+  };
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (showActions) setShowActions(false);
+    };
+    // Capture scroll events on window to close dropdown on scroll
+    window.addEventListener('scroll', handleScroll, true);
+    window.addEventListener('resize', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll, true);
+      window.removeEventListener('resize', handleScroll);
+    };
+  }, [showActions]);
+
   if (!isHydrated) {
     return (
       <tr className="border-b border-border hover:bg-muted/50 transition-smooth">
@@ -81,7 +132,9 @@ const InvoiceTableRow = ({
           <span className="text-sm text-foreground">{invoice.clients?.company_name || 'Unknown Client'}</span>
         </td>
         <td className="px-4 py-4">
-          <span className="text-sm font-medium text-foreground data-text">${invoice.total_amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          <span className="text-sm font-medium text-foreground data-text">
+            {new Intl.NumberFormat('en-US', { style: 'currency', currency: invoice.currency || 'KES' }).format(invoice.total_amount)}
+          </span>
         </td>
         <td className="px-4 py-4">
           <span className="text-sm text-muted-foreground">{new Date(invoice.issue_date).toLocaleDateString()}</span>
@@ -124,7 +177,9 @@ const InvoiceTableRow = ({
         <span className="text-sm text-foreground">{invoice.clients?.company_name || 'Unknown Client'}</span>
       </td>
       <td className="px-4 py-4">
-        <span className="text-sm font-medium text-foreground data-text">${invoice.total_amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+        <span className="text-sm font-medium text-foreground data-text">
+          {new Intl.NumberFormat('en-US', { style: 'currency', currency: invoice.currency || 'KES' }).format(invoice.total_amount)}
+        </span>
       </td>
       <td className="px-4 py-4">
         <span className="text-sm text-muted-foreground">{new Date(invoice.issue_date).toLocaleDateString()}</span>
@@ -141,7 +196,8 @@ const InvoiceTableRow = ({
       <td className="px-4 py-4">
         <div className="relative">
           <button
-            onClick={() => setShowActions(!showActions)}
+            ref={buttonRef}
+            onClick={toggleActions}
             className="p-2 hover:bg-muted rounded-md transition-smooth"
             aria-label="Invoice actions"
           >
@@ -151,12 +207,23 @@ const InvoiceTableRow = ({
           {showActions && (
             <>
               <div
-                className="fixed inset-0 z-10"
-                onClick={() => setShowActions(false)}
+                className="fixed inset-0 z-40"
+                 onClick={(e) => {
+                  e.stopPropagation();
+                  setShowActions(false);
+                }}
               />
-              <div className="absolute right-0 top-full mt-1 w-48 bg-popover rounded-lg shadow-elevation-3 py-2 z-20">
+              <div 
+                className="fixed w-48 bg-card border border-border rounded-lg shadow-elevation-3 py-1 z-50 text-foreground"
+                style={{ 
+                  top: dropdownPos.top, 
+                  right: dropdownPos.right,
+                  // We calculated top relative to window, so fixed positioning places it correctly.
+                }}
+              >
                 <button
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation();
                     onEdit(invoice.id);
                     setShowActions(false);
                   }}
@@ -166,7 +233,8 @@ const InvoiceTableRow = ({
                   <span>Edit</span>
                 </button>
                 <button
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation();
                     onDuplicate(invoice.id);
                     setShowActions(false);
                   }}
@@ -176,7 +244,8 @@ const InvoiceTableRow = ({
                   <span>Duplicate</span>
                 </button>
                 <button
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation();
                     onDownload(invoice.id);
                     setShowActions(false);
                   }}
@@ -186,7 +255,8 @@ const InvoiceTableRow = ({
                   <span>Download PDF</span>
                 </button>
                 <button
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation();
                     onSend(invoice.id);
                     setShowActions(false);
                   }}
@@ -195,9 +265,10 @@ const InvoiceTableRow = ({
                   <Icon name="PaperAirplaneIcon" size={18} />
                   <span>Send</span>
                 </button>
-                <div className="h-px bg-border my-2" />
+                <div className="h-px bg-border my-1" />
                 <button
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation();
                     onDelete(invoice.id);
                     setShowActions(false);
                   }}

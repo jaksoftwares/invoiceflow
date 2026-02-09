@@ -3,8 +3,17 @@ import { createClient } from '@/lib/supabase/api';
 import { z } from 'zod';
 import type { Invoice } from '@/types/database';
 
+// Zod schema for invoice items
+const invoiceItemSchema = z.object({
+  description: z.string().min(1, 'Description is required'),
+  quantity: z.number().min(0.01, 'Quantity must be positive'),
+  rate: z.number().min(0, 'Rate must be positive'),
+  amount: z.number().min(0, 'Amount must be positive'),
+});
+
 // Zod schema for creating an invoice
 const createInvoiceSchema = z.object({
+  business_id: z.string().uuid().optional(), // Make optional for backward compatibility, but UI should provide it
   client_id: z.string().uuid(),
   invoice_number: z.string().min(1, 'Invoice number is required'),
   issue_date: z.string().refine((val) => !isNaN(Date.parse(val)), 'Invalid date'),
@@ -21,6 +30,7 @@ const createInvoiceSchema = z.object({
   terms: z.string().optional(),
   payment_instructions: z.string().optional(),
   template: z.string().min(1, 'Template is required'),
+  items: z.array(invoiceItemSchema).min(1, 'At least one item is required'),
 });
 
 // Zod schema for query parameters
@@ -42,6 +52,7 @@ const listInvoicesQuerySchema = z.object({
   due_date_from: z.string().optional().refine((val) => !val || !isNaN(Date.parse(val)), 'Invalid date'),
   due_date_to: z.string().optional().refine((val) => !val || !isNaN(Date.parse(val)), 'Invalid date'),
   search: z.string().optional(),
+  business_id: z.string().uuid().optional(),
 });
 
 export async function GET(request: NextRequest) {
@@ -63,7 +74,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid query parameters', details: queryValidation.error.issues }, { status: 400 });
     }
 
-    const { page, limit, status, client_id, issue_date_from, issue_date_to, due_date_from, due_date_to, search } = queryValidation.data;
+    const { page, limit, status, client_id, business_id, issue_date_from, issue_date_to, due_date_from, due_date_to, search } = queryValidation.data;
     const offset = (page - 1) * limit;
 
     // Build query
@@ -80,6 +91,10 @@ export async function GET(request: NextRequest) {
 
     if (client_id) {
       query = query.eq('client_id', client_id);
+    }
+
+    if (business_id) {
+      query = query.eq('business_id', business_id);
     }
 
     if (issue_date_from) {
@@ -161,21 +176,21 @@ export async function POST(request: NextRequest) {
     }
 
     // Create invoice
-    const { data: invoice, error } = await supabase
-      .from('invoices')
-      .insert({
-        ...invoiceData,
-        user_id: user.id,
-      })
-      .select()
-      .single();
+    // Use RPC for atomic creation
+    const { items, ...invoiceFields } = invoiceData;
+
+    // Call the RPC function
+    const { data: invoiceId, error } = await supabase.rpc('create_invoice_full', {
+      p_invoice_data: invoiceFields,
+      p_items_data: items,
+    });
 
     if (error) {
-      console.error('Database error:', error);
+      console.error('Database error in create_invoice_full:', error);
       return NextResponse.json({ error: 'Failed to create invoice' }, { status: 500 });
     }
 
-    return NextResponse.json(invoice, { status: 201 });
+    return NextResponse.json({ id: invoiceId, ...invoiceFields, items }, { status: 201 });
   } catch (error) {
     console.error('Unexpected error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

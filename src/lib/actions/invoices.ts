@@ -2,9 +2,13 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
-import type { Invoice } from '@/types/database';
+import type { Invoice, InvoiceItem } from '@/types/database';
 
-export async function createInvoiceAction(invoiceData: Omit<Invoice, 'id' | 'user_id' | 'created_at' | 'updated_at'>): Promise<Invoice> {
+interface CreateInvoiceParams extends Omit<Invoice, 'id' | 'user_id' | 'created_at' | 'updated_at'> {
+  items: Omit<InvoiceItem, 'id' | 'invoice_id' | 'created_at'>[];
+}
+
+export async function createInvoiceAction(invoiceData: CreateInvoiceParams): Promise<Invoice> {
   const supabase = createClient();
 
   const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -24,27 +28,46 @@ export async function createInvoiceAction(invoiceData: Omit<Invoice, 'id' | 'use
     throw new Error('Client not found or access denied');
   }
 
-  const { data: invoice, error } = await supabase
-    .from('invoices')
-    .insert({
-      ...invoiceData,
-      user_id: user.id,
-    })
-    .select()
-    .single();
+  const { items, ...invoiceFields } = invoiceData;
+
+  // Call the RPC function
+  const { data: invoiceId, error } = await supabase.rpc('create_invoice_full', {
+    p_invoice_data: invoiceFields,
+    p_items_data: items,
+  });
 
   if (error) {
+    console.error('RPC Error:', error);
     throw new Error('Failed to create invoice');
+  }
+  
+  // Since RPC returns {id: UUID}, we can construct the object or fetch it.
+  // Fetching is safer to return the full object as expected by the caller (if it expects full object)
+  // But for performance, we can just return what we have if the caller allows.
+  // However, the return type is Promise<Invoice>. We should better fetch it or just cast it if we trust the input.
+  // Let's fetch it to be sure.
+  const { data: createdInvoice, error: fetchError } = await supabase
+    .from('invoices')
+    .select('*')
+    .eq('id', (invoiceId as any).id)
+    .single();
+    
+  if (fetchError || !createdInvoice) {
+      throw new Error('Invoice created but failed to fetch');
   }
 
   revalidatePath('/invoice-management');
   revalidatePath('/dashboard');
   revalidatePath(`/client-management/${invoiceData.client_id}`);
 
-  return invoice;
+  return createdInvoice;
 }
 
-export async function updateInvoiceAction(id: string, invoiceData: Partial<Omit<Invoice, 'id' | 'user_id' | 'created_at' | 'updated_at'>>): Promise<Invoice> {
+interface UpdateInvoiceParams extends Partial<Omit<Invoice, 'id' | 'user_id' | 'created_at' | 'updated_at'>> {
+  items?: Omit<InvoiceItem, 'id' | 'invoice_id' | 'created_at'>[];
+}
+
+export async function updateInvoiceAction(id: string, invoiceData: UpdateInvoiceParams): Promise<Invoice> {
   const supabase = createClient();
 
   const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -66,27 +89,17 @@ export async function updateInvoiceAction(id: string, invoiceData: Partial<Omit<
     }
   }
 
-  // Check if invoice exists and belongs to user
-  const { data: existingInvoice, error: fetchError } = await supabase
-    .from('invoices')
-    .select('id')
-    .eq('id', id)
-    .eq('user_id', user.id)
-    .single();
+  const { items, ...invoiceFields } = invoiceData;
 
-  if (fetchError) {
-    throw new Error('Invoice not found');
-  }
-
-  const { data: invoice, error } = await supabase
-    .from('invoices')
-    .update(invoiceData)
-    .eq('id', id)
-    .eq('user_id', user.id)
-    .select()
-    .single();
+  // Use RPC for atomic update
+  const { error } = await supabase.rpc('update_invoice_full', {
+    p_invoice_id: id,
+    p_invoice_data: invoiceFields,
+    p_items_data: items, // Can be undefined, RPC handles it
+  });
 
   if (error) {
+    console.error('RPC Error:', error);
     throw new Error('Failed to update invoice');
   }
 
@@ -94,7 +107,18 @@ export async function updateInvoiceAction(id: string, invoiceData: Partial<Omit<
   revalidatePath('/dashboard');
   revalidatePath(`/invoice-management/${id}`);
 
-  return invoice;
+  // Fetch updated invoice
+  const { data: updatedInvoice, error: fetchError } = await supabase
+    .from('invoices')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (fetchError || !updatedInvoice) {
+    throw new Error('Invoice updated but failed to fetch');
+  }
+
+  return updatedInvoice;
 }
 
 export async function deleteInvoiceAction(id: string): Promise<void> {

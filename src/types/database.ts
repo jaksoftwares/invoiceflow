@@ -32,6 +32,15 @@ export interface BusinessProfile {
   tax_id?: string;
   website?: string;
   status: 'pending' | 'verified' | 'active' | 'suspended';
+  smtp_settings?: {
+    host: string;
+    port: number;
+    secure: boolean;
+    user: string;
+    pass: string; // Ideally encrypted, but for MVP storing as is or user handles encryption logic
+    fromName: string;
+    fromEmail: string;
+  };
   created_at: string;
   updated_at: string;
 }
@@ -39,6 +48,7 @@ export interface BusinessProfile {
 export interface Client {
   id: string;
   user_id: string;
+  business_id?: string;
   company_name: string;
   contact_person?: string;
   email?: string;
@@ -57,6 +67,7 @@ export interface Client {
 export interface Invoice {
   id: string;
   user_id: string;
+  business_id?: string;
   client_id: string;
   invoice_number: string;
   issue_date: string;

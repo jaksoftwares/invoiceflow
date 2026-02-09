@@ -12,13 +12,15 @@ import TemplateSelector from './TemplateSelector';
 import AdditionalDetailsForm from './AdditionalDetailsForm';
 import AddClientModal from './AddClientModal';
 import { useClients } from '@/lib/hooks/useClients';
-import { useInvoiceItems } from '@/lib/hooks/useInvoiceItems';
-import { createInvoiceAction } from '@/lib/actions/invoices';
-import { createInvoiceItemAction } from '@/lib/actions/invoiceItems';
-import type { Client, InvoiceItem } from '@/types/database';
+import { createInvoiceAction, updateInvoiceAction } from '@/lib/actions/invoices';
+import { supabase } from '@/lib/supabase/client';
+import { useInvoicePDF } from '@/lib/hooks/useInvoicePDF';
+import type { Client, InvoiceItem, BusinessProfile } from '@/types/database';
 
 interface CreateInvoiceInteractiveProps {
   initialClients: Client[];
+  editId?: string;
+  duplicateId?: string;
 }
 
 interface InvoiceDetails {
@@ -28,7 +30,7 @@ interface InvoiceDetails {
   paymentTerms: string;
 }
 
-const CreateInvoiceInteractive = ({ initialClients }: CreateInvoiceInteractiveProps) => {
+const CreateInvoiceInteractive = ({ initialClients, editId, duplicateId }: CreateInvoiceInteractiveProps) => {
   const router = useRouter();
   const [isHydrated, setIsHydrated] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
@@ -41,7 +43,13 @@ const CreateInvoiceInteractive = ({ initialClients }: CreateInvoiceInteractivePr
   const [lineItems, setLineItems] = useState<InvoiceItem[]>([]);
   const [taxRate, setTaxRate] = useState(0);
   const [discount, setDiscount] = useState(0);
-  const [currency, setCurrency] = useState('USD');
+  const [currency, setCurrency] = useState('KES');
+
+  // Business Profile State
+  const [businessProfiles, setBusinessProfiles] = useState<BusinessProfile[]>([]);
+  const [selectedBusiness, setSelectedBusiness] = useState<BusinessProfile | null>(null);
+  const [loadingBusiness, setLoadingBusiness] = useState(true);
+  const [loadingInvoice, setLoadingInvoice] = useState(false);
 
   // Use the clients hook for client management
   const {
@@ -62,22 +70,135 @@ const CreateInvoiceInteractive = ({ initialClients }: CreateInvoiceInteractivePr
 
   useEffect(() => {
     setIsHydrated(true);
-    const today = new Date().toISOString().split('T')[0];
-    const dueDate = new Date();
-    dueDate.setDate(dueDate.getDate() + 30);
-    setInvoiceDetails({
-      invoiceNumber: `INV-${Date.now().toString().slice(-9)}`,
-      issueDate: today,
-      dueDate: dueDate.toISOString().split('T')[0],
-      paymentTerms: 'net30',
-    });
+    
+    // Only set default values if NOT editing
+    if (!editId) {
+      const today = new Date().toISOString().split('T')[0];
+      const dueDate = new Date();
+      dueDate.setDate(dueDate.getDate() + 30);
+      setInvoiceDetails({
+        invoiceNumber: `INV-${Date.now().toString().slice(-9)}`,
+        issueDate: today,
+        dueDate: dueDate.toISOString().split('T')[0],
+        paymentTerms: 'net30',
+      });
+    }
 
     // Initialize clients state with initial data
     if (initialClients.length > 0) {
       // Note: useClients hook manages its own state, so we don't set it directly
-      // The hook will fetch fresh data, but we can use initialClients for immediate display
     }
-  }, [initialClients]);
+
+    // Fetch Business Profiles
+    const fetchBusinessProfiles = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('business_profiles')
+          .select('*')
+          .eq('status', 'active');
+        
+        if (error) throw error;
+        
+        if (data && data.length > 0) {
+          setBusinessProfiles(data);
+          // Only default if not editing or if fetchInvoice hasn't set it yet
+          if (!editId) {
+            setSelectedBusiness(data[0]);
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching business profiles:', err);
+      } finally {
+        setLoadingBusiness(false);
+      }
+    };
+
+    fetchBusinessProfiles();
+  }, [initialClients, editId]);
+
+  // Fetch Invoice for Edited or Duplicated data
+  useEffect(() => {
+    const fetchInvoice = async () => {
+      const sourceId = editId || duplicateId;
+      if (!sourceId) return;
+
+      setLoadingInvoice(true);
+      try {
+        const { data: invoice, error } = await supabase
+          .from('invoices')
+          .select(`
+            *,
+            items:invoice_items(*),
+            client:clients(*)
+          `)
+          .eq('id', sourceId)
+          .single();
+
+        if (error) throw error;
+        if (!invoice) throw new Error('Invoice not found');
+
+        // Populate State
+        setSelectedClient(invoice.client as unknown as Client); 
+        
+        // If duplicating, keep new invoice number and dates
+        // If editing, use existing invoice number and dates
+        if (editId) {
+          setInvoiceDetails({
+            invoiceNumber: invoice.invoice_number,
+            issueDate: invoice.issue_date,
+            dueDate: invoice.due_date,
+            paymentTerms: invoice.payment_terms,
+          });
+        }
+        // If duplicateId, we already set defaults in previous effect (isHydrated effect)
+        // But we might want to carry over payment terms?
+        if (duplicateId) {
+           setInvoiceDetails(prev => ({
+             ...prev,
+             paymentTerms: invoice.payment_terms
+           }));
+        }
+        
+        // Transform items to match InvoiceItem type
+        if (invoice.items) {
+          setLineItems(invoice.items.map((item: any) => ({
+            ...item,
+            id: duplicateId ? `temp-${Math.random().toString(36).substr(2, 9)}` : item.id,
+            quantity: Number(item.quantity),
+            rate: Number(item.rate),
+            amount: Number(item.amount),
+          })));
+        }
+
+        setTaxRate(Number(invoice.tax_rate) || 0);
+        setDiscount(Number(invoice.discount) || 0);
+        setCurrency(invoice.currency || 'KES');
+        setNotes(invoice.notes || '');
+        setTerms(invoice.terms || '');
+        setPaymentInstructions(invoice.payment_instructions || '');
+        setSelectedTemplate(invoice.template || 'professional');
+
+        // Business Profile
+        if (invoice.business_id) {
+            const { data: business } = await supabase
+              .from('business_profiles')
+              .select('*')
+              .eq('id', invoice.business_id)
+              .single();
+            if (business) setSelectedBusiness(business);
+        }
+
+      } catch (err) {
+        console.error('Error fetching invoice:', err);
+        setError('Failed to load invoice details.');
+      } finally {
+        setLoadingInvoice(false);
+      }
+    };
+
+    fetchInvoice();
+  }, [editId, duplicateId]);
+
 
   const handleClientAdded = async (clientData: { company_name: string; contact_person?: string; email?: string; phone?: string; address?: string }) => {
     const newClient = await createClient({
@@ -124,7 +245,7 @@ const CreateInvoiceInteractive = ({ initialClients }: CreateInvoiceInteractivePr
     return true;
   };
 
-  const handleSaveDraft = async () => {
+  const handleSave = async (status: 'draft' | 'sent') => {
     if (!validateForm()) return;
     if (!selectedClient) return;
 
@@ -142,7 +263,7 @@ const CreateInvoiceInteractive = ({ initialClients }: CreateInvoiceInteractivePr
         issue_date: invoiceDetails.issueDate,
         due_date: invoiceDetails.dueDate,
         payment_terms: invoiceDetails.paymentTerms,
-        status: 'draft' as const,
+        status: status,
         subtotal,
         tax_rate: taxRate,
         tax_amount: taxAmount,
@@ -153,21 +274,23 @@ const CreateInvoiceInteractive = ({ initialClients }: CreateInvoiceInteractivePr
         terms,
         payment_instructions: paymentInstructions,
         template: selectedTemplate,
-      };
-
-      const invoice = await createInvoiceAction(invoiceData);
-
-      // Create invoice items
-      for (const item of lineItems) {
-        await createInvoiceItemAction(invoice.id, {
+        business_id: selectedBusiness?.id,
+        items: lineItems.map(item => ({
           description: item.description,
           quantity: item.quantity,
           rate: item.rate,
           amount: item.amount,
-        });
+        })),
+      };
+
+      if (editId) {
+        await updateInvoiceAction(editId, invoiceData);
+        alert(`Invoice ${status === 'draft' ? 'updated' : 'sent'} successfully!`);
+      } else {
+        await createInvoiceAction(invoiceData);
+        alert(`Invoice ${status === 'draft' ? 'saved' : 'sent'} successfully!`);
       }
 
-      alert('Invoice draft saved successfully!');
       router.push('/invoice-management');
     } catch (error) {
       console.error('Error saving invoice:', error);
@@ -177,65 +300,29 @@ const CreateInvoiceInteractive = ({ initialClients }: CreateInvoiceInteractivePr
     }
   };
 
-  const handleGeneratePDF = () => {
+  /* Hook for PDF Generation */
+  const { downloadPDF } = useInvoicePDF();
+
+  const handleGeneratePDF = async () => {
     if (!validateForm()) return;
-    alert('PDF generation feature will download the invoice as a PDF file');
+
+    const data = {
+      businessProfile: selectedBusiness,
+      client: selectedClient,
+      details: invoiceDetails,
+      items: lineItems,
+      taxRate,
+      discount,
+      currency,
+      notes,
+      terms,
+      selectedTemplate,
+    };
+
+    await downloadPDF(editId || 'draft', data);
   };
 
-  const handleSendInvoice = async () => {
-    if (!validateForm()) return;
-    if (!selectedClient) return;
-
-    setIsSaving(true);
-    setError(null);
-    try {
-      // Calculate totals
-      const subtotal = lineItems.reduce((sum, item) => sum + item.amount, 0);
-      const taxAmount = (subtotal * taxRate) / 100;
-      const totalAmount = subtotal + taxAmount - discount;
-
-      const invoiceData = {
-        client_id: selectedClient.id,
-        invoice_number: invoiceDetails.invoiceNumber,
-        issue_date: invoiceDetails.issueDate,
-        due_date: invoiceDetails.dueDate,
-        payment_terms: invoiceDetails.paymentTerms,
-        status: 'sent' as const,
-        subtotal,
-        tax_rate: taxRate,
-        tax_amount: taxAmount,
-        discount,
-        total_amount: totalAmount,
-        currency,
-        notes,
-        terms,
-        payment_instructions: paymentInstructions,
-        template: selectedTemplate,
-      };
-
-      const invoice = await createInvoiceAction(invoiceData);
-
-      // Create invoice items
-      for (const item of lineItems) {
-        await createInvoiceItemAction(invoice.id, {
-          description: item.description,
-          quantity: item.quantity,
-          rate: item.rate,
-          amount: item.amount,
-        });
-      }
-
-      alert(`Invoice sent successfully to ${selectedClient.email || selectedClient.contact_person || selectedClient.company_name}!`);
-      router.push('/invoice-management');
-    } catch (error) {
-      console.error('Error sending invoice:', error);
-      setError(error instanceof Error ? error.message : 'Failed to send invoice. Please try again.');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  if (!isHydrated) {
+  if (!isHydrated || loadingInvoice) {
     return (
       <div className="min-h-screen bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -258,9 +345,11 @@ const CreateInvoiceInteractive = ({ initialClients }: CreateInvoiceInteractivePr
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-3xl font-heading font-bold text-foreground">Create Invoice</h1>
+              <h1 className="text-3xl font-heading font-bold text-foreground">
+                {editId ? 'Edit Invoice' : duplicateId ? 'Duplicate Invoice' : 'Create Invoice'}
+              </h1>
               <p className="text-sm text-muted-foreground mt-1">
-                Generate professional invoices for your clients
+                {editId ? 'Update existing invoice details' : duplicateId ? 'Create a new invoice from existing details' : 'Generate professional invoices for your clients'}
               </p>
             </div>
             <button
@@ -283,6 +372,35 @@ const CreateInvoiceInteractive = ({ initialClients }: CreateInvoiceInteractivePr
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
+              <div className="bg-card border border-border rounded-md p-6 shadow-elevation-1">
+                <h2 className="text-xl font-heading font-semibold text-foreground mb-4">Business Profile</h2>
+                {loadingBusiness ? (
+                  <div className="h-10 bg-muted rounded animate-pulse" />
+                ) : (
+                  <div className="space-y-4">
+                     {businessProfiles.length > 0 ? (
+                        <div>
+                          <label className="block text-sm font-medium text-foreground mb-2">Select Business Profile</label>
+                          <select
+                            className="w-full px-4 py-2.5 bg-card border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-smooth"
+                            value={selectedBusiness?.id || ''}
+                            onChange={(e) => {
+                              const business = businessProfiles.find(b => b.id === e.target.value);
+                              setSelectedBusiness(business || null);
+                            }}
+                          >
+                            {businessProfiles.map(b => (
+                              <option key={b.id} value={b.id}>{b.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                     ) : (
+                       <p className="text-sm text-yellow-500">No active business profiles found. Please create one in user settings.</p>
+                     )}
+                  </div>
+                )}
+              </div>
+
               <div className="bg-card border border-border rounded-md p-6 shadow-elevation-1">
                 <h2 className="text-xl font-heading font-semibold text-foreground mb-4">Invoice Details</h2>
                 <div className="space-y-6">
@@ -332,12 +450,12 @@ const CreateInvoiceInteractive = ({ initialClients }: CreateInvoiceInteractivePr
 
               <div className="flex flex-col sm:flex-row items-center gap-3">
                 <button
-                  onClick={handleSaveDraft}
+                  onClick={() => handleSave('draft')}
                   disabled={isSaving}
                   className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-secondary text-secondary-foreground rounded-md text-sm font-medium transition-smooth hover:-translate-y-[1px] hover:shadow-elevation-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Icon name="DocumentDuplicateIcon" size={18} />
-                  <span>{isSaving ? 'Saving...' : 'Save Draft'}</span>
+                  <span>{isSaving ? 'Saving...' : (editId ? 'Update Draft' : 'Save Draft')}</span>
                 </button>
                 <button
                   onClick={handleGeneratePDF}
@@ -347,12 +465,21 @@ const CreateInvoiceInteractive = ({ initialClients }: CreateInvoiceInteractivePr
                   <span>Download PDF</span>
                 </button>
                 <button
-                  onClick={handleSendInvoice}
+                  onClick={() => {
+                     // If it's a new invoice, save it first, then open share modal?
+                     // Or just open share modal and save on send?
+                     // For better UX, let's open share modal if validation passes.
+                     if (validateForm()) {
+                        // We need to implement share logic here similar to InvoiceManagement
+                        // But since we might be in 'create' mode without an ID, we should probably save first.
+                        handleSave('sent');
+                     }
+                  }}
                   disabled={isSaving}
                   className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-accent text-accent-foreground rounded-md text-sm font-medium transition-smooth hover:-translate-y-[1px] hover:shadow-elevation-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Icon name="PaperAirplaneIcon" size={18} />
-                  <span>{isSaving ? 'Sending...' : 'Send Invoice'}</span>
+                  <span>{isSaving ? 'Sending...' : (editId ? 'Update & Send' : 'Save & Share')}</span>
                 </button>
               </div>
             </div>
@@ -370,6 +497,7 @@ const CreateInvoiceInteractive = ({ initialClients }: CreateInvoiceInteractivePr
               </div>
               <div className={`${showPreview ? 'block' : 'hidden'} lg:block`}>
                 <InvoicePreview
+                  businessProfile={selectedBusiness}
                   client={selectedClient}
                   details={invoiceDetails}
                   items={lineItems}

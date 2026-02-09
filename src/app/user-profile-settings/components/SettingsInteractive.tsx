@@ -71,6 +71,9 @@ interface UsageStats {
   storageLimit: number;
 }
 
+
+
+
 type TabType = 'profile' | 'business' | 'notifications' | 'security' | 'subscription';
 
 const SettingsInteractive = () => {
@@ -369,6 +372,7 @@ const SettingsInteractive = () => {
           {activeTab === 'business' && (
             <BusinessTab businessSettings={businessSettings} onSave={handleBusinessSave} />
           )}
+
           {activeTab === 'notifications' && (
             <NotificationsTab
               notificationSettings={notificationSettings}

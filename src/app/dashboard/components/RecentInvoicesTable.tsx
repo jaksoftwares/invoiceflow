@@ -49,7 +49,9 @@ const RecentInvoicesTable = ({ invoices, onViewInvoice }: RecentInvoicesTablePro
               <tr key={invoice.id} className="hover:bg-muted/30 transition-smooth">
                 <td className="px-6 py-4 text-sm text-foreground font-medium">{invoice.invoice_number}</td>
                 <td className="px-6 py-4 text-sm text-foreground">{invoice.clients?.company_name || 'Unknown Client'}</td>
-                <td className="px-6 py-4 text-sm text-foreground font-semibold">${invoice.total_amount.toLocaleString()}</td>
+                <td className="px-6 py-4 text-sm text-foreground font-semibold">
+                  {new Intl.NumberFormat('en-US', { style: 'currency', currency: invoice.currency || 'KES' }).format(invoice.total_amount)}
+                </td>
                 <td className="px-6 py-4 text-sm text-muted-foreground">{new Date(invoice.due_date).toLocaleDateString()}</td>
                 <td className="px-6 py-4">
                   <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusStyles(invoice.status)}`}>
@@ -84,7 +86,9 @@ const RecentInvoicesTable = ({ invoices, onViewInvoice }: RecentInvoicesTablePro
             </div>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-lg font-semibold text-foreground">${invoice.total_amount.toLocaleString()}</p>
+                <p className="text-lg font-semibold text-foreground">
+                  {new Intl.NumberFormat('en-US', { style: 'currency', currency: invoice.currency || 'KES' }).format(invoice.total_amount)}
+                </p>
                 <p className="text-xs text-muted-foreground mt-1">Due: {new Date(invoice.due_date).toLocaleDateString()}</p>
               </div>
               <button

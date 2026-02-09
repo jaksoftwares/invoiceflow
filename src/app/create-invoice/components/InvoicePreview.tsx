@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import type { Client, InvoiceItem } from '@/types/database';
+import type { Client, InvoiceItem, BusinessProfile } from '@/types/database';
 
 interface InvoiceDetails {
   invoiceNumber: string;
@@ -11,6 +11,7 @@ interface InvoiceDetails {
 }
 
 interface InvoicePreviewProps {
+  businessProfile: BusinessProfile | null;
   client: Client | null;
   details: InvoiceDetails;
   items: InvoiceItem[];
@@ -23,6 +24,7 @@ interface InvoicePreviewProps {
 }
 
 const InvoicePreview = ({
+  businessProfile,
   client,
   details,
   items,
@@ -50,6 +52,13 @@ const InvoicePreview = ({
       style: 'currency',
       currency: currency,
       minimumFractionDigits: 2,
+    }).format(amount);
+  };
+   
+  const formatNumber = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     }).format(amount);
   };
 
@@ -134,20 +143,29 @@ const InvoicePreview = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">From</h3>
-            <div className="space-y-1">
-              <p className="text-sm font-semibold text-foreground">InvoiceFlow Inc.</p>
-              <p className="text-sm text-muted-foreground">123 Business Street</p>
-              <p className="text-sm text-muted-foreground">New York, NY 10001</p>
-              <p className="text-sm text-muted-foreground">contact@invoiceflow.com</p>
-            </div>
+            {businessProfile ? (
+              <div className="space-y-1">
+                <p className="text-sm font-semibold text-foreground">{businessProfile.name}</p>
+                {businessProfile.address && <p className="text-sm text-muted-foreground">{businessProfile.address}</p>}
+                {(businessProfile.city || businessProfile.state || businessProfile.zip_code) && (
+                  <p className="text-sm text-muted-foreground">
+                    {[businessProfile.city, businessProfile.state, businessProfile.zip_code].filter(Boolean).join(', ')}
+                  </p>
+                )}
+                {businessProfile.country && <p className="text-sm text-muted-foreground">{businessProfile.country}</p>}
+                {businessProfile.tax_id && <p className="text-sm text-muted-foreground">Tax ID: {businessProfile.tax_id}</p>}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground italic">No business profile selected</p>
+            )}
           </div>
 
           <div>
             <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Bill To</h3>
             {client ? (
               <div className="space-y-1">
-                <p className="text-sm font-semibold text-foreground">{client.name}</p>
-                <p className="text-sm text-muted-foreground">{client.company}</p>
+                <p className="text-sm font-semibold text-foreground">{client.company_name}</p>
+                {client.contact_person && <p className="text-sm text-muted-foreground">{client.contact_person}</p>}
                 <p className="text-sm text-muted-foreground">{client.email}</p>
               </div>
             ) : (
@@ -184,10 +202,10 @@ const InvoicePreview = ({
                   Qty
                 </th>
                 <th className="text-right py-3 text-xs font-medium text-muted-foreground uppercase tracking-wide w-24">
-                  Rate
+                  Rate ({currency})
                 </th>
                 <th className="text-right py-3 text-xs font-medium text-muted-foreground uppercase tracking-wide w-28">
-                  Amount
+                  Amount ({currency})
                 </th>
               </tr>
             </thead>
@@ -197,9 +215,9 @@ const InvoicePreview = ({
                   <tr key={item.id} className="border-b border-border">
                     <td className="py-3 text-sm text-foreground">{item.description || 'Untitled item'}</td>
                     <td className="py-3 text-sm text-right text-foreground data-text">{item.quantity}</td>
-                    <td className="py-3 text-sm text-right text-foreground data-text">{formatCurrency(item.rate)}</td>
+                    <td className="py-3 text-sm text-right text-foreground data-text">{formatNumber(item.rate)}</td>
                     <td className="py-3 text-sm text-right font-medium text-foreground data-text">
-                      {formatCurrency(item.amount)}
+                      {formatNumber(item.amount)}
                     </td>
                   </tr>
                 ))

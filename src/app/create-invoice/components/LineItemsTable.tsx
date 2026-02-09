@@ -43,11 +43,14 @@ const LineItemsTable = ({ items, onItemsChange, currency }: LineItemsTableProps)
     onItemsChange(items.filter((item) => item.id !== id));
   };
 
-  const formatCurrency = (amount: number) => {
+  /* 
+   * Format number for display without currency symbol 
+   * (Currency is now shown in the header)
+   */
+  const formatNumber = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency,
       minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     }).format(amount);
   };
 
@@ -72,8 +75,8 @@ const LineItemsTable = ({ items, onItemsChange, currency }: LineItemsTableProps)
             <tr>
               <th className="px-4 py-3 text-left text-sm font-medium text-foreground">Description</th>
               <th className="px-4 py-3 text-left text-sm font-medium text-foreground w-24">Quantity</th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-foreground w-32">Rate</th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-foreground w-32">Amount</th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-foreground w-32">Rate ({currency})</th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-foreground w-32">Amount ({currency})</th>
               <th className="px-4 py-3 text-center text-sm font-medium text-foreground w-20">Action</th>
             </tr>
           </thead>
@@ -111,7 +114,7 @@ const LineItemsTable = ({ items, onItemsChange, currency }: LineItemsTableProps)
                   </td>
                   <td className="px-4 py-3">
                     <span className="text-sm font-medium text-foreground data-text">
-                      {formatCurrency(item.amount)}
+                      {formatNumber(item.amount)}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-center">
@@ -176,7 +179,7 @@ const LineItemsTable = ({ items, onItemsChange, currency }: LineItemsTableProps)
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="block text-xs font-medium text-foreground">Rate</label>
+                  <label className="block text-xs font-medium text-foreground">Rate ({currency})</label>
                   <input
                     type="number"
                     value={item.rate}
@@ -189,9 +192,9 @@ const LineItemsTable = ({ items, onItemsChange, currency }: LineItemsTableProps)
               </div>
               <div className="pt-2 border-t border-border">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-foreground">Amount:</span>
+                  <span className="text-sm font-medium text-foreground">Amount ({currency}):</span>
                   <span className="text-lg font-semibold text-foreground data-text">
-                    {formatCurrency(item.amount)}
+                    {formatNumber(item.amount)}
                   </span>
                 </div>
               </div>

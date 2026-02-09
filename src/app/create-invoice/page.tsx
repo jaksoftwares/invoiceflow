@@ -33,12 +33,22 @@ async function getInitialClients(): Promise<Client[]> {
   return clients || [];
 }
 
-export default async function CreateInvoicePage() {
+interface CreateInvoicePageProps {
+  searchParams: { [key: string]: string | string[] | undefined };
+}
+
+export default async function CreateInvoicePage({ searchParams }: CreateInvoicePageProps) {
   const initialClients = await getInitialClients();
+  const editId = typeof searchParams.edit === 'string' ? searchParams.edit : undefined;
+  const duplicateId = typeof searchParams.duplicate === 'string' ? searchParams.duplicate : undefined;
 
   return (
     <NavigationWrapper>
-      <CreateInvoiceInteractive initialClients={initialClients} />
+      <CreateInvoiceInteractive 
+        initialClients={initialClients} 
+        editId={editId} 
+        duplicateId={duplicateId} 
+      />
     </NavigationWrapper>
   );
 }

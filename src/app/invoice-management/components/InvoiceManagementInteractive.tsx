@@ -7,13 +7,18 @@ import InvoiceFilters from './InvoiceFilters';
 import InvoiceSearch from './InvoiceSearch';
 import BulkActionToolbar from './BulkActionToolbar';
 import InvoiceTableRow from './InvoiceTableRow';
+import { toast } from 'sonner';
+import ShareInvoiceModal from '@/components/modals/ShareInvoiceModal';
 import InvoiceCard from './InvoiceCard';
 import { useInvoices } from '@/lib/hooks/useInvoices';
+import { sendInvoiceEmail } from '@/lib/actions/email';
+import { useInvoicePDF } from '@/lib/hooks/useInvoicePDF';
 import type { Invoice } from '@/types/database';
 
 interface InvoiceWithClient extends Invoice {
   clients?: {
     company_name: string;
+    email?: string;
   };
 }
 
@@ -63,12 +68,52 @@ const InvoiceManagementInteractive = ({ initialInvoices }: InvoiceManagementInte
     autoFetch: false, // We'll manage fetching manually
   });
 
+  const { downloadPDF, generatePDFBase64, isGenerating: isGeneratingPDF } = useInvoicePDF();
+
+  const handleDownload = async (id: string) => {
+    await downloadPDF(id);
+  };
+
+  /* State for Share Modal */
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [selectedInvoiceForShare, setSelectedInvoiceForShare] = useState<InvoiceWithClient | null>(null);
+
+  // Use invoices from hook, fallback to initial data if not loaded yet
+  const displayInvoices = invoices.length > 0 ? invoices : initialInvoices;
+
+  const handleSend = (id: string) => {
+    const invoice = displayInvoices.find((inv: InvoiceWithClient) => inv.id === id);
+    if (invoice) {
+      setSelectedInvoiceForShare(invoice);
+      setShareModalOpen(true);
+    }
+  };
+
+  const handleSendEmail = async (data: { to: string; subject: string; message: string; copyMe: boolean }) => {
+    if (!selectedInvoiceForShare) return;
+
+    const toastId = toast.loading('Sending email...');
+    try {
+      // 1. Generate PDF
+      const pdfBase64 = await generatePDFBase64(selectedInvoiceForShare.id);
+      
+      // 2. Send Email via Server Action
+      await sendInvoiceEmail(selectedInvoiceForShare.id, pdfBase64, data);
+      
+      toast.success('Email sent successfully!', { id: toastId });
+      setShareModalOpen(false);
+    } catch (error) {
+      console.error('Failed to send email:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to send email. Check your settings.', { id: toastId });
+    }
+  };
+
   useEffect(() => {
     setIsHydrated(true);
   }, []);
 
   // Use invoices from hook, fallback to initial data if not loaded yet
-  const displayInvoices = invoices.length > 0 ? invoices : initialInvoices;
+
 
   const filteredInvoices = displayInvoices.filter(invoice => {
     const matchesSearch = searchQuery === '' ||
@@ -192,18 +237,27 @@ const InvoiceManagementInteractive = ({ initialInvoices }: InvoiceManagementInte
   };
 
   const handleDuplicate = (id: string) => {
-    // TODO: Implement duplicate functionality
-    console.log('Duplicate invoice:', id);
+    router.push(`/create-invoice?duplicate=${id}`);
   };
 
-  const handleDownload = (id: string) => {
-    // TODO: Implement download functionality
-    console.log('Download invoice:', id);
+
+
+  const handleCopyLink = async () => {
+    // In a real app, this would be a public link to the invoice
+    // For now, we just copy a placeholder link
+    if (selectedInvoiceForShare) {
+       const link = `${window.location.origin}/invoice/view/${selectedInvoiceForShare.id}`;
+       await navigator.clipboard.writeText(link);
+    }
   };
 
-  const handleSend = (id: string) => {
-    // TODO: Implement send functionality
-    console.log('Send invoice:', id);
+  const handleWhatsAppShare = () => {
+    if (selectedInvoiceForShare) {
+      const link = `${window.location.origin}/invoice/view/${selectedInvoiceForShare.id}`;
+      const text = `Hi, please find your invoice here: ${link}`;
+      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+      setShareModalOpen(false);
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -491,6 +545,19 @@ const InvoiceManagementInteractive = ({ initialInvoices }: InvoiceManagementInte
           onDelete={handleBulkDelete}
           onClearSelection={() => setSelectedInvoices([])}
         />
+
+        {selectedInvoiceForShare && (
+          <ShareInvoiceModal
+            isOpen={shareModalOpen}
+            onClose={() => setShareModalOpen(false)}
+            invoiceId={selectedInvoiceForShare.id}
+            clientEmail={selectedInvoiceForShare.clients?.email || ''} 
+            invoiceNumber={selectedInvoiceForShare.invoice_number}
+            onSendEmail={handleSendEmail}
+            onCopyLink={handleCopyLink}
+            onWhatsAppShare={handleWhatsAppShare}
+          />
+        )}
       </div>
     </div>
   );

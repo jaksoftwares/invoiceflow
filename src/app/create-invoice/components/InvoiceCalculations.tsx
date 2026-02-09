@@ -22,6 +22,7 @@ const InvoiceCalculations = ({
   onCurrencyChange,
 }: InvoiceCalculationsProps) => {
   const currencies = [
+    { code: 'KES', symbol: 'KSh', name: 'Kenyan Shilling' },
     { code: 'USD', symbol: '$', name: 'US Dollar' },
     { code: 'EUR', symbol: '€', name: 'Euro' },
     { code: 'GBP', symbol: '£', name: 'British Pound' },
