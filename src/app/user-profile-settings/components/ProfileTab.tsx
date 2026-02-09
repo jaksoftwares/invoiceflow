@@ -1,13 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Icon from '@/components/ui/AppIcon';
+import AppImage from '@/components/ui/AppImage';
+import { toast } from 'sonner';
+import { uploadFile } from '@/lib/cloudinary';
 
 interface ProfileData {
   firstName: string;
   lastName: string;
   email: string;
   phone: string;
+  avatarUrl?: string;
   businessName: string;
   businessAddress: string;
   city: string;
@@ -25,6 +29,11 @@ const ProfileTab = ({ profileData, onSave }: ProfileTabProps) => {
   const [formData, setFormData] = useState<ProfileData>(profileData);
   const [isEditing, setIsEditing] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<keyof ProfileData, string>>>({});
+  const [isUploading, setIsUploading] = useState(false);
+
+  useEffect(() => {
+    setFormData(profileData);
+  }, [profileData]);
 
   const validateForm = (): boolean => {
     const newErrors: Partial<Record<keyof ProfileData, string>> = {};
@@ -34,11 +43,6 @@ const ProfileTab = ({ profileData, onSave }: ProfileTabProps) => {
     }
     if (!formData.lastName.trim()) {
       newErrors.lastName = 'Last name is required';
-    }
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Invalid email format';
     }
     if (!formData.phone.trim()) {
       newErrors.phone = 'Phone number is required';
@@ -59,6 +63,10 @@ const ProfileTab = ({ profileData, onSave }: ProfileTabProps) => {
   };
 
   const handleSave = () => {
+    if (isUploading) {
+      toast.warning('Please wait for the image upload to finish.');
+      return;
+    }
     if (validateForm()) {
       onSave(formData);
       setIsEditing(false);
@@ -69,6 +77,28 @@ const ProfileTab = ({ profileData, onSave }: ProfileTabProps) => {
     setFormData(profileData);
     setErrors({});
     setIsEditing(false);
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        toast.error('File size must be less than 2MB');
+        return;
+      }
+      
+      setIsUploading(true);
+      try {
+        const url = await uploadFile(file, 'invoiceflow_avatars');
+        handleInputChange('avatarUrl', url);
+        toast.success('Profile picture uploaded successfully');
+      } catch (error) {
+        console.error('Avatar upload error:', error);
+        toast.error('Failed to upload profile picture');
+      } finally {
+        setIsUploading(false);
+      }
+    }
   };
 
   return (
@@ -87,6 +117,46 @@ const ProfileTab = ({ profileData, onSave }: ProfileTabProps) => {
       </div>
 
       <div className="bg-card rounded-lg shadow-elevation-1 p-6">
+        <div className="mb-6 flex items-center gap-4">
+          <div className="relative w-20 h-20 rounded-full border border-border overflow-hidden bg-muted">
+            {formData.avatarUrl ? (
+              <AppImage
+                src={formData.avatarUrl}
+                alt={`${formData.firstName} ${formData.lastName}`}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-primary/10 text-primary">
+                <span className="text-2xl font-bold">
+                  {formData.firstName?.[0]}{formData.lastName?.[0]}
+                </span>
+              </div>
+            )}
+          </div>
+          {isEditing && (
+            <div>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleAvatarUpload}
+                className="hidden"
+                id="avatar-upload"
+                disabled={isUploading}
+              />
+              <label
+                htmlFor="avatar-upload"
+                className={`inline-flex items-center gap-2 px-4 py-2 bg-secondary text-secondary-foreground rounded-md text-sm font-medium cursor-pointer transition-smooth hover:-translate-y-[1px] hover:shadow-elevation-2 ${isUploading ? 'opacity-50 cursor-wait' : ''}`}
+              >
+                <Icon name="CameraIcon" size={18} />
+                <span>{isUploading ? 'Uploading...' : 'Change Photo'}</span>
+              </label>
+              <p className="text-xs text-muted-foreground mt-2">
+                PNG, JPG up to 2MB
+              </p>
+            </div>
+          )}
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-medium text-foreground mb-2">
@@ -135,13 +205,8 @@ const ProfileTab = ({ profileData, onSave }: ProfileTabProps) => {
             <input
               type="email"
               value={formData.email}
-              onChange={(e) => handleInputChange('email', e.target.value)}
-              disabled={!isEditing}
-              className={`w-full px-4 py-2 border rounded-md transition-smooth ${
-                isEditing
-                  ? 'border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring'
-                  : 'border-transparent bg-muted text-foreground cursor-not-allowed'
-              } ${errors.email ? 'border-error' : ''}`}
+              readOnly
+              className="w-full px-4 py-2 border border-transparent bg-muted text-foreground cursor-not-allowed rounded-md transition-smooth"
             />
             {errors.email && (
               <p className="text-error text-xs mt-1">{errors.email}</p>
@@ -282,9 +347,10 @@ const ProfileTab = ({ profileData, onSave }: ProfileTabProps) => {
           </button>
           <button
             onClick={handleSave}
-            className="px-6 py-2 bg-accent text-accent-foreground rounded-md text-sm font-medium transition-smooth hover:-translate-y-[1px] hover:shadow-elevation-2"
+            disabled={isUploading}
+            className={`px-6 py-2 bg-accent text-accent-foreground rounded-md text-sm font-medium transition-smooth hover:-translate-y-[1px] hover:shadow-elevation-2 ${isUploading ? 'opacity-70 cursor-not-allowed' : ''}`}
           >
-            Save Changes
+            {isUploading ? 'Uploading...' : 'Save Changes'}
           </button>
         </div>
       )}

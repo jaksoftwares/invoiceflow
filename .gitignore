@@ -39,3 +39,8 @@ turbo/
 .env
 .env.local
 database-setup.sql
+SUPABASE_SETUP.md
+onboarding_flow.md
+20240209_refactor_schema.sql
+supabase/migrations/
+supabase/migrations/*

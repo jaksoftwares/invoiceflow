@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import Icon from '@/components/ui/AppIcon';
 import { useAuth } from '@/components/providers/SupabaseAuthProvider';
@@ -172,9 +173,21 @@ const Header = ({ onMobileMenuToggle }: HeaderProps) => {
               aria-label="User menu"
               aria-expanded={isUserMenuOpen}
             >
-              <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-                <Icon name="UserIcon" size={18} className="text-primary-foreground" />
-              </div>
+              {profile?.avatar_url ? (
+                <div className="w-8 h-8 rounded-full overflow-hidden bg-muted">
+                  <Image
+                    src={profile.avatar_url}
+                    alt="Profile avatar"
+                    width={32}
+                    height={32}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+                  <Icon name="UserIcon" size={18} className="text-primary-foreground" />
+                </div>
+              )}
               <Icon
                 name="ChevronDownIcon"
                 size={16}
@@ -192,14 +205,35 @@ const Header = ({ onMobileMenuToggle }: HeaderProps) => {
                 />
                 <div className="absolute right-0 top-full mt-2 w-56 bg-popover rounded-md shadow-elevation-3 py-2 z-[1200] animate-scale-in">
                   <div className="px-4 py-3 border-b border-border">
-                    <p className="text-sm font-medium text-foreground">
-                      {loading.profile ? 'Loading...' : profile?.first_name && profile?.last_name
-                        ? `${profile.first_name} ${profile.last_name}`
-                        : profile?.business_name || 'Business Owner'}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {user?.email || 'owner@invoiceflow.com'}
-                    </p>
+                    <div className="flex items-center gap-3">
+                      {profile?.avatar_url ? (
+                        <div className="w-10 h-10 rounded-full overflow-hidden bg-muted flex-shrink-0">
+                          <Image
+                            src={profile.avatar_url}
+                            alt="Profile avatar"
+                            width={40}
+                            height={40}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+                          <span className="text-primary-foreground font-medium">
+                            {profile?.first_name?.[0]?.toUpperCase() || profile?.business_name?.[0]?.toUpperCase() || 'U'}
+                          </span>
+                        </div>
+                      )}
+                      <div>
+                        <p className="text-sm font-medium text-foreground">
+                          {loading.profile ? 'Loading...' : profile?.first_name && profile?.last_name
+                            ? `${profile.first_name} ${profile.last_name}`
+                            : profile?.business_name || 'Business Owner'}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {user?.email || 'owner@invoiceflow.com'}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                   <Link
                     href="/user-profile-settings"

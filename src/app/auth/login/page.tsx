@@ -32,7 +32,7 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data: authData, error } = await supabase.auth.signInWithPassword({
         email: data.email,
         password: data.password,
       })
@@ -42,9 +42,25 @@ export default function LoginPage() {
         return
       }
 
+      // Check onboarding status
+      if (authData.user) {
+         const { data: profile } = await supabase
+          .from('profiles')
+          .select('onboarding_status')
+          .eq('id', authData.user.id)
+          .single();
+
+         if (profile && (profile.onboarding_status === 'pending_signup' || profile.onboarding_status === 'profile_incomplete' || profile.onboarding_status === 'business_pending')) {
+             toast.info('Please complete your account setup.');
+             router.push('/auth/signup');
+             return;
+         }
+      }
+
       toast.success('Logged in successfully!')
       router.push('/dashboard')
     } catch (error) {
+      console.error('Login error:', error);
       toast.error('An unexpected error occurred. Please try again.')
     } finally {
       setLoading(false)

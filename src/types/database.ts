@@ -4,12 +4,34 @@ export interface Profile {
   first_name?: string;
   last_name?: string;
   phone?: string;
+  avatar_url?: string;
+  onboarding_status?: 'pending_signup' | 'profile_incomplete' | 'business_pending' | 'verified' | 'active';
+  // Deprecated fields (moved to business_profiles)
   business_name?: string;
   business_address?: string;
   city?: string;
   state?: string;
   zip_code?: string;
   country?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BusinessProfile {
+  id: string;
+  owner_id: string;
+  name: string;
+  slug?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  zip_code?: string;
+  country?: string;
+  logo_url?: string;
+  registration_number?: string;
+  tax_id?: string;
+  website?: string;
+  status: 'pending' | 'verified' | 'active' | 'suspended';
   created_at: string;
   updated_at: string;
 }

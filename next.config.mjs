@@ -25,6 +25,10 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'img.rocket.new',
       },
+      {
+        protocol: 'https',
+        hostname: 'res.cloudinary.com',
+      },
     ],
   },
 

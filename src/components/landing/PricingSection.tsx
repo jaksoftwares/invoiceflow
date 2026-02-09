@@ -90,7 +90,7 @@ export default function PricingSection() {
                 ))}
               </ul>
               <Link
-                href={plan.name === 'Enterprise' ? '/contact' : '/auth/signup'}
+                href="/auth/signup"
                 className={`w-full inline-flex items-center justify-center px-6 py-3 font-semibold rounded-lg transition-smooth ${
                   plan.popular
                     ? 'bg-primary text-primary-foreground hover:bg-primary/90'

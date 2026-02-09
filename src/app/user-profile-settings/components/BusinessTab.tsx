@@ -1,8 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Icon from '@/components/ui/AppIcon';
 import AppImage from '@/components/ui/AppImage';
+import { toast } from 'sonner';
+import { uploadFile } from '@/lib/cloudinary';
 
 interface BusinessSettings {
   companyLogo: string;
@@ -23,6 +25,11 @@ const BusinessTab = ({ businessSettings, onSave }: BusinessTabProps) => {
   const [formData, setFormData] = useState<BusinessSettings>(businessSettings);
   const [isEditing, setIsEditing] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+
+  useEffect(() => {
+    setFormData(businessSettings);
+  }, [businessSettings]);
 
   const templates = [
     { id: 'modern', name: 'Modern Professional' },
@@ -44,6 +51,10 @@ const BusinessTab = ({ businessSettings, onSave }: BusinessTabProps) => {
   };
 
   const handleSave = () => {
+    if (isUploading) {
+      toast.warning('Please wait for the logo upload to finish.');
+      return;
+    }
     onSave(formData);
     setIsEditing(false);
   };
@@ -53,14 +64,25 @@ const BusinessTab = ({ businessSettings, onSave }: BusinessTabProps) => {
     setIsEditing(false);
   };
 
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        handleInputChange('companyLogo', reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      if (file.size > 2 * 1024 * 1024) {
+        toast.error('File size must be less than 2MB');
+        return;
+      }
+      
+      setIsUploading(true);
+      try {
+        const url = await uploadFile(file, 'invoiceflow_logos');
+        handleInputChange('companyLogo', url);
+        toast.success('Logo uploaded successfully');
+      } catch (error) {
+        console.error('Logo upload error:', error);
+        toast.error('Failed to upload logo');
+      } finally {
+        setIsUploading(false);
+      }
     }
   };
 
@@ -93,7 +115,9 @@ const BusinessTab = ({ businessSettings, onSave }: BusinessTabProps) => {
                     className="w-full h-full object-contain"
                   />
                 ) : (
-                  <Icon name="BuildingOfficeIcon" size={32} className="text-muted-foreground" />
+                  <div className="flex flex-col items-center justify-center text-muted-foreground">
+                    <Icon name="BuildingOfficeIcon" size={32} />
+                  </div>
                 )}
               </div>
               {isEditing && (
@@ -104,13 +128,14 @@ const BusinessTab = ({ businessSettings, onSave }: BusinessTabProps) => {
                     onChange={handleLogoUpload}
                     className="hidden"
                     id="logo-upload"
+                    disabled={isUploading}
                   />
                   <label
                     htmlFor="logo-upload"
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-secondary text-secondary-foreground rounded-md text-sm font-medium cursor-pointer transition-smooth hover:-translate-y-[1px] hover:shadow-elevation-2"
+                    className={`inline-flex items-center gap-2 px-4 py-2 bg-secondary text-secondary-foreground rounded-md text-sm font-medium cursor-pointer transition-smooth hover:-translate-y-[1px] hover:shadow-elevation-2 ${isUploading ? 'opacity-50 cursor-wait' : ''}`}
                   >
                     <Icon name="ArrowUpTrayIcon" size={18} />
-                    <span>Upload Logo</span>
+                    <span>{isUploading ? 'Uploading...' : 'Upload Logo'}</span>
                   </label>
                   <p className="text-xs text-muted-foreground mt-2">
                     PNG, JPG up to 2MB. Recommended: 200x200px
@@ -334,9 +359,10 @@ const BusinessTab = ({ businessSettings, onSave }: BusinessTabProps) => {
           </button>
           <button
             onClick={handleSave}
-            className="px-6 py-2 bg-accent text-accent-foreground rounded-md text-sm font-medium transition-smooth hover:-translate-y-[1px] hover:shadow-elevation-2"
+            disabled={isUploading}
+            className={`px-6 py-2 bg-accent text-accent-foreground rounded-md text-sm font-medium transition-smooth hover:-translate-y-[1px] hover:shadow-elevation-2 ${isUploading ? 'opacity-70 cursor-not-allowed' : ''}`}
           >
-            Save Changes
+            {isUploading ? 'Uploading...' : 'Save Changes'}
           </button>
         </div>
       )}

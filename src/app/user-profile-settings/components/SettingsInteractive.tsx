@@ -15,6 +15,7 @@ interface ProfileData {
   lastName: string;
   email: string;
   phone: string;
+  avatarUrl?: string;
   businessName: string;
   businessAddress: string;
   city: string;
@@ -85,6 +86,7 @@ const SettingsInteractive = () => {
     lastName: profile?.last_name || '',
     email: user?.email || '',
     phone: profile?.phone || '',
+    avatarUrl: profile?.avatar_url || '',
     businessName: profile?.business_name || '',
     businessAddress: profile?.business_address || '',
     city: profile?.city || '',
@@ -162,6 +164,7 @@ const SettingsInteractive = () => {
         lastName: profile.last_name || '',
         email: user?.email || '',
         phone: profile.phone || '',
+        avatarUrl: profile.avatar_url || '',
         businessName: profile.business_name || '',
         businessAddress: profile.business_address || '',
         city: profile.city || '',
@@ -234,6 +237,7 @@ const SettingsInteractive = () => {
       state: data.state,
       zip_code: data.zipCode,
       country: data.country,
+      avatar_url: data.avatarUrl,
     };
 
     const result = await updateProfile(profileUpdateData);
