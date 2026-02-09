@@ -71,6 +71,10 @@ export default async function DashboardPage() {
       .map(([period, revenue]) => ({ period, revenue }))
       .sort((a, b) => a.period.localeCompare(b.period));
 
+
+    // Determine primary currency from recent invoices or default to KES
+    const currency = recentInvoices?.[0]?.currency || 'KES';
+
     initialData = {
       metrics: {
         totalInvoices: totalInvoices || 0,
@@ -81,6 +85,7 @@ export default async function DashboardPage() {
       recentInvoices: recentInvoices || [],
       recentActivities: recentActivities || [],
       revenueChart,
+      currency,
     };
   }
 

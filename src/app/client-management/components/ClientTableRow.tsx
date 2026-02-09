@@ -7,6 +7,7 @@ interface ClientTableRowProps {
   onViewHistory: (clientId: string) => void;
   onCreateInvoice: (clientId: string) => void;
   onViewLogs: (clientId: string) => void;
+  currency?: string;
 }
 
 const ClientTableRow = ({
@@ -15,6 +16,7 @@ const ClientTableRow = ({
   onViewHistory,
   onCreateInvoice,
   onViewLogs,
+  currency = 'KES',
 }: ClientTableRowProps) => {
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -52,7 +54,7 @@ const ClientTableRow = ({
       </td>
       <td className="px-4 py-4">
         <p className="text-sm font-medium text-foreground">
-          ${client.total_billed.toLocaleString()}
+          {new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(client.total_billed)}
         </p>
       </td>
       <td className="px-4 py-4">

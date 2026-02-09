@@ -10,7 +10,11 @@ interface ComparisonData {
   change: number;
 }
 
-const ComparisonTools = () => {
+interface ComparisonToolsProps {
+  currency?: string;
+}
+
+const ComparisonTools = ({ currency = 'KES' }: ComparisonToolsProps) => {
   const [selectedYear, setSelectedYear] = useState('2026');
   const [comparisonYear, setComparisonYear] = useState('2025');
 
@@ -85,8 +89,8 @@ const ComparisonTools = () => {
                 <p className="text-lg font-semibold text-foreground">
                   {item.metric.includes('Rate') || item.metric.includes('Retention') 
                     ? `${item.currentYear}%` 
-                    : item.metric.includes('Average') 
-                    ? `$${item.currentYear.toLocaleString()}`
+                    : item.metric.includes('Revenue') || item.metric.includes('Average') 
+                    ? new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 }).format(item.currentYear)
                     : item.currentYear.toLocaleString()}
                 </p>
               </div>
@@ -95,8 +99,8 @@ const ComparisonTools = () => {
                 <p className="text-lg font-semibold text-muted-foreground">
                   {item.metric.includes('Rate') || item.metric.includes('Retention') 
                     ? `${item.previousYear}%` 
-                    : item.metric.includes('Average') 
-                    ? `$${item.previousYear.toLocaleString()}`
+                    : item.metric.includes('Revenue') || item.metric.includes('Average') 
+                    ? new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 }).format(item.previousYear)
                     : item.previousYear.toLocaleString()}
                 </p>
               </div>

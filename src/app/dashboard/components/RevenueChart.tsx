@@ -10,9 +10,10 @@ interface RevenueChartData {
 
 interface RevenueChartProps {
   data: RevenueChartData[];
+  currency?: string;
 }
 
-const RevenueChart = ({ data }: RevenueChartProps) => {
+const RevenueChart = ({ data, currency = 'USD' }: RevenueChartProps) => {
   const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
@@ -45,7 +46,7 @@ const RevenueChart = ({ data }: RevenueChartProps) => {
             <YAxis 
               stroke="rgba(100, 116, 139, 0.5)"
               style={{ fontSize: '14px' }}
-              tickFormatter={(value) => `$${value / 1000}k`}
+              tickFormatter={(value) => new Intl.NumberFormat('en-US', { style: 'currency', currency, notation: 'compact', compactDisplay: 'short' }).format(value)}
             />
             <Tooltip
               contentStyle={{
@@ -54,7 +55,7 @@ const RevenueChart = ({ data }: RevenueChartProps) => {
                 borderRadius: '8px',
                 boxShadow: '0 4px 6px rgba(30, 58, 95, 0.1)'
               }}
-              formatter={(value: number | undefined) => value !== undefined ? [`$${value.toLocaleString()}`, 'Revenue'] : ['N/A', 'Revenue']}
+              formatter={(value: number | undefined) => value !== undefined ? [new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(value), 'Revenue'] : ['N/A', 'Revenue']}
             />
             <Line 
               type="monotone" 

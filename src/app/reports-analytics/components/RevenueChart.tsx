@@ -10,9 +10,10 @@ interface RevenueData {
 
 interface RevenueChartProps {
   data: RevenueData[];
+  currency?: string;
 }
 
-const RevenueChart = ({ data }: RevenueChartProps) => {
+const RevenueChart = ({ data, currency = 'KES' }: RevenueChartProps) => {
   return (
     <div className="w-full h-80" aria-label="Monthly Revenue Bar Chart">
       <ResponsiveContainer width="100%" height="100%">
@@ -26,7 +27,7 @@ const RevenueChart = ({ data }: RevenueChartProps) => {
           <YAxis 
             stroke="var(--color-text-secondary)"
             style={{ fontSize: '14px' }}
-            tickFormatter={(value) => `$${value.toLocaleString()}`}
+            tickFormatter={(value) => new Intl.NumberFormat('en-US', { style: 'currency', currency, notation: 'compact' }).format(value)}
           />
           <Tooltip
             contentStyle={{
@@ -35,7 +36,7 @@ const RevenueChart = ({ data }: RevenueChartProps) => {
               borderRadius: '8px',
               color: 'var(--color-foreground)'
             }}
-            formatter={(value: number | undefined) => value !== undefined ? `$${value.toLocaleString()}` : '$0'}
+            formatter={(value: number | undefined) => value !== undefined ? new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(value) : new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(0)}
           />
           <Legend 
             wrapperStyle={{ paddingTop: '20px' }}

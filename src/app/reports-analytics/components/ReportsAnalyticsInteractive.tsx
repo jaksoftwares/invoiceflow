@@ -74,6 +74,7 @@ const ReportsAnalyticsInteractive = () => {
   const clientPerformanceData = data?.clientPerformanceChart || [];
   const kpiData = data?.kpis || [];
   const reportsTableData = data?.reportsTable || [];
+  const currency = data?.currency || 'KES';
 
   const handleFilterChange = (newFilters: FilterState) => {
     setFilters(newFilters);
@@ -146,14 +147,14 @@ const ReportsAnalyticsInteractive = () => {
             <h3 className="text-lg font-heading font-semibold text-foreground mb-4">
               Monthly Revenue Trends
             </h3>
-            <RevenueChart data={revenueData} />
+            <RevenueChart data={revenueData} currency={currency} />
           </div>
 
           <div className="bg-card rounded-lg p-6 shadow-elevation-2">
             <h3 className="text-lg font-heading font-semibold text-foreground mb-4">
               Payment Status Distribution
             </h3>
-            <PaymentStatusChart data={paymentStatusData} />
+            <PaymentStatusChart data={paymentStatusData} currency={currency} />
           </div>
         </div>
 
@@ -166,12 +167,12 @@ const ReportsAnalyticsInteractive = () => {
           </div>
 
           <div>
-            <ComparisonTools />
+            <ComparisonTools currency={currency} />
           </div>
         </div>
 
         <div className="mb-8">
-          <ReportsTable data={reportsTableData} />
+          <ReportsTable data={reportsTableData} currency={currency} />
         </div>
 
         <div className="bg-card rounded-lg p-6 shadow-elevation-2">
@@ -188,7 +189,9 @@ const ReportsAnalyticsInteractive = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="p-4 bg-muted/50 rounded-lg">
               <p className="text-sm text-muted-foreground mb-2">Q1 2026 Projection</p>
-              <p className="text-2xl font-heading font-bold text-foreground mb-1">$145,000</p>
+              <p className="text-2xl font-heading font-bold text-foreground mb-1">
+                {new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 }).format(145000)}
+              </p>
               <p className="text-xs text-success">+12% from Q4 2025</p>
             </div>
             <div className="p-4 bg-muted/50 rounded-lg">

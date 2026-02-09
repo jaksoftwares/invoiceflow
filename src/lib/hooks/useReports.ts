@@ -42,6 +42,7 @@ interface ReportsData {
   clientPerformanceChart: ClientPerformanceData[];
   kpis: KPIData[];
   reportsTable: ReportRow[];
+  currency?: string;
 }
 
 interface UseReportsOptions {

@@ -36,6 +36,17 @@ export async function GET(request: NextRequest) {
         break;
     }
 
+    // Determine currency
+    const { data: currencyData } = await supabase
+      .from('invoices')
+      .select('currency')
+      .eq('user_id', user.id)
+      .limit(1)
+      .maybeSingle();
+
+    const currency = currencyData?.currency || 'KES';
+    const formatter = new Intl.NumberFormat('en-US', { style: 'currency', currency });
+
     // Revenue data (monthly aggregation)
     const { data: revenueData } = await supabase
       .from('invoices')
@@ -132,14 +143,14 @@ export async function GET(request: NextRequest) {
     const kpis = [
       {
         title: 'Total Revenue',
-        value: `$${totalRevenue.toLocaleString()}`,
+        value: formatter.format(totalRevenue),
         change: 18.5, // This would need historical comparison
         icon: 'CurrencyDollarIcon',
         trend: 'up' as const
       },
       {
         title: 'Average Invoice Value',
-        value: `$${avgInvoiceValue.toFixed(0)}`,
+        value: formatter.format(avgInvoiceValue),
         change: 5.2,
         icon: 'DocumentTextIcon',
         trend: 'up' as const
@@ -153,7 +164,7 @@ export async function GET(request: NextRequest) {
       },
       {
         title: 'Outstanding Amount',
-        value: `$${outstandingAmount.toLocaleString()}`,
+        value: formatter.format(outstandingAmount),
         change: 12.3,
         icon: 'ExclamationCircleIcon',
         trend: 'down' as const
@@ -209,7 +220,8 @@ export async function GET(request: NextRequest) {
       paymentStatusChart,
       clientPerformanceChart,
       kpis,
-      reportsTable
+      reportsTable,
+      currency
     });
   } catch (error) {
     console.error('Unexpected error:', error);

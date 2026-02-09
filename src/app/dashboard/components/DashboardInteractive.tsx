@@ -43,6 +43,7 @@ interface InitialData {
   recentInvoices: InvoiceWithClient[];
   recentActivities: ActivityWithClient[];
   revenueChart: RevenueChartData[];
+  currency?: string;
 }
 
 interface DashboardInteractiveProps {
@@ -68,6 +69,7 @@ const DashboardInteractive = ({ initialData }: DashboardInteractiveProps) => {
   const recentInvoices = initialData?.recentInvoices || hookInvoices;
   const recentActivities = initialData?.recentActivities || hookActivities;
   const revenueChart = initialData?.revenueChart || hookChart;
+  const currency = initialData?.currency || 'KES';
 
   useEffect(() => {
     setIsHydrated(true);
@@ -142,18 +144,18 @@ const DashboardInteractive = ({ initialData }: DashboardInteractiveProps) => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <MetricCard
             title="Total Revenue"
-            value={metrics ? `$${metrics.totalRevenue.toLocaleString()}` : '$0'}
+            value={metrics ? new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(metrics.totalRevenue) : new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(0)}
             change="+12.5%"
             trend="up"
-            icon="💰"
+            icon="BanknotesIcon"
             chartData={[45, 52, 48, 61, 58, 67, 72]} />
 
           <MetricCard
-            title="Outstanding Payments"
-            value={metrics ? `$${metrics.pendingInvoices.toString()}` : '0'}
+            title="Pending Invoices"
+            value={metrics ? metrics.pendingInvoices.toString() : '0'}
             change="-8.3%"
             trend="down"
-            icon="⏳"
+            icon="ClockIcon"
             chartData={[35, 32, 28, 30, 26, 25, 24]} />
 
           <MetricCard
@@ -161,7 +163,7 @@ const DashboardInteractive = ({ initialData }: DashboardInteractiveProps) => {
             value={metrics ? metrics.totalInvoices.toString() : '0'}
             change="+15.2%"
             trend="up"
-            icon="📄"
+            icon="DocumentTextIcon"
             chartData={[32, 35, 38, 41, 43, 45, 47]} />
 
           <MetricCard
@@ -169,7 +171,7 @@ const DashboardInteractive = ({ initialData }: DashboardInteractiveProps) => {
             value="18.7%"
             change="+3.4%"
             trend="up"
-            icon="📈"
+            icon="PresentationChartLineIcon"
             chartData={[12, 13, 14, 15, 16, 17, 18]} />
 
         </div>
@@ -197,7 +199,7 @@ const DashboardInteractive = ({ initialData }: DashboardInteractiveProps) => {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
           <div className="lg:col-span-2">
-            <RevenueChart data={revenueChart} />
+            <RevenueChart data={revenueChart} currency={currency} />
           </div>
           <div>
             <RecentClientActivity activities={recentActivities} />

@@ -1,3 +1,7 @@
+'use client';
+
+import Icon from '@/components/ui/AppIcon';
+
 interface MetricCardProps {
   title: string;
   value: string;
@@ -6,6 +10,7 @@ interface MetricCardProps {
   icon: string;
   chartData: number[];
 }
+
 
 const MetricCard = ({ title, value, change, trend, icon, chartData }: MetricCardProps) => {
   const maxValue = Math.max(...chartData);
@@ -22,7 +27,7 @@ const MetricCard = ({ title, value, change, trend, icon, chartData }: MetricCard
         <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
           trend === 'up' ? 'bg-success/10' : 'bg-error/10'
         }`}>
-          <span className="text-2xl">{icon}</span>
+          <Icon name={icon} size={24} className={trend === 'up' ? 'text-success' : 'text-error'} />
         </div>
       </div>
       

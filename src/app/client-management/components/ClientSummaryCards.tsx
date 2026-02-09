@@ -12,9 +12,10 @@ interface SummaryCard {
 
 interface ClientSummaryCardsProps {
   clients: Client[];
+  currency?: string;
 }
 
-const ClientSummaryCards = ({ clients }: ClientSummaryCardsProps) => {
+const ClientSummaryCards = ({ clients, currency = 'KES' }: ClientSummaryCardsProps) => {
   const totalClients = clients.length;
   const activeClients = clients.filter(client => client.status === 'active').length;
   const totalBilled = clients.reduce((sum, client) => sum + client.total_billed, 0);
@@ -40,7 +41,7 @@ const ClientSummaryCards = ({ clients }: ClientSummaryCardsProps) => {
     },
     {
       title: 'Average Invoice Value',
-      value: `$${averageInvoiceValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
+      value: new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 }).format(averageInvoiceValue),
       trend: 0,
       trendLabel: 'average',
       icon: 'CurrencyDollarIcon',
@@ -48,7 +49,7 @@ const ClientSummaryCards = ({ clients }: ClientSummaryCardsProps) => {
     },
     {
       title: 'Outstanding Balances',
-      value: `$${outstandingBalances.toLocaleString()}`,
+      value: new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(outstandingBalances),
       trend: 0,
       trendLabel: 'total outstanding',
       icon: 'ExclamationTriangleIcon',

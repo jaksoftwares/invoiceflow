@@ -11,9 +11,10 @@ interface PaymentStatusData {
 
 interface PaymentStatusChartProps {
   data: PaymentStatusData[];
+  currency?: string;
 }
 
-const PaymentStatusChart = ({ data }: PaymentStatusChartProps) => {
+const PaymentStatusChart = ({ data, currency = 'KES' }: PaymentStatusChartProps) => {
   return (
     <div className="w-full h-80" aria-label="Payment Status Distribution Pie Chart">
       <ResponsiveContainer width="100%" height="100%">
@@ -39,7 +40,7 @@ const PaymentStatusChart = ({ data }: PaymentStatusChartProps) => {
               borderRadius: '8px',
               color: 'var(--color-foreground)'
             }}
-            formatter={(value: number | undefined) => value !== undefined ? `$${value.toLocaleString()}` : '$0'}
+            formatter={(value: number | undefined) => value !== undefined ? new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(value) : new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(0)}
           />
           <Legend 
             verticalAlign="bottom" 

@@ -7,6 +7,7 @@ interface ClientMobileCardProps {
   onViewHistory: (clientId: string) => void;
   onCreateInvoice: (clientId: string) => void;
   onViewLogs: (clientId: string) => void;
+  currency?: string;
 }
 
 const ClientMobileCard = ({
@@ -15,6 +16,7 @@ const ClientMobileCard = ({
   onViewHistory,
   onCreateInvoice,
   onViewLogs,
+  currency = 'KES',
 }: ClientMobileCardProps) => {
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -39,8 +41,8 @@ const ClientMobileCard = ({
             className="w-12 h-12 rounded-full object-cover"
           />
           <div>
-            <h3 className="font-medium text-foreground">{client.companyName}</h3>
-            <p className="text-sm text-muted-foreground">{client.contactPerson}</p>
+            <h3 className="font-medium text-foreground">{client.company_name}</h3>
+            <p className="text-sm text-muted-foreground">{client.contact_person}</p>
           </div>
         </div>
         <span
@@ -64,7 +66,7 @@ const ClientMobileCard = ({
         <div className="flex justify-between">
           <span className="text-sm text-muted-foreground">Total Billed:</span>
           <span className="text-sm font-medium text-foreground">
-            ${client.total_billed.toLocaleString()}
+            {new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(client.total_billed)}
           </span>
         </div>
         <div className="flex justify-between">
@@ -77,7 +79,7 @@ const ClientMobileCard = ({
           <div className="flex justify-between">
             <span className="text-sm text-muted-foreground">Outstanding:</span>
             <span className="text-sm font-medium text-warning">
-              ${client.outstanding_balance.toLocaleString()}
+              {new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(client.outstanding_balance)}
             </span>
           </div>
         )}

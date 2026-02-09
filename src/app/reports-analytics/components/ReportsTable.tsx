@@ -12,9 +12,10 @@ interface ReportRow {
 
 interface ReportsTableProps {
   data: ReportRow[];
+  currency?: string;
 }
 
-const ReportsTable = ({ data }: ReportsTableProps) => {
+const ReportsTable = ({ data, currency = 'KES' }: ReportsTableProps) => {
   return (
     <div className="bg-card rounded-lg shadow-elevation-1 overflow-hidden">
       <div className="px-6 py-4 border-b border-border">
@@ -54,12 +55,12 @@ const ReportsTable = ({ data }: ReportsTableProps) => {
                 </td>
                 <td className="px-6 py-4">
                   <span className="text-sm font-medium text-foreground">
-                    ${row.totalRevenue.toLocaleString()}
+                    {new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(row.totalRevenue)}
                   </span>
                 </td>
                 <td className="px-6 py-4">
                   <span className="text-sm text-foreground">
-                    ${row.avgInvoiceValue.toLocaleString()}
+                    {new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(row.avgInvoiceValue)}
                   </span>
                 </td>
                 <td className="px-6 py-4">
@@ -80,7 +81,7 @@ const ReportsTable = ({ data }: ReportsTableProps) => {
                   <span className={`text-sm font-medium ${
                     row.outstanding > 0 ? 'text-warning' : 'text-success'
                   }`}>
-                    ${row.outstanding.toLocaleString()}
+                    {new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(row.outstanding)}
                   </span>
                 </td>
               </tr>
@@ -97,12 +98,12 @@ const ReportsTable = ({ data }: ReportsTableProps) => {
           <div className="flex items-center gap-4">
             <span className="text-muted-foreground">
               Total Revenue: <span className="font-medium text-foreground">
-                ${data.reduce((sum, row) => sum + row.totalRevenue, 0).toLocaleString()}
+                {new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(data.reduce((sum, row) => sum + row.totalRevenue, 0))}
               </span>
             </span>
             <span className="text-muted-foreground">
               Total Outstanding: <span className="font-medium text-foreground">
-                ${data.reduce((sum, row) => sum + row.outstanding, 0).toLocaleString()}
+                {new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(data.reduce((sum, row) => sum + row.outstanding, 0))}
               </span>
             </span>
           </div>
