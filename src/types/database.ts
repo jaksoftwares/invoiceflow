@@ -84,6 +84,7 @@ export interface Invoice {
   terms?: string;
   payment_instructions?: string;
   template: string;
+  slug?: string;
   created_at: string;
   updated_at: string;
 }

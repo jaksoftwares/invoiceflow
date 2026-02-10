@@ -19,7 +19,7 @@ export async function createInvoiceAction(invoiceData: CreateInvoiceParams): Pro
   // Verify client belongs to user
   const { data: client, error: clientError } = await supabase
     .from('clients')
-    .select('id')
+    .select('id, company_name')
     .eq('id', invoiceData.client_id)
     .eq('user_id', user.id)
     .single();
@@ -28,11 +28,14 @@ export async function createInvoiceAction(invoiceData: CreateInvoiceParams): Pro
     throw new Error('Client not found or access denied');
   }
 
+  // Generate slug
+  const slug = generateInvoiceSlug(client.company_name, invoiceData.invoice_number);
+
   const { items, ...invoiceFields } = invoiceData;
 
   // Call the RPC function
   const { data: invoiceId, error } = await supabase.rpc('create_invoice_full', {
-    p_invoice_data: invoiceFields,
+    p_invoice_data: { ...invoiceFields, slug },
     p_items_data: items,
   });
 
@@ -189,4 +192,18 @@ export async function bulkUpdateInvoiceStatusAction(invoiceIds: string[], status
   revalidatePath('/dashboard');
 
   return { affected: count || 0 };
+}
+
+function generateInvoiceSlug(clientName: string, invoiceNumber: string): string {
+  const sanitizedClient = clientName
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  
+  const sanitizedNumber = invoiceNumber.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  
+  // Add random suffix (6 chars)
+  const randomSuffix = Math.random().toString(36).substring(2, 8);
+  
+  return `${sanitizedClient}-${sanitizedNumber}-${randomSuffix}`;
 }

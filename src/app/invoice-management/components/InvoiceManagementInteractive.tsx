@@ -243,17 +243,15 @@ const InvoiceManagementInteractive = ({ initialInvoices }: InvoiceManagementInte
 
 
   const handleCopyLink = async () => {
-    // In a real app, this would be a public link to the invoice
-    // For now, we just copy a placeholder link
     if (selectedInvoiceForShare) {
-       const link = `${window.location.origin}/invoice/view/${selectedInvoiceForShare.id}`;
+       const link = `${window.location.origin}/invoice/view/${selectedInvoiceForShare.slug || selectedInvoiceForShare.id}`;
        await navigator.clipboard.writeText(link);
     }
   };
 
   const handleWhatsAppShare = () => {
     if (selectedInvoiceForShare) {
-      const link = `${window.location.origin}/invoice/view/${selectedInvoiceForShare.id}`;
+      const link = `${window.location.origin}/invoice/view/${selectedInvoiceForShare.slug || selectedInvoiceForShare.id}`;
       const text = `Hi, please find your invoice here: ${link}`;
       window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
       setShareModalOpen(false);
@@ -553,6 +551,7 @@ const InvoiceManagementInteractive = ({ initialInvoices }: InvoiceManagementInte
             invoiceId={selectedInvoiceForShare.id}
             clientEmail={selectedInvoiceForShare.clients?.email || ''} 
             invoiceNumber={selectedInvoiceForShare.invoice_number}
+            slug={selectedInvoiceForShare.slug}
             onSendEmail={handleSendEmail}
             onCopyLink={handleCopyLink}
             onWhatsAppShare={handleWhatsAppShare}

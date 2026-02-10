@@ -10,6 +10,7 @@ interface ShareInvoiceModalProps {
   invoiceId: string;
   clientEmail: string;
   invoiceNumber: string;
+  slug?: string;
   onSendEmail: (data: { to: string; subject: string; message: string; copyMe: boolean }) => Promise<void>;
   onCopyLink: () => Promise<void>;
   onWhatsAppShare: () => void;
@@ -21,6 +22,7 @@ const ShareInvoiceModal = ({
   invoiceId,
   clientEmail,
   invoiceNumber,
+  slug,
   onSendEmail,
   onCopyLink,
   onWhatsAppShare,
@@ -197,7 +199,7 @@ const ShareInvoiceModal = ({
                
                <div className="flex items-center gap-2 bg-muted/50 p-2 rounded-md border border-border overflow-hidden">
                   <code className="bg-transparent flex-1 text-xs text-foreground font-mono truncate text-left pl-2 select-all">
-                    {typeof window !== 'undefined' ? `${window.location.origin}/invoice/view/${invoiceId}` : '...'}
+                    {typeof window !== 'undefined' ? `${window.location.origin}/invoice/view/${slug || invoiceId}` : '...'}
                   </code>
                   <button 
                     onClick={handleCopyLink}

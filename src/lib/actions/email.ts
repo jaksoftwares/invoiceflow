@@ -18,7 +18,7 @@ export async function sendInvoiceEmail(
   // 1. Fetch Invoice
   const { data: invoice, error: invoiceError } = await supabase
     .from('invoices')
-    .select('business_id, invoice_number')
+    .select('business_id, invoice_number, slug')
     .eq('id', invoiceId)
     .single();
 
@@ -41,9 +41,23 @@ export async function sendInvoiceEmail(
   const replyToEmail = user.email || 'no-reply@dovepeakdigital.com'; 
 
   // 3. Prepare Email content
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const invoiceLink = `${baseUrl}/invoice/view/${invoice.slug || invoiceId}`;
+  
   // Remove data URI prefix for Postmark
   const pdfContent = pdfBase64.split(',')[1];
   
+  const htmlBody = `
+    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #333;">Invoice from ${business.name}</h2>
+      <p style="white-space: pre-wrap;">${emailData.message}</p>
+      <div style="margin: 20px 0;">
+        <a href="${invoiceLink}" style="background-color: #000; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">View Invoice Online</a>
+      </div>
+      <p style="color: #666; font-size: 14px;">Or paste this link into your browser: <br> ${invoiceLink}</p>
+    </div>
+  `;
+
   // 4. Send via Postmark
   try {
     const result = await postmarkClient.sendEmail({
@@ -51,7 +65,8 @@ export async function sendInvoiceEmail(
       To: emailData.to,
       ReplyTo: replyToEmail,
       Subject: emailData.subject,
-      TextBody: emailData.message,
+      HtmlBody: htmlBody,
+      TextBody: `${emailData.message}\n\nView Invoice: ${invoiceLink}`,
       Attachments: [
         {
           Name: `Invoice_${invoice.invoice_number}.pdf`,
@@ -71,7 +86,8 @@ export async function sendInvoiceEmail(
         To: user.email,
         ReplyTo: replyToEmail,
         Subject: `[COPY] ${emailData.subject}`,
-        TextBody: `This is a copy of the invoice sent to ${emailData.to}.\n\n` + emailData.message,
+        HtmlBody: `<p style="color: #666;">This is a copy of the invoice sent to ${emailData.to}.</p><hr>` + htmlBody,
+        TextBody: `This is a copy of the invoice sent to ${emailData.to}.\n\n` + `${emailData.message}\n\nView Invoice: ${invoiceLink}`,
         Attachments: [
           {
             Name: `Invoice_${invoice.invoice_number}.pdf`,
