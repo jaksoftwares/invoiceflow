@@ -48,7 +48,11 @@ export async function GET(request: NextRequest) {
         .single();
         
        if (insertError) return NextResponse.json({ error: 'Failed to create profile' }, { status: 500 });
-       return NextResponse.json(newProfile);
+       // Return new profile with email from auth
+       return NextResponse.json({
+         ...newProfile,
+         email: user.email
+       });
     }
 
     // Fetch Business Profile
@@ -61,6 +65,8 @@ export async function GET(request: NextRequest) {
     // Merge data for backward compatibility
     const responseData = {
       ...profile,
+      // Include email from auth user
+      email: user.email,
       business_name: business?.name || profile.business_name,
       business_address: business?.address || profile.business_address,
       city: business?.city || profile.city,

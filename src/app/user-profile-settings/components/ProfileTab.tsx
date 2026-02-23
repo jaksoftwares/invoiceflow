@@ -21,19 +21,59 @@ interface ProfileData {
 }
 
 interface ProfileTabProps {
-  profileData: ProfileData;
-  onSave: (data: ProfileData) => void;
+  profileData?: ProfileData;
+  onSave?: (data: ProfileData) => void;
 }
 
-const ProfileTab = ({ profileData, onSave }: ProfileTabProps) => {
-  const [formData, setFormData] = useState<ProfileData>(profileData);
+const ProfileTab = ({ profileData: initialData, onSave }: ProfileTabProps) => {
+  const [formData, setFormData] = useState<ProfileData>({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    avatarUrl: undefined,
+    businessName: '',
+    businessAddress: '',
+    city: '',
+    state: '',
+    zipCode: '',
+    country: '',
+  });
   const [isEditing, setIsEditing] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<keyof ProfileData, string>>>({});
   const [isUploading, setIsUploading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    setFormData(profileData);
-  }, [profileData]);
+    fetchProfileData();
+  }, []);
+
+  const fetchProfileData = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/settings/profile');
+      if (response.ok) {
+        const data = await response.json();
+        setFormData({
+          firstName: data.first_name || '',
+          lastName: data.last_name || '',
+          email: data.email || '',
+          phone: data.phone || '',
+          avatarUrl: data.avatar_url,
+          businessName: data.business_name || '',
+          businessAddress: data.business_address || '',
+          city: data.city || '',
+          state: data.state || '',
+          zipCode: data.zip_code || '',
+          country: data.country || '',
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching profile data:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const validateForm = (): boolean => {
     const newErrors: Partial<Record<keyof ProfileData, string>> = {};
@@ -62,23 +102,6 @@ const ProfileTab = ({ profileData, onSave }: ProfileTabProps) => {
     }
   };
 
-  const handleSave = () => {
-    if (isUploading) {
-      toast.warning('Please wait for the image upload to finish.');
-      return;
-    }
-    if (validateForm()) {
-      onSave(formData);
-      setIsEditing(false);
-    }
-  };
-
-  const handleCancel = () => {
-    setFormData(profileData);
-    setErrors({});
-    setIsEditing(false);
-  };
-
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -100,6 +123,73 @@ const ProfileTab = ({ profileData, onSave }: ProfileTabProps) => {
       }
     }
   };
+
+  const handleSave = async () => {
+    if (isUploading) {
+      toast.warning('Please wait for the image upload to finish.');
+      return;
+    }
+    if (validateForm()) {
+      try {
+        const response = await fetch('/api/settings/profile', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            first_name: formData.firstName,
+            last_name: formData.lastName,
+            phone: formData.phone,
+            business_name: formData.businessName,
+            business_address: formData.businessAddress,
+            city: formData.city,
+            state: formData.state,
+            zip_code: formData.zipCode,
+            country: formData.country,
+            avatar_url: formData.avatarUrl,
+          }),
+        });
+
+        if (response.ok) {
+          toast.success('Profile updated successfully');
+          setIsEditing(false);
+        } else {
+          toast.error('Failed to update profile');
+        }
+      } catch (error) {
+        console.error('Error saving profile:', error);
+        toast.error('Failed to update profile');
+      }
+    }
+  };
+
+  const handleCancel = () => {
+    fetchProfileData();
+    setErrors({});
+    setIsEditing(false);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="h-8 bg-muted rounded w-32 animate-pulse"></div>
+        </div>
+        <div className="bg-card rounded-lg shadow-elevation-1 p-6">
+          <div className="animate-pulse space-y-4">
+            <div className="flex items-center gap-4">
+              <div className="w-20 h-20 bg-muted rounded-full"></div>
+              <div className="w-32 h-8 bg-muted rounded"></div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="h-10 bg-muted rounded"></div>
+              <div className="h-10 bg-muted rounded"></div>
+              <div className="h-10 bg-muted rounded"></div>
+              <div className="h-10 bg-muted rounded"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
