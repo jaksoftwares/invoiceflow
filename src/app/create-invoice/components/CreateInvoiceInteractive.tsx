@@ -301,25 +301,19 @@ const CreateInvoiceInteractive = ({ initialClients, editId, duplicateId }: Creat
   };
 
   /* Hook for PDF Generation */
-  const { downloadPDF } = useInvoicePDF();
+  const { generatePDF } = useInvoicePDF();
 
   const handleGeneratePDF = async () => {
     if (!validateForm()) return;
 
-    const data = {
-      businessProfile: selectedBusiness,
-      client: selectedClient,
-      details: invoiceDetails,
-      items: lineItems,
-      taxRate,
-      discount,
-      currency,
-      notes,
-      terms,
-      selectedTemplate,
-    };
-
-    await downloadPDF(editId || 'draft', data);
+    // Generate PDF from the hidden full-size container
+    // Create descriptive filename: Invoice-INV-number-client-name.pdf
+    const invoiceNum = invoiceDetails.invoiceNumber || 'draft';
+    const clientName = selectedClient?.company_name 
+      ? selectedClient.company_name.toLowerCase().replace(/[^a-z0-9]/g, '-')
+      : 'no-client';
+    const fileName = `Invoice-${invoiceNum}-${clientName}.pdf`.toLowerCase();
+    await generatePDF({ fileName });
   };
 
   if (!isHydrated || loadingInvoice) {
@@ -495,7 +489,7 @@ const CreateInvoiceInteractive = ({ initialClients, editId, duplicateId }: Creat
                   <span>{showPreview ? 'Hide' : 'Show'}</span>
                 </button>
               </div>
-              <div className={`${showPreview ? 'block' : 'hidden'} lg:block`}>
+              <div id="invoice-preview-container" className={`${showPreview ? 'block' : 'hidden'} lg:block`}>
                 <InvoicePreview
                   businessProfile={selectedBusiness}
                   client={selectedClient}
@@ -511,6 +505,25 @@ const CreateInvoiceInteractive = ({ initialClients, editId, duplicateId }: Creat
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Hidden full-size container for PDF generation - positioned off-screen but visible to html2canvas */}
+      <div className="fixed" style={{ left: '-9999px', top: '0', width: '210mm', height: '297mm' }}>
+        <div id="invoice-pdf-container" className="w-[210mm] min-h-[297mm] bg-white" style={{ width: '210mm', minHeight: '297mm' }}>
+          <InvoicePreview
+            businessProfile={selectedBusiness}
+            client={selectedClient}
+            details={invoiceDetails}
+            items={lineItems}
+            taxRate={taxRate}
+            discount={discount}
+            currency={currency}
+            notes={notes}
+            terms={terms}
+            selectedTemplate={selectedTemplate}
+            fullSize={true}
+          />
         </div>
       </div>
 

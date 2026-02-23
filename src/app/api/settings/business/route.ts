@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
       const defaultBusinessSettings = {
         user_id: user.id,
         company_logo_url: null,
-        default_template: 'professional',
+        default_template: 'default',
         default_payment_terms: 'net30',
         default_tax_rate: 0,
         tax_label: 'Tax',

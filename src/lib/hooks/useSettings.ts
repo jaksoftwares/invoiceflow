@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { UserSettings, Profile } from '@/types/database';
+import type { UserSettings, Profile, BusinessProfile } from '@/types/database';
 
 interface UseSettingsOptions {
   autoFetch?: boolean;
@@ -8,6 +8,7 @@ interface UseSettingsOptions {
 interface UseSettingsReturn {
   settings: UserSettings | null;
   profile: Profile | null;
+  business: BusinessProfile | null;
   loading: {
     settings: boolean;
     profile: boolean;
@@ -23,6 +24,7 @@ interface UseSettingsReturn {
   refetch: () => Promise<void>;
   refetchSettings: () => Promise<void>;
   refetchProfile: () => Promise<void>;
+  refetchBusiness: () => Promise<void>;
   updateSettings: (settings: Partial<Omit<UserSettings, 'id' | 'user_id' | 'created_at' | 'updated_at'>>) => Promise<UserSettings | null>;
   updateBusinessSettings: (businessData: {
     company_logo_url?: string;
@@ -33,6 +35,7 @@ interface UseSettingsReturn {
     invoice_prefix: string;
     invoice_footer?: string;
   }) => Promise<Partial<UserSettings> | null>;
+  updateBusinessProfile: (businessData: Partial<Omit<BusinessProfile, 'id' | 'owner_id' | 'created_at' | 'updated_at'>>) => Promise<BusinessProfile | null>;
   updateNotificationSettings: (notificationData: {
     email_notifications: UserSettings['email_notifications'];
     push_notifications: UserSettings['push_notifications'];
@@ -46,6 +49,7 @@ export function useSettings(options: UseSettingsOptions = {}): UseSettingsReturn
 
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [business, setBusiness] = useState<BusinessProfile | null>(null);
 
   const [loading, setLoading] = useState({
     settings: false,
@@ -111,9 +115,34 @@ export function useSettings(options: UseSettingsOptions = {}): UseSettingsReturn
     }
   }, []);
 
+  const fetchBusiness = useCallback(async () => {
+    setLoading(prev => ({ ...prev, business: true }));
+    setError(prev => ({ ...prev, business: null }));
+
+    try {
+      const response = await fetch('/api/settings/business-profile');
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch business profile');
+      }
+
+      const data = await response.json();
+      setBusiness(data);
+    } catch (err) {
+      setError(prev => ({
+        ...prev,
+        business: err instanceof Error ? err.message : 'Failed to fetch business profile'
+      }));
+      setBusiness(null);
+    } finally {
+      setLoading(prev => ({ ...prev, business: false }));
+    }
+  }, []);
+
   const refetch = useCallback(async () => {
-    await Promise.all([fetchSettings(), fetchProfile()]);
-  }, [fetchSettings, fetchProfile]);
+    await Promise.all([fetchSettings(), fetchProfile(), fetchBusiness()]);
+  }, [fetchSettings, fetchProfile, fetchBusiness]);
 
   const refetchSettings = useCallback(async () => {
     await fetchSettings();
@@ -122,6 +151,10 @@ export function useSettings(options: UseSettingsOptions = {}): UseSettingsReturn
   const refetchProfile = useCallback(async () => {
     await fetchProfile();
   }, [fetchProfile]);
+
+  const refetchBusiness = useCallback(async () => {
+    await fetchBusiness();
+  }, [fetchBusiness]);
 
   const updateSettings = useCallback(async (settingsData: Partial<Omit<UserSettings, 'id' | 'user_id' | 'created_at' | 'updated_at'>>): Promise<UserSettings | null> => {
     try {
@@ -186,6 +219,38 @@ export function useSettings(options: UseSettingsOptions = {}): UseSettingsReturn
       setError(prev => ({
         ...prev,
         business: err instanceof Error ? err.message : 'Failed to update business settings'
+      }));
+      return null;
+    } finally {
+      setLoading(prev => ({ ...prev, business: false }));
+    }
+  }, []);
+
+  const updateBusinessProfile = useCallback(async (businessData: Partial<Omit<BusinessProfile, 'id' | 'owner_id' | 'created_at' | 'updated_at'>>): Promise<BusinessProfile | null> => {
+    setLoading(prev => ({ ...prev, business: true }));
+    setError(prev => ({ ...prev, business: null }));
+
+    try {
+      const response = await fetch('/api/settings/business-profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(businessData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update business profile');
+      }
+
+      const updatedBusiness = await response.json();
+      setBusiness(updatedBusiness);
+      return updatedBusiness;
+    } catch (err) {
+      setError(prev => ({
+        ...prev,
+        business: err instanceof Error ? err.message : 'Failed to update business profile'
       }));
       return null;
     } finally {
@@ -268,13 +333,16 @@ export function useSettings(options: UseSettingsOptions = {}): UseSettingsReturn
   return {
     settings,
     profile,
+    business,
     loading,
     error,
     refetch,
     refetchSettings,
     refetchProfile,
+    refetchBusiness,
     updateSettings,
     updateBusinessSettings,
+    updateBusinessProfile,
     updateNotificationSettings,
     updateProfile,
   };

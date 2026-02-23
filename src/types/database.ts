@@ -31,6 +31,8 @@ export interface BusinessProfile {
   registration_number?: string;
   tax_id?: string;
   website?: string;
+  email?: string;
+  phone?: string;
   status: 'pending' | 'verified' | 'active' | 'suspended';
   smtp_settings?: {
     host: string;

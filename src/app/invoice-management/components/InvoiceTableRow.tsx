@@ -17,6 +17,7 @@ interface InvoiceTableRowProps {
   onEdit: (id: string) => void;
   onDuplicate: (id: string) => void;
   onDownload: (id: string) => void;
+  onPreview: (id: string) => void;
   onSend: (id: string) => void;
   onDelete: (id: string) => void;
 }
@@ -28,6 +29,7 @@ const InvoiceTableRow = ({
   onEdit,
   onDuplicate,
   onDownload,
+  onPreview,
   onSend,
   onDelete
 }: InvoiceTableRowProps) => {
@@ -231,6 +233,17 @@ const InvoiceTableRow = ({
                 >
                   <Icon name="PencilIcon" size={18} />
                   <span>Edit</span>
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onPreview(invoice.id);
+                    setShowActions(false);
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-2 text-sm text-foreground hover:bg-muted transition-smooth"
+                >
+                  <Icon name="EyeIcon" size={18} />
+                  <span>Preview</span>
                 </button>
                 <button
                   onClick={(e) => {

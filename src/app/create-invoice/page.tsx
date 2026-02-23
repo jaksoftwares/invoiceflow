@@ -1,3 +1,6 @@
+
+
+
 import type { Metadata } from 'next';
 import NavigationWrapper from '@/components/common/NavigationWrapper';
 import CreateInvoiceInteractive from './components/CreateInvoiceInteractive';

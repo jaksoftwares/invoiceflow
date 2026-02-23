@@ -2,73 +2,46 @@
 
 import Icon from '@/components/ui/AppIcon';
 
-interface Template {
-  id: string;
-  name: string;
-  description: string;
-  preview: string;
-}
-
 interface TemplateSelectorProps {
   selectedTemplate: string;
-  onTemplateChange: (templateId: string) => void;
+  onTemplateChange: (template: string) => void;
 }
 
-const TemplateSelector = ({ selectedTemplate, onTemplateChange }: TemplateSelectorProps) => {
-  const templates: Template[] = [
-    {
-      id: 'professional',
-      name: 'Professional',
-      description: 'Clean and modern design with gradient header',
-      preview: 'bg-gradient-to-r from-primary to-secondary',
-    },
-    {
-      id: 'modern',
-      name: 'Modern',
-      description: 'Bold colors with accent highlights',
-      preview: 'bg-gradient-to-r from-accent to-primary',
-    },
-    {
-      id: 'classic',
-      name: 'Classic',
-      description: 'Traditional business invoice layout',
-      preview: 'bg-foreground',
-    },
-    {
-      id: 'minimal',
-      name: 'Minimal',
-      description: 'Simple and elegant design',
-      preview: 'bg-muted',
-    },
-  ];
+const templates = [
+  { id: 'default', name: 'InvoiceFlow', description: 'Default template with InvoiceFlow branding' },
+  { id: 'professional', name: 'Business Classic', description: 'Professional design with logo support' },
+  { id: 'modern', name: 'Modern', description: 'Sleek sidebar layout with logo support' },
+  { id: 'classic', name: 'Classic', description: 'Traditional serif typography with logo' },
+  { id: 'minimal', name: 'Minimal', description: 'Clean design with logo support' },
+  { id: 'executive', name: 'Executive', description: 'Premium dark theme with logo' },
+  { id: 'elegant', name: 'Elegant', description: 'Sophisticated serif design with logo' },
+  { id: 'simple', name: 'Simple Plain', description: 'Plain design - no logo required' },
+  { id: 'creative', name: 'Creative', description: 'Colorful design - no logo required' },
+];
 
+const TemplateSelector = ({ selectedTemplate, onTemplateChange }: TemplateSelectorProps) => {
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-heading font-semibold text-foreground">Invoice Template</h3>
-        <Icon name="SwatchIcon" size={20} className="text-muted-foreground" />
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <h3 className="text-lg font-heading font-semibold text-foreground">Select Template</h3>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {templates.map((template) => (
           <button
             key={template.id}
             type="button"
             onClick={() => onTemplateChange(template.id)}
-            className={`relative p-4 bg-card border-2 rounded-md text-left transition-smooth hover:-translate-y-1 hover:shadow-elevation-2 ${
+            className={`flex flex-col p-4 text-left border rounded-lg transition-smooth ${
               selectedTemplate === template.id
-                ? 'border-primary shadow-elevation-2'
-                : 'border-border hover:border-primary/50'
+                ? 'border-primary bg-primary/5 ring-1 ring-primary'
+                : 'border-border bg-card hover:border-primary/50'
             }`}
           >
-            <div className={`w-full h-24 ${template.preview} rounded-md mb-3`} />
-            <h4 className="text-sm font-semibold text-foreground mb-1">{template.name}</h4>
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-medium text-foreground">{template.name}</span>
+              {selectedTemplate === template.id && (
+                <Icon name="CheckCircleIcon" size={20} className="text-primary" variant="solid" />
+              )}
+            </div>
             <p className="text-xs text-muted-foreground">{template.description}</p>
-            {selectedTemplate === template.id && (
-              <div className="absolute top-2 right-2 w-6 h-6 bg-primary rounded-full flex items-center justify-center">
-                <Icon name="CheckIcon" size={14} className="text-primary-foreground" />
-              </div>
-            )}
           </button>
         ))}
       </div>

@@ -13,12 +13,26 @@ import InvoiceCard from './InvoiceCard';
 import { useInvoices } from '@/lib/hooks/useInvoices';
 import { sendInvoiceEmail } from '@/lib/actions/email';
 import { useInvoicePDF } from '@/lib/hooks/useInvoicePDF';
+import { supabase } from '@/lib/supabase/client';
+import InvoicePreview from '@/app/create-invoice/components/InvoicePreview';
 import type { Invoice } from '@/types/database';
 
 interface InvoiceWithClient extends Invoice {
   clients?: {
     company_name: string;
     email?: string;
+    address?: string;
+    contact_person?: string;
+  };
+  business?: {
+    id: string;
+    name: string;
+    logo_url?: string;
+    address?: string;
+    city?: string;
+    country?: string;
+    email?: string;
+    phone?: string;
   };
 }
 
@@ -68,10 +82,74 @@ const InvoiceManagementInteractive = ({ initialInvoices }: InvoiceManagementInte
     autoFetch: false, // We'll manage fetching manually
   });
 
-  const { downloadPDF, generatePDFBase64, isGenerating: isGeneratingPDF } = useInvoicePDF();
+  const { downloadInvoice, generatePDF, generatePDFBase64, downloadFromDOM, isGenerating: isGeneratingPDF } = useInvoicePDF();
 
   const handleDownload = async (id: string) => {
-    await downloadPDF(id);
+    // First, open the preview modal to render the invoice
+    const invoice = displayInvoices.find((inv: InvoiceWithClient) => inv.id === id);
+    if (!invoice) return;
+    
+    // Set the preview data (same as handlePreview)
+    const { data: invoiceData } = await supabase
+      .from('invoices')
+      .select('*, client:clients(*), business:business_profiles(*)')
+      .eq('id', id)
+      .single();
+    
+    const { data: itemsData } = await supabase
+      .from('invoice_items')
+      .select('*')
+      .eq('invoice_id', id);
+    
+    if (invoiceData) {
+      setPreviewInvoice(invoiceData);
+      setPreviewInvoiceItems(itemsData || []);
+      setPreviewBusinessProfile(invoiceData.business);
+      setPreviewModalOpen(true);
+      
+      // Wait for the modal to render, then download
+      setTimeout(() => {
+        const invoiceNum = (invoiceData.invoice_number || 'draft')
+          .toLowerCase()
+          .replace(/[^a-z0-9]/g, '-');
+        const clientName = invoiceData.client?.company_name 
+          ? invoiceData.client.company_name.toLowerCase().replace(/[^a-z0-9]/g, '-')
+          : 'no-client';
+        const fileName = `Invoice-${invoiceNum}-${clientName}.pdf`;
+        downloadFromDOM(fileName);
+      }, 500);
+    }
+  };
+
+  /* State for Preview Modal */
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
+  const [previewInvoice, setPreviewInvoice] = useState<InvoiceWithClient | null>(null);
+  const [previewInvoiceItems, setPreviewInvoiceItems] = useState<any[]>([]);
+  const [previewBusinessProfile, setPreviewBusinessProfile] = useState<any>(null);
+
+  const handlePreview = async (id: string) => {
+    // Fetch fresh invoice data with client and business
+    const { data: invoiceData } = await supabase
+      .from('invoices')
+      .select('*, client:clients(*), business:business_profiles(*)')
+      .eq('id', id)
+      .single();
+    
+    if (invoiceData) {
+      setPreviewInvoice(invoiceData);
+      
+      // Fetch invoice items
+      const { data: items } = await supabase
+        .from('invoice_items')
+        .select('*')
+        .eq('invoice_id', id);
+      setPreviewInvoiceItems(items || []);
+      
+      // Set business profile
+      setPreviewBusinessProfile(invoiceData.business);
+      
+      setPreviewModalOpen(true);
+    }
   };
 
   /* State for Share Modal */
@@ -306,6 +384,7 @@ const InvoiceManagementInteractive = ({ initialInvoices }: InvoiceManagementInte
                       onEdit={() => {}}
                       onDuplicate={() => {}}
                       onDownload={() => {}}
+                      onPreview={() => {}}
                       onSend={() => {}}
                       onDelete={() => {}}
                     />
@@ -456,6 +535,7 @@ const InvoiceManagementInteractive = ({ initialInvoices }: InvoiceManagementInte
                     onEdit={handleEdit}
                     onDuplicate={handleDuplicate}
                     onDownload={handleDownload}
+                    onPreview={handlePreview}
                     onSend={handleSend}
                     onDelete={handleDelete}
                   />
@@ -514,6 +594,7 @@ const InvoiceManagementInteractive = ({ initialInvoices }: InvoiceManagementInte
               onEdit={handleEdit}
               onDuplicate={handleDuplicate}
               onDownload={handleDownload}
+              onPreview={handlePreview}
               onSend={handleSend}
               onDelete={handleDelete}
             />
@@ -557,6 +638,100 @@ const InvoiceManagementInteractive = ({ initialInvoices }: InvoiceManagementInte
             onWhatsAppShare={handleWhatsAppShare}
           />
         )}
+
+        {/* Preview Modal */}
+        {previewModalOpen && previewInvoice && (
+          <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => {
+            setPreviewModalOpen(false);
+            setPreviewInvoice(null);
+          }}>
+            <div className="bg-card rounded-lg w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between p-4 border-b border-border">
+                <h3 className="text-lg font-semibold">Invoice Preview</h3>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      // Generate filename from invoice data
+                      const invoiceNum = (previewInvoice.invoice_number || 'draft')
+                        .toLowerCase()
+                        .replace(/[^a-z0-9]/g, '-');
+                      const clientData = previewInvoice as any;
+                      const clientName = clientData.client?.company_name 
+                        ? clientData.client.company_name.toLowerCase().replace(/[^a-z0-9]/g, '-')
+                        : 'no-client';
+                      const fileName = `Invoice-${invoiceNum}-${clientName}.pdf`;
+                      downloadFromDOM(fileName);
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-md text-sm font-medium hover:bg-primary/90"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Download PDF
+                  </button>
+                  <button
+                    onClick={() => {
+                      setPreviewModalOpen(false);
+                      setPreviewInvoice(null);
+                    }}
+                    className="p-2 hover:bg-muted rounded-md"
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <div className="flex-1 overflow-auto p-4 bg-muted/30">
+                <div id="invoice-preview-container" className="flex justify-center">
+                  <InvoicePreview
+                    businessProfile={previewBusinessProfile}
+                    client={(previewInvoice as any).client}
+                    details={{
+                      invoiceNumber: previewInvoice.invoice_number,
+                      issueDate: previewInvoice.issue_date,
+                      dueDate: previewInvoice.due_date,
+                      paymentTerms: previewInvoice.payment_terms,
+                    }}
+                    items={previewInvoiceItems}
+                    taxRate={previewInvoice.tax_rate}
+                    discount={previewInvoice.discount}
+                    currency={previewInvoice.currency}
+                    notes={previewInvoice.notes || ''}
+                    terms={previewInvoice.terms || ''}
+                    selectedTemplate={previewInvoice.template}
+                    fullSize={true}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        {/* Hidden container for PDF generation */}
+        <div className="fixed" style={{ left: '-9999px', top: '0', width: '210mm', height: '297mm' }}>
+          <div id="invoice-pdf-container" className="w-[210mm] min-h-[297mm] bg-white" style={{ width: '210mm', minHeight: '297mm' }}>
+            {previewInvoice && previewBusinessProfile && (
+              <InvoicePreview
+                businessProfile={previewBusinessProfile}
+                client={(previewInvoice as any).client}
+                details={{
+                  invoiceNumber: previewInvoice.invoice_number,
+                  issueDate: previewInvoice.issue_date,
+                  dueDate: previewInvoice.due_date,
+                  paymentTerms: previewInvoice.payment_terms,
+                }}
+                items={previewInvoiceItems}
+                taxRate={previewInvoice.tax_rate}
+                discount={previewInvoice.discount}
+                currency={previewInvoice.currency}
+                notes={previewInvoice.notes || ''}
+                terms={previewInvoice.terms || ''}
+                selectedTemplate={previewInvoice.template}
+                fullSize={true}
+              />
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
