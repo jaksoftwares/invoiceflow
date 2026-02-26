@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import ShareInvoiceModal from '@/components/modals/ShareInvoiceModal';
 import InvoiceCard from './InvoiceCard';
 import { useInvoices } from '@/lib/hooks/useInvoices';
+import { useClients } from '@/lib/hooks/useClients';
 import { sendInvoiceEmail } from '@/lib/actions/email';
 import { useInvoicePDF } from '@/lib/hooks/useInvoicePDF';
 import { supabase } from '@/lib/supabase/client';
@@ -67,7 +68,6 @@ const InvoiceManagementInteractive = ({ initialInvoices }: InvoiceManagementInte
     loading,
     error,
     pagination,
-    refetch,
     updateInvoice,
     deleteInvoice,
     bulkDeleteInvoices,
@@ -79,119 +79,22 @@ const InvoiceManagementInteractive = ({ initialInvoices }: InvoiceManagementInte
     search: searchQuery || undefined,
     issue_date_from: filters.dateRange.start || undefined,
     issue_date_to: filters.dateRange.end || undefined,
-    autoFetch: false, // We'll manage fetching manually
+    autoFetch: true,
   });
 
-  const { downloadInvoice, generatePDF, generatePDFBase64, downloadFromDOM, isGenerating: isGeneratingPDF } = useInvoicePDF();
+  const { clients: availableClients } = useClients({ limit: 100 });
 
-  const handleDownload = async (id: string) => {
-    // First, open the preview modal to render the invoice
-    const invoice = displayInvoices.find((inv: InvoiceWithClient) => inv.id === id);
-    if (!invoice) return;
-    
-    // Set the preview data (same as handlePreview)
-    const { data: invoiceData } = await supabase
-      .from('invoices')
-      .select('*, client:clients(*), business:business_profiles(*)')
-      .eq('id', id)
-      .single();
-    
-    const { data: itemsData } = await supabase
-      .from('invoice_items')
-      .select('*')
-      .eq('invoice_id', id);
-    
-    if (invoiceData) {
-      setPreviewInvoice(invoiceData);
-      setPreviewInvoiceItems(itemsData || []);
-      setPreviewBusinessProfile(invoiceData.business);
-      setPreviewModalOpen(true);
-      
-      // Wait for the modal to render, then download
-      setTimeout(() => {
-        const invoiceNum = (invoiceData.invoice_number || 'draft')
-          .toLowerCase()
-          .replace(/[^a-z0-9]/g, '-');
-        const clientName = invoiceData.client?.company_name 
-          ? invoiceData.client.company_name.toLowerCase().replace(/[^a-z0-9]/g, '-')
-          : 'no-client';
-        const fileName = `Invoice-${invoiceNum}-${clientName}.pdf`;
-        downloadFromDOM(fileName);
-      }, 500);
-    }
-  };
+  const { generatePDFBase64, downloadFromDOM } = useInvoicePDF();
 
-  /* State for Preview Modal */
   const [previewModalOpen, setPreviewModalOpen] = useState(false);
   const [previewInvoice, setPreviewInvoice] = useState<InvoiceWithClient | null>(null);
   const [previewInvoiceItems, setPreviewInvoiceItems] = useState<any[]>([]);
   const [previewBusinessProfile, setPreviewBusinessProfile] = useState<any>(null);
 
-  const handlePreview = async (id: string) => {
-    // Fetch fresh invoice data with client and business
-    const { data: invoiceData } = await supabase
-      .from('invoices')
-      .select('*, client:clients(*), business:business_profiles(*)')
-      .eq('id', id)
-      .single();
-    
-    if (invoiceData) {
-      setPreviewInvoice(invoiceData);
-      
-      // Fetch invoice items
-      const { data: items } = await supabase
-        .from('invoice_items')
-        .select('*')
-        .eq('invoice_id', id);
-      setPreviewInvoiceItems(items || []);
-      
-      // Set business profile
-      setPreviewBusinessProfile(invoiceData.business);
-      
-      setPreviewModalOpen(true);
-    }
-  };
-
-  /* State for Share Modal */
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [selectedInvoiceForShare, setSelectedInvoiceForShare] = useState<InvoiceWithClient | null>(null);
 
-  // Use invoices from hook, fallback to initial data if not loaded yet
   const displayInvoices = invoices.length > 0 ? invoices : initialInvoices;
-
-  const handleSend = (id: string) => {
-    const invoice = displayInvoices.find((inv: InvoiceWithClient) => inv.id === id);
-    if (invoice) {
-      setSelectedInvoiceForShare(invoice);
-      setShareModalOpen(true);
-    }
-  };
-
-  const handleSendEmail = async (data: { to: string; subject: string; message: string; copyMe: boolean }) => {
-    if (!selectedInvoiceForShare) return;
-
-    const toastId = toast.loading('Sending email...');
-    try {
-      // 1. Generate PDF
-      const pdfBase64 = await generatePDFBase64(selectedInvoiceForShare.id);
-      
-      // 2. Send Email via Server Action
-      await sendInvoiceEmail(selectedInvoiceForShare.id, pdfBase64, data);
-      
-      toast.success('Email sent successfully!', { id: toastId });
-      setShareModalOpen(false);
-    } catch (error) {
-      console.error('Failed to send email:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to send email. Check your settings.', { id: toastId });
-    }
-  };
-
-  useEffect(() => {
-    setIsHydrated(true);
-  }, []);
-
-  // Use invoices from hook, fallback to initial data if not loaded yet
-
 
   const filteredInvoices = displayInvoices.filter(invoice => {
     const matchesSearch = searchQuery === '' ||
@@ -291,13 +194,11 @@ const InvoiceManagementInteractive = ({ initialInvoices }: InvoiceManagementInte
   };
 
   const handleSendReminders = () => {
-    // TODO: Implement send reminders functionality
     console.log('Send reminders:', selectedInvoices);
     setSelectedInvoices([]);
   };
 
   const handleExportPDF = () => {
-    // TODO: Implement export PDF functionality
     console.log('Export PDF:', selectedInvoices);
     setSelectedInvoices([]);
   };
@@ -318,12 +219,84 @@ const InvoiceManagementInteractive = ({ initialInvoices }: InvoiceManagementInte
     router.push(`/create-invoice?duplicate=${id}`);
   };
 
+  const handlePreview = async (id: string) => {
+    const { data: invoiceData } = await supabase
+      .from('invoices')
+      .select('*, client:clients(*), business:business_profiles(*)')
+      .eq('id', id)
+      .single();
+    
+    if (invoiceData) {
+      setPreviewInvoice(invoiceData);
+      const { data: items } = await supabase
+        .from('invoice_items')
+        .select('*')
+        .eq('invoice_id', id);
+      setPreviewInvoiceItems(items || []);
+      setPreviewBusinessProfile(invoiceData.business);
+      setPreviewModalOpen(true);
+    }
+  };
 
+  const handleDownload = async (id: string) => {
+    const invoice = displayInvoices.find((inv: InvoiceWithClient) => inv.id === id);
+    if (!invoice) return;
+    
+    const { data: invoiceData } = await supabase
+      .from('invoices')
+      .select('*, client:clients(*), business:business_profiles(*)')
+      .eq('id', id)
+      .single();
+    
+    const { data: itemsData } = await supabase
+      .from('invoice_items')
+      .select('*')
+      .eq('invoice_id', id);
+    
+    if (invoiceData) {
+      setPreviewInvoice(invoiceData);
+      setPreviewInvoiceItems(itemsData || []);
+      setPreviewBusinessProfile(invoiceData.business);
+      setPreviewModalOpen(true);
+      
+      setTimeout(() => {
+        const invoiceNum = (invoiceData.invoice_number || 'draft').toLowerCase().replace(/[^a-z0-9]/g, '-');
+        const clientName = invoiceData.client?.company_name 
+          ? invoiceData.client.company_name.toLowerCase().replace(/[^a-z0-9]/g, '-')
+          : 'no-client';
+        const fileName = `Invoice-${invoiceNum}-${clientName}.pdf`;
+        downloadFromDOM(fileName);
+      }, 500);
+    }
+  };
+
+  const handleSend = (id: string) => {
+    const invoice = displayInvoices.find((inv: InvoiceWithClient) => inv.id === id);
+    if (invoice) {
+      setSelectedInvoiceForShare(invoice);
+      setShareModalOpen(true);
+    }
+  };
+
+  const handleSendEmail = async (data: { to: string; subject: string; message: string; copyMe: boolean }) => {
+    if (!selectedInvoiceForShare) return;
+    const toastId = toast.loading('Sending email...');
+    try {
+      const pdfBase64 = await generatePDFBase64(selectedInvoiceForShare.id);
+      await sendInvoiceEmail(selectedInvoiceForShare.id, pdfBase64, data);
+      toast.success('Email sent successfully!', { id: toastId });
+      setShareModalOpen(false);
+    } catch (error) {
+      console.error('Failed to send email:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to send email.', { id: toastId });
+    }
+  };
 
   const handleCopyLink = async () => {
     if (selectedInvoiceForShare) {
        const link = `${window.location.origin}/invoice/view/${selectedInvoiceForShare.slug || selectedInvoiceForShare.id}`;
        await navigator.clipboard.writeText(link);
+       toast.success('Link copied to clipboard!');
     }
   };
 
@@ -337,91 +310,57 @@ const InvoiceManagementInteractive = ({ initialInvoices }: InvoiceManagementInte
   };
 
   const handleDelete = async (id: string) => {
-    const success = await deleteInvoice(id);
-    if (success) {
-      // Invoice removed from list via optimistic update
-    }
+    await deleteInvoice(id);
   };
 
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
+
   if (!isHydrated) {
-    return (
-      <div className="min-h-screen bg-background">
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h1 className="text-3xl font-heading font-bold text-foreground">Invoice Management</h1>
-              <p className="text-muted-foreground mt-2">Track and manage all your business invoices</p>
-            </div>
-          </div>
-
-          <InvoiceSearch onSearch={() => {}} />
-          <InvoiceFilters onFilterChange={() => {}} totalResults={displayInvoices.length} />
-
-          <div className="bg-card rounded-lg shadow-elevation-1 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-muted/50 border-b border-border">
-                  <tr>
-                    <th className="px-4 py-4 text-left">
-                      <input type="checkbox" className="w-4 h-4 rounded border-input" disabled />
-                    </th>
-                    <th className="px-4 py-4 text-left text-sm font-medium text-foreground">Invoice #</th>
-                    <th className="px-4 py-4 text-left text-sm font-medium text-foreground">Client</th>
-                    <th className="px-4 py-4 text-left text-sm font-medium text-foreground">Amount</th>
-                    <th className="px-4 py-4 text-left text-sm font-medium text-foreground">Issue Date</th>
-                    <th className="px-4 py-4 text-left text-sm font-medium text-foreground">Due Date</th>
-                    <th className="px-4 py-4 text-left text-sm font-medium text-foreground">Status</th>
-                    <th className="px-4 py-4 text-left text-sm font-medium text-foreground">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {initialInvoices.slice(0, 5).map(invoice => (
-                    <InvoiceTableRow
-                      key={invoice.id}
-                      invoice={invoice}
-                      isSelected={false}
-                      onSelect={() => {}}
-                      onEdit={() => {}}
-                      onDuplicate={() => {}}
-                      onDownload={() => {}}
-                      onPreview={() => {}}
-                      onSend={() => {}}
-                      onDelete={() => {}}
-                    />
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    return <div className="min-h-screen bg-background" />;
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-20 lg:pb-8">
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-          <div>
-            <h1 className="text-3xl font-heading font-bold text-foreground">Invoice Management</h1>
-            <p className="text-muted-foreground mt-2">Track and manage all your business invoices</p>
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
+          <div className="flex-1">
+            <h1 className="text-4xl font-heading font-black text-foreground tracking-tight sm:text-5xl">
+              Invoice Management
+            </h1>
+            <p className="text-muted-foreground mt-3 text-lg max-w-2xl font-medium">
+              Manage your billing, collections, and financial records in one place.
+            </p>
           </div>
-          <button
-            onClick={() => router.push('/create-invoice')}
-            className="flex items-center justify-center gap-2 px-6 py-3 bg-accent text-accent-foreground rounded-md font-medium transition-smooth hover:-translate-y-[1px] hover:shadow-elevation-2 active:scale-[0.97]"
-          >
-            <Icon name="PlusIcon" size={20} />
-            <span>Create Invoice</span>
-          </button>
+          <div className="flex items-center gap-3 shrink-0">
+             <button 
+               onClick={() => router.push('/create-invoice')}
+               className="w-full sm:w-auto bg-accent text-accent-foreground px-8 py-4 rounded-2xl font-black text-sm shadow-elevation-2 hover:shadow-elevation-4 transition-all hover:-translate-y-1 active:scale-[0.98] flex items-center justify-center gap-2 group"
+             >
+               <Icon name="PlusCircleIcon" size={20} className="group-hover:rotate-90 transition-transform duration-500" />
+               <span>Issue New Invoice</span>
+             </button>
+          </div>
         </div>
 
-        <InvoiceSearch onSearch={setSearchQuery} />
-        <InvoiceFilters onFilterChange={setFilters} totalResults={filteredInvoices.length} />
+        <div className="flex flex-col xl:flex-row gap-6 items-start mb-8">
+          <div className="flex-1 w-full">
+            <InvoiceSearch onSearch={setSearchQuery} />
+          </div>
+          <div className="w-full xl:w-[450px] shrink-0">
+            <InvoiceFilters 
+              onFilterChange={setFilters} 
+              totalResults={filteredInvoices.length} 
+              availableClients={availableClients.map(c => ({ id: c.id, name: c.company_name }))}
+            />
+          </div>
+        </div>
 
         {loading && (
           <div className="flex items-center justify-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            <span className="ml-2 text-muted-foreground">Loading invoices...</span>
+            <span className="ml-2 text-muted-foreground">Syncing data...</span>
           </div>
         )}
 
@@ -434,9 +373,9 @@ const InvoiceManagementInteractive = ({ initialInvoices }: InvoiceManagementInte
         <div className="hidden lg:block bg-card rounded-lg shadow-elevation-1 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-muted/50 border-b border-border">
+              <thead className="bg-muted/50 border-b border-border text-left">
                 <tr>
-                  <th className="px-4 py-4 text-left">
+                  <th className="px-5 py-4 w-10">
                     <input
                       type="checkbox"
                       checked={selectedInvoices.length === paginatedInvoices.length && paginatedInvoices.length > 0}
@@ -444,85 +383,13 @@ const InvoiceManagementInteractive = ({ initialInvoices }: InvoiceManagementInte
                       className="w-4 h-4 rounded border-input text-primary focus:ring-2 focus:ring-ring cursor-pointer"
                     />
                   </th>
-                  <th className="px-4 py-4 text-left">
-                    <button
-                      onClick={() => handleSort('invoiceNumber')}
-                      className="flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary transition-smooth"
-                    >
-                      <span>Invoice #</span>
-                      <Icon
-                        name={sortConfig?.key === 'invoiceNumber' && sortConfig.direction === 'desc' ? 'ChevronDownIcon' : 'ChevronUpIcon'}
-                        size={16}
-                        className={sortConfig?.key === 'invoiceNumber' ? 'text-primary' : 'text-muted-foreground'}
-                      />
-                    </button>
-                  </th>
-                  <th className="px-4 py-4 text-left">
-                    <button
-                      onClick={() => handleSort('clientName')}
-                      className="flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary transition-smooth"
-                    >
-                      <span>Client</span>
-                      <Icon
-                        name={sortConfig?.key === 'clientName' && sortConfig.direction === 'desc' ? 'ChevronDownIcon' : 'ChevronUpIcon'}
-                        size={16}
-                        className={sortConfig?.key === 'clientName' ? 'text-primary' : 'text-muted-foreground'}
-                      />
-                    </button>
-                  </th>
-                  <th className="px-4 py-4 text-left">
-                    <button
-                      onClick={() => handleSort('amount')}
-                      className="flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary transition-smooth"
-                    >
-                      <span>Amount</span>
-                      <Icon
-                        name={sortConfig?.key === 'amount' && sortConfig.direction === 'desc' ? 'ChevronDownIcon' : 'ChevronUpIcon'}
-                        size={16}
-                        className={sortConfig?.key === 'amount' ? 'text-primary' : 'text-muted-foreground'}
-                      />
-                    </button>
-                  </th>
-                  <th className="px-4 py-4 text-left">
-                    <button
-                      onClick={() => handleSort('issueDate')}
-                      className="flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary transition-smooth"
-                    >
-                      <span>Issue Date</span>
-                      <Icon
-                        name={sortConfig?.key === 'issueDate' && sortConfig.direction === 'desc' ? 'ChevronDownIcon' : 'ChevronUpIcon'}
-                        size={16}
-                        className={sortConfig?.key === 'issueDate' ? 'text-primary' : 'text-muted-foreground'}
-                      />
-                    </button>
-                  </th>
-                  <th className="px-4 py-4 text-left">
-                    <button
-                      onClick={() => handleSort('dueDate')}
-                      className="flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary transition-smooth"
-                    >
-                      <span>Due Date</span>
-                      <Icon
-                        name={sortConfig?.key === 'dueDate' && sortConfig.direction === 'desc' ? 'ChevronDownIcon' : 'ChevronUpIcon'}
-                        size={16}
-                        className={sortConfig?.key === 'dueDate' ? 'text-primary' : 'text-muted-foreground'}
-                      />
-                    </button>
-                  </th>
-                  <th className="px-4 py-4 text-left">
-                    <button
-                      onClick={() => handleSort('status')}
-                      className="flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary transition-smooth"
-                    >
-                      <span>Status</span>
-                      <Icon
-                        name={sortConfig?.key === 'status' && sortConfig.direction === 'desc' ? 'ChevronDownIcon' : 'ChevronUpIcon'}
-                        size={16}
-                        className={sortConfig?.key === 'status' ? 'text-primary' : 'text-muted-foreground'}
-                      />
-                    </button>
-                  </th>
-                  <th className="px-4 py-4 text-left text-sm font-medium text-foreground">Actions</th>
+                  <th className="px-5 py-4 text-sm font-bold text-foreground">Invoice #</th>
+                  <th className="px-5 py-4 text-sm font-bold text-foreground">Client Entity</th>
+                  <th className="px-5 py-4 text-sm font-bold text-foreground">Amount</th>
+                  <th className="px-5 py-4 text-sm font-bold text-foreground">Issued</th>
+                  <th className="px-5 py-4 text-sm font-bold text-foreground">Due Date</th>
+                  <th className="px-5 py-4 text-sm font-bold text-foreground">Status</th>
+                  <th className="px-5 py-4 text-sm font-bold text-foreground">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -543,45 +410,6 @@ const InvoiceManagementInteractive = ({ initialInvoices }: InvoiceManagementInte
               </tbody>
             </table>
           </div>
-
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border-t border-border">
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-muted-foreground">Rows per page:</span>
-              <select
-                value={itemsPerPage}
-                onChange={(e) => {
-                  setItemsPerPage(Number(e.target.value));
-                  setCurrentPage(1);
-                }}
-                className="px-3 py-1.5 bg-background border border-input rounded-md text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-              >
-                <option value={5}>5</option>
-                <option value={10}>10</option>
-                <option value={25}>25</option>
-                <option value={50}>50</option>
-              </select>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">
-                {startIndex + 1}-{Math.min(startIndex + itemsPerPage, sortedInvoices.length)} of {sortedInvoices.length}
-              </span>
-              <button
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-                className="p-2 hover:bg-muted rounded-md transition-smooth disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Icon name="ChevronLeftIcon" size={20} />
-              </button>
-              <button
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages}
-                className="p-2 hover:bg-muted rounded-md transition-smooth disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Icon name="ChevronRightIcon" size={20} />
-              </button>
-            </div>
-          </div>
         </div>
 
         <div className="lg:hidden grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -601,18 +429,11 @@ const InvoiceManagementInteractive = ({ initialInvoices }: InvoiceManagementInte
           ))}
         </div>
 
-        {paginatedInvoices.length === 0 && (
-          <div className="bg-card rounded-lg shadow-elevation-1 p-12 text-center">
+        {paginatedInvoices.length === 0 && !loading && (
+          <div className="bg-card rounded-2xl border border-divider p-12 text-center">
             <Icon name="DocumentTextIcon" size={48} className="text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-heading font-semibold text-foreground mb-2">No invoices found</h3>
-            <p className="text-muted-foreground mb-6">Try adjusting your filters or search query</p>
-            <button
-              onClick={() => router.push('/create-invoice')}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-accent text-accent-foreground rounded-md font-medium transition-smooth hover:-translate-y-[1px] hover:shadow-elevation-2"
-            >
-              <Icon name="PlusIcon" size={20} />
-              <span>Create Your First Invoice</span>
-            </button>
+            <h3 className="text-lg font-black text-foreground mb-2">No Records Found</h3>
+            <p className="text-muted-foreground mb-6">Your search parameters didn't match any documents.</p>
           </div>
         )}
 
@@ -639,50 +460,41 @@ const InvoiceManagementInteractive = ({ initialInvoices }: InvoiceManagementInte
           />
         )}
 
-        {/* Preview Modal */}
         {previewModalOpen && previewInvoice && (
-          <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => {
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-300" onClick={() => {
             setPreviewModalOpen(false);
             setPreviewInvoice(null);
           }}>
-            <div className="bg-card rounded-lg w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
-              <div className="flex items-center justify-between p-4 border-b border-border">
-                <h3 className="text-lg font-semibold">Invoice Preview</h3>
-                <div className="flex items-center gap-2">
+            <div className="bg-card rounded-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl animate-in zoom-in-95 duration-300" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between p-6 border-b border-divider">
+                <h3 className="text-xl font-black uppercase tracking-tight">Document Preview</h3>
+                <div className="flex items-center gap-3">
                   <button
                     onClick={() => {
-                      // Generate filename from invoice data
-                      const invoiceNum = (previewInvoice.invoice_number || 'draft')
-                        .toLowerCase()
-                        .replace(/[^a-z0-9]/g, '-');
-                      const clientData = previewInvoice as any;
-                      const clientName = clientData.client?.company_name 
-                        ? clientData.client.company_name.toLowerCase().replace(/[^a-z0-9]/g, '-')
+                      const invoiceNum = (previewInvoice.invoice_number || 'draft').toLowerCase().replace(/[^a-z0-9]/g, '-');
+                      const clientName = (previewInvoice as any).client?.company_name 
+                        ? (previewInvoice as any).client.company_name.toLowerCase().replace(/[^a-z0-9]/g, '-')
                         : 'no-client';
                       const fileName = `Invoice-${invoiceNum}-${clientName}.pdf`;
                       downloadFromDOM(fileName);
                     }}
-                    className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-md text-sm font-medium hover:bg-primary/90"
+                    className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-black uppercase tracking-widest hover:bg-primary/90 transition-all"
                   >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                    </svg>
-                    Download PDF
+                    <Icon name="ArrowDownTrayIcon" size={18} />
+                    Download
                   </button>
                   <button
                     onClick={() => {
                       setPreviewModalOpen(false);
                       setPreviewInvoice(null);
                     }}
-                    className="p-2 hover:bg-muted rounded-md"
+                    className="w-10 h-10 flex items-center justify-center hover:bg-muted rounded-xl transition-colors"
                   >
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
+                    <Icon name="XMarkIcon" size={24} />
                   </button>
                 </div>
               </div>
-              <div className="flex-1 overflow-auto p-4 bg-muted/30">
+              <div className="flex-1 overflow-auto p-8 bg-muted/30">
                 <div id="invoice-preview-container" className="flex justify-center">
                   <InvoicePreview
                     businessProfile={previewBusinessProfile}
@@ -707,9 +519,10 @@ const InvoiceManagementInteractive = ({ initialInvoices }: InvoiceManagementInte
             </div>
           </div>
         )}
+
         {/* Hidden container for PDF generation */}
         <div className="fixed" style={{ left: '-9999px', top: '0', width: '210mm', height: '297mm' }}>
-          <div id="invoice-pdf-container" className="w-[210mm] min-h-[297mm] bg-white" style={{ width: '210mm', minHeight: '297mm' }}>
+          <div id="invoice-pdf-container" className="w-[210mm] min-h-[297mm] bg-white">
             {previewInvoice && previewBusinessProfile && (
               <InvoicePreview
                 businessProfile={previewBusinessProfile}

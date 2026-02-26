@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import type { Invoice, InvoiceItem } from '@/types/database';
+import { recordClientActivity } from './activities';
 
 interface CreateInvoiceParams extends Omit<Invoice, 'id' | 'user_id' | 'created_at' | 'updated_at'> {
   items: Omit<InvoiceItem, 'id' | 'invoice_id' | 'created_at'>[];
@@ -63,7 +64,19 @@ export async function createInvoiceAction(invoiceData: CreateInvoiceParams): Pro
   revalidatePath('/dashboard');
   revalidatePath(`/client-management/${invoiceData.client_id}`);
 
+  // Record activity
+  await recordClientActivity({
+    clientId: invoiceData.client_id,
+    activity: `Invoice #${invoiceData.invoice_number} created for ${formatCurrency(invoiceData.total_amount, invoiceData.currency)}`,
+    type: 'invoice_sent',
+    metadata: { invoiceId: createdInvoice.id }
+  });
+
   return createdInvoice;
+}
+
+function formatCurrency(amount: number, currency: string) {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount);
 }
 
 interface UpdateInvoiceParams extends Partial<Omit<Invoice, 'id' | 'user_id' | 'created_at' | 'updated_at'>> {
@@ -119,6 +132,16 @@ export async function updateInvoiceAction(id: string, invoiceData: UpdateInvoice
 
   if (fetchError || !updatedInvoice) {
     throw new Error('Invoice updated but failed to fetch');
+  }
+
+  // Record activity if status changed
+  if (invoiceData.status) {
+    await recordClientActivity({
+      clientId: updatedInvoice.client_id,
+      activity: `Invoice #${updatedInvoice.invoice_number} status updated to ${invoiceData.status}`,
+      type: invoiceData.status === 'paid' ? 'payment' : 'other',
+      metadata: { invoiceId: updatedInvoice.id }
+    });
   }
 
   return updatedInvoice;

@@ -15,10 +15,12 @@ import { useClients } from '@/lib/hooks/useClients';
 import { createInvoiceAction, updateInvoiceAction } from '@/lib/actions/invoices';
 import { supabase } from '@/lib/supabase/client';
 import { useInvoicePDF } from '@/lib/hooks/useInvoicePDF';
-import type { Client, InvoiceItem, BusinessProfile } from '@/types/database';
+import { useSettings } from '@/lib/hooks/useSettings';
+import type { Client, InvoiceItem, BusinessProfile, Product } from '@/types/database';
 
 interface CreateInvoiceInteractiveProps {
   initialClients: Client[];
+  initialProducts: Product[];
   editId?: string;
   duplicateId?: string;
 }
@@ -30,7 +32,7 @@ interface InvoiceDetails {
   paymentTerms: string;
 }
 
-const CreateInvoiceInteractive = ({ initialClients, editId, duplicateId }: CreateInvoiceInteractiveProps) => {
+const CreateInvoiceInteractive = ({ initialClients, initialProducts, editId, duplicateId }: CreateInvoiceInteractiveProps) => {
   const router = useRouter();
   const [isHydrated, setIsHydrated] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
@@ -59,6 +61,14 @@ const CreateInvoiceInteractive = ({ initialClients, editId, duplicateId }: Creat
     createClient,
     refetch: refetchClients,
   } = useClients({ autoFetch: false }); // Don't auto-fetch since we have initial data
+
+  const { settings } = useSettings();
+
+  useEffect(() => {
+    if (settings?.default_currency && !editId && !duplicateId) {
+      setCurrency(settings.default_currency);
+    }
+  }, [settings, editId, duplicateId]);
   const [notes, setNotes] = useState('');
   const [terms, setTerms] = useState('');
   const [paymentInstructions, setPaymentInstructions] = useState('');
@@ -411,7 +421,12 @@ const CreateInvoiceInteractive = ({ initialClients, editId, duplicateId }: Creat
               </div>
 
               <div className="bg-card border border-border rounded-md p-6 shadow-elevation-1">
-                <LineItemsTable items={lineItems} onItemsChange={setLineItems} currency={currency} />
+                <LineItemsTable 
+                  items={lineItems} 
+                  onItemsChange={setLineItems} 
+                  currency={currency} 
+                  products={initialProducts} 
+                />
               </div>
 
               <div className="bg-card border border-border rounded-md p-6 shadow-elevation-1">

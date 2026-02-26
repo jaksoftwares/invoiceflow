@@ -101,6 +101,18 @@ export interface InvoiceItem {
   created_at: string;
 }
 
+export interface Product {
+  id: string;
+  user_id: string;
+  name: string;
+  description?: string;
+  price: number;
+  unit: string;
+  category?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Payment {
   id: string;
   invoice_id: string;
@@ -131,6 +143,7 @@ export interface UserSettings {
   tax_label: string;
   invoice_prefix: string;
   invoice_footer?: string;
+  default_currency: string;
   email_notifications: {
     paymentReceived: boolean;
     invoiceOverdue: boolean;

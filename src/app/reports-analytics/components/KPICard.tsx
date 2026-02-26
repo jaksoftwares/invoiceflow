@@ -3,36 +3,25 @@ import Icon from '@/components/ui/AppIcon';
 interface KPICardProps {
   title: string;
   value: string;
-  change: number;
+  change?: number;
   icon: string;
-  trend: 'up' | 'down';
+  trend?: 'up' | 'down';
 }
 
-const KPICard = ({ title, value, change, icon, trend }: KPICardProps) => {
-  const isPositive = trend === 'up';
-  
+const KPICard = ({ title, value, icon }: KPICardProps) => {
   return (
-    <div className="bg-card rounded-lg p-6 shadow-elevation-2 transition-smooth hover:shadow-elevation-3">
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex-1">
-          <p className="text-sm text-muted-foreground mb-1">{title}</p>
-          <h3 className="text-2xl font-heading font-semibold text-foreground">{value}</h3>
+    <div className="bg-card rounded-2xl p-6 border border-border/50 shadow-sm transition-all hover:shadow-md hover:border-primary/20 group">
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1 group-hover:text-primary transition-smooth">{title}</p>
+          <h3 className="text-2xl font-heading font-black text-foreground tracking-tight">{value}</h3>
         </div>
-        <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
-          <Icon name={icon as any} size={24} className="text-primary" />
+        <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center transition-smooth group-hover:bg-primary group-hover:text-white">
+          <Icon name={icon as any} size={24} className="text-primary group-hover:text-white" />
         </div>
       </div>
-      <div className="flex items-center gap-2">
-        <div className={`flex items-center gap-1 px-2 py-1 rounded-md ${
-          isPositive ? 'bg-success/10 text-success' : 'bg-error/10 text-error'
-        }`}>
-          <Icon 
-            name={isPositive ? 'ArrowUpIcon' : 'ArrowDownIcon'} 
-            size={16} 
-          />
-          <span className="text-sm font-medium">{Math.abs(change)}%</span>
-        </div>
-        <span className="text-sm text-muted-foreground">vs last month</span>
+      <div className="mt-4 h-1 w-full bg-muted/30 rounded-full overflow-hidden">
+        <div className="h-full bg-primary/40 w-2/3 rounded-full" />
       </div>
     </div>
   );

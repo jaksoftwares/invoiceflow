@@ -4,9 +4,8 @@ import type { Client } from '@/types/database';
 interface SummaryCard {
   title: string;
   value: string;
-  trend: number;
-  trendLabel: string;
   icon: string;
+  iconColor: string;
   bgColor: string;
 }
 
@@ -19,73 +18,65 @@ const ClientSummaryCards = ({ clients, currency = 'KES' }: ClientSummaryCardsPro
   const totalClients = clients.length;
   const activeClients = clients.filter(client => client.status === 'active').length;
   const totalBilled = clients.reduce((sum, client) => sum + client.total_billed, 0);
-  const averageInvoiceValue = totalClients > 0 ? totalBilled / totalClients : 0;
   const outstandingBalances = clients.reduce((sum, client) => sum + client.outstanding_balance, 0);
 
   const summaryData: SummaryCard[] = [
     {
-      title: 'Total Clients',
+      title: 'Total Database',
       value: totalClients.toString(),
-      trend: 0, // Would need historical data for trends
-      trendLabel: 'total',
       icon: 'UsersIcon',
-      bgColor: 'bg-primary',
+      iconColor: 'text-primary',
+      bgColor: 'bg-primary/10',
     },
     {
-      title: 'Active Relationships',
+      title: 'Active Clients',
       value: activeClients.toString(),
-      trend: 0,
-      trendLabel: 'active',
       icon: 'CheckCircleIcon',
-      bgColor: 'bg-success',
+      iconColor: 'text-success',
+      bgColor: 'bg-success/10',
     },
     {
-      title: 'Average Invoice Value',
-      value: new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 }).format(averageInvoiceValue),
-      trend: 0,
-      trendLabel: 'average',
-      icon: 'CurrencyDollarIcon',
-      bgColor: 'bg-accent',
+      title: 'Gross Billings',
+      value: new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 }).format(totalBilled),
+      icon: 'BanknotesIcon',
+      iconColor: 'text-accent',
+      bgColor: 'bg-accent/10',
     },
     {
-      title: 'Outstanding Balances',
+      title: 'Pending Collections',
       value: new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(outstandingBalances),
-      trend: 0,
-      trendLabel: 'total outstanding',
-      icon: 'ExclamationTriangleIcon',
-      bgColor: 'bg-warning',
+      icon: 'ExclamationCircleIcon',
+      iconColor: 'text-warning',
+      bgColor: 'bg-warning/10',
     },
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
       {summaryData.map((card, index) => (
         <div
           key={index}
-          className="bg-card rounded-lg shadow-elevation-1 p-6 transition-smooth hover:shadow-elevation-2"
+          className="bg-card rounded-2xl p-6 border border-border/50 shadow-sm transition-all hover:shadow-md hover:border-primary/20 group"
         >
-          <div className="flex items-start justify-between mb-4">
-            <div className={`${card.bgColor} w-12 h-12 rounded-lg flex items-center justify-center`}>
-              <Icon name={card.icon as any} size={24} className="text-white" />
+          <div className="flex items-center gap-4 mb-4">
+            <div className={`${card.bgColor} w-12 h-12 rounded-xl flex items-center justify-center transition-smooth group-hover:scale-110`}>
+              <Icon name={card.icon as any} size={24} className={card.iconColor} />
             </div>
-            <div
-              className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${
-                card.trend >= 0
-                  ? 'bg-success/10 text-success' :'bg-error/10 text-error'
-              }`}
-            >
-              <Icon
-                name={card.trend >= 0 ? 'ArrowUpIcon' : 'ArrowDownIcon'}
-                size={14}
-              />
-              <span>{Math.abs(card.trend)}%</span>
+            <div>
+              <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1.5">
+                {card.title}
+              </p>
+              <h3 className="text-2xl font-heading font-black text-foreground tracking-tight">
+                {card.value}
+              </h3>
             </div>
           </div>
-          <h3 className="text-2xl font-heading font-semibold text-foreground mb-1">
-            {card.value}
-          </h3>
-          <p className="text-sm text-muted-foreground">{card.title}</p>
-          <p className="text-xs text-muted-foreground mt-2">{card.trendLabel}</p>
+          <div className="h-1 w-full bg-muted/30 rounded-full overflow-hidden">
+             <div 
+               className={`h-full ${card.bgColor.replace('/10', '')}`} 
+               style={{ width: index === 0 ? '100%' : `${(parseInt(card.value.replace(/[^0-9]/g, '')) / totalClients) * 100}%` }}
+             />
+          </div>
         </div>
       ))}
     </div>

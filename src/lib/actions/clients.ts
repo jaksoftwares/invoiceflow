@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import type { Client } from '@/types/database';
+import { recordClientActivity } from './activities';
 
 export async function createClientAction(clientData: Omit<Client, 'id' | 'user_id' | 'total_billed' | 'outstanding_balance' | 'created_at' | 'updated_at'>): Promise<Client> {
   const supabase = createClient();
@@ -29,6 +30,12 @@ export async function createClientAction(clientData: Omit<Client, 'id' | 'user_i
 
   revalidatePath('/client-management');
   revalidatePath('/dashboard');
+
+  await recordClientActivity({
+    clientId: client.id,
+    activity: `Added as a new client`,
+    type: 'new',
+  });
 
   return client;
 }

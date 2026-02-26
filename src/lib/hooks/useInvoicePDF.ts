@@ -55,55 +55,68 @@ export const useInvoicePDF = () => {
         const formatDate = (date: string) => new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
         
         // Professional Template
-        if (templateToUse === 'professional') {
+        if (templateToUse === 'professional' || templateToUse.startsWith('premium_')) {
+          const isCorporate = templateToUse === 'premium_corporate';
+          const isModern = templateToUse === 'premium_modern';
+          const isClassic = templateToUse === 'premium_classic';
+          const isMinimal = templateToUse === 'premium_minimal';
+          const isBold = templateToUse === 'premium_bold';
+          
+          const primaryColor = isBold ? '#0f172a' : (isClassic ? '#475569' : '#3b82f6');
+          const accentColor = isMinimal ? '#94a3b8' : primaryColor;
+          
           invoiceHTML = `
-            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 40px; color: #1e293b; min-height: 297mm; box-sizing: border-box;">
-              <div style="display: flex; justify-content: space-between; margin-bottom: 40px;">
-                <div>
-                  <h1 style="font-size: 28px; font-weight: 700; margin: 0; color: #0f172a;">${businessProfile?.name || 'Company'}</h1>
-                  <p style="color: #64748b; font-size: 12px; margin: 8px 0 4px;">${businessProfile?.address || ''}</p>
-                  <p style="color: #64748b; font-size: 12px; margin: 4px 0;">${businessProfile?.city || ''}${businessProfile?.city && businessProfile?.country ? ', ' : ''}${businessProfile?.country || ''}</p>
-                  ${businessProfile?.email ? `<p style="color: #64748b; font-size: 12px; margin: 4px 0;">${businessProfile.email}</p>` : ''}
-                  ${businessProfile?.phone ? `<p style="color: #64748b; font-size: 12px; margin: 4px 0;">${businessProfile.phone}</p>` : ''}
+            <div style="font-family: ${isClassic ? 'Georgia, serif' : '-apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, sans-serif'}; padding: 40px; color: #1e293b; min-height: 297mm; box-sizing: border-box; background: #ffffff;">
+              ${isCorporate ? `<div style="height: 8px; background: ${primaryColor}; margin: -40px -40px 40px;"></div>` : ''}
+              
+              <div style="display: flex; justify-content: space-between; margin-bottom: 40px; ${isModern ? `padding: 30px; background: ${primaryColor}; color: white; border-radius: 12px; margin-top: -10px;` : ''}">
+                <div style="display: flex; align-items: flex-start; gap: 20px;">
+                  ${businessProfile?.logo_url ? `<img src="${businessProfile.logo_url}" style="height: 60px; width: 60px; object-fit: contain; background: white; border-radius: 8px; padding: 5px;" />` : ''}
+                  <div>
+                    <h1 style="font-size: ${isMinimal ? '22px' : '28px'}; font-weight: 700; margin: 0; color: ${isModern ? '#ffffff' : '#0f172a'};">${businessProfile?.name || 'Company'}</h1>
+                    <p style="color: ${isModern ? 'rgba(255,255,255,0.7)' : '#64748b'}; font-size: 12px; margin: 8px 0 4px;">${businessProfile?.address || ''}</p>
+                    <p style="color: ${isModern ? 'rgba(255,255,255,0.7)' : '#64748b'}; font-size: 12px; margin: 4px 0;">${businessProfile?.city || ''}${businessProfile?.city && businessProfile?.country ? ', ' : ''}${businessProfile?.country || ''}</p>
+                    ${businessProfile?.email ? `<p style="color: ${isModern ? '#ffffff' : accentColor}; font-size: 12px; margin: 4px 0;">${businessProfile.email}</p>` : ''}
+                  </div>
                 </div>
                 <div style="text-align: right;">
-                  <h2 style="font-size: 36px; font-weight: 700; color: #3b82f6; margin: 0; letter-spacing: 2px;">INVOICE</h2>
-                  <p style="color: #64748b; font-size: 14px; margin: 12px 0 0;">#${invoice.invoice_number}</p>
+                  <h2 style="font-size: ${isMinimal ? '32px' : '36px'}; font-weight: 700; color: ${isModern ? '#ffffff' : (isMinimal ? '#0f172a' : accentColor)}; margin: 0; letter-spacing: ${isMinimal ? '0px' : '2px'}; opacity: ${isMinimal ? '1' : '0.8'};">INVOICE</h2>
+                  <p style="color: ${isModern ? 'rgba(255,255,255,0.8)' : '#64748b'}; font-size: 14px; margin: 12px 0 0; font-weight: 600;">#${invoice.invoice_number}</p>
                 </div>
               </div>
               
-              <div style="display: flex; justify-content: space-between; margin-bottom: 40px; padding: 24px; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border-radius: 12px;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 40px; padding: 24px; background: ${isMinimal ? 'transparent' : 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)'}; border-radius: 12px; ${isMinimal ? 'border: 1px solid #e2e8f0;' : ''}">
                 <div>
-                  <p style="font-size: 11px; color: #94a3b8; text-transform: uppercase; margin: 0 0 12px; letter-spacing: 1px;">Bill To</p>
-                  <p style="font-weight: 600; font-size: 16px; margin: 0; color: #0f172a;">${client?.company_name || 'Client'}</p>
+                  <p style="font-size: 11px; color: #94a3b8; text-transform: uppercase; margin: 0 0 12px; letter-spacing: 1px; font-weight: 700;">Bill To</p>
+                  <p style="font-weight: 700; font-size: 16px; margin: 0; color: #0f172a;">${client?.company_name || 'Client'}</p>
                   ${client?.contact_person ? `<p style="color: #64748b; font-size: 14px; margin: 8px 0 0;">${client.contact_person}</p>` : ''}
-                  ${client?.email ? `<p style="color: #3b82f6; font-size: 14px; margin: 4px 0;">${client.email}</p>` : ''}
+                  ${client?.email ? `<p style="color: ${accentColor}; font-size: 14px; margin: 4px 0; font-weight: 500;">${client.email}</p>` : ''}
                   ${client?.address ? `<p style="color: #64748b; font-size: 14px; margin: 4px 0;">${client.address}</p>` : ''}
                 </div>
                 <div style="text-align: right;">
-                  <p style="font-size: 11px; color: #94a3b8; text-transform: uppercase; margin: 0 0 12px; letter-spacing: 1px;">Invoice Details</p>
-                  <p style="margin: 6px 0; font-size: 14px;"><span style="color: #64748b;">Issue Date:</span> <span style="color: #0f172a; font-weight: 500;">${formatDate(invoice.issue_date)}</span></p>
-                  <p style="margin: 6px 0; font-size: 14px;"><span style="color: #64748b;">Due Date:</span> <span style="color: #0f172a; font-weight: 500;">${formatDate(invoice.due_date)}</span></p>
-                  <p style="margin: 6px 0; font-size: 14px;"><span style="color: #64748b;">Terms:</span> <span style="color: #0f172a; font-weight: 500; text-transform: capitalize;">${invoice.payment_terms?.replace('_', ' ') || 'Net 30'}</span></p>
+                  <p style="font-size: 11px; color: #94a3b8; text-transform: uppercase; margin: 0 0 12px; letter-spacing: 1px; font-weight: 700;">Invoice Details</p>
+                  <p style="margin: 6px 0; font-size: 14px;"><span style="color: #64748b;">Issue Date:</span> <span style="color: #0f172a; font-weight: 600;">${formatDate(invoice.issue_date)}</span></p>
+                  <p style="margin: 6px 0; font-size: 14px;"><span style="color: #64748b;">Due Date:</span> <span style="color: ${isMinimal ? '#f43f5e' : '#0f172a'}; font-weight: 600;">${formatDate(invoice.due_date)}</span></p>
+                  <p style="margin: 6px 0; font-size: 14px;"><span style="color: #64748b;">Terms:</span> <span style="color: #0f172a; font-weight: 600; text-transform: capitalize;">${invoice.payment_terms?.replace('_', ' ') || 'Net 30'}</span></p>
                 </div>
               </div>
               
               <table style="width: 100%; border-collapse: collapse; margin-bottom: 32px; table-layout: fixed;">
                 <thead>
-                  <tr style="background: #0f172a;">
-                    <th style="padding: 14px 12px; text-align: left; font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Description</th>
-                    <th style="padding: 14px 12px; text-align: right; font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; width: 80px;">Qty</th>
-                    <th style="padding: 14px 12px; text-align: right; font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; width: 100px;">Rate</th>
-                    <th style="padding: 14px 12px; text-align: right; font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; width: 100px;">Amount</th>
+                  <tr style="background: ${isBold ? '#0f172a' : (isMinimal ? '#ffffff' : '#0f172a')}; ${isMinimal ? 'border-bottom: 2px solid #0f172a;' : ''}">
+                    <th style="padding: 14px 12px; text-align: left; font-size: 11px; color: ${isMinimal ? '#0f172a' : '#94a3b8'}; text-transform: uppercase; letter-spacing: 1px; font-weight: 700;">Description</th>
+                    <th style="padding: 14px 12px; text-align: right; font-size: 11px; color: ${isMinimal ? '#0f172a' : '#94a3b8'}; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; width: 80px;">Qty</th>
+                    <th style="padding: 14px 12px; text-align: right; font-size: 11px; color: ${isMinimal ? '#0f172a' : '#94a3b8'}; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; width: 100px;">Rate</th>
+                    <th style="padding: 14px 12px; text-align: right; font-size: 11px; color: ${isMinimal ? '#0f172a' : '#94a3b8'}; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; width: 100px;">Amount</th>
                   </tr>
                 </thead>
                 <tbody>
                   ${items?.map((item: any) => `
                     <tr style="border-bottom: 1px solid #e2e8f0;">
-                      <td style="padding: 16px 12px; font-size: 14px; color: #334155;">${item.description || ''}</td>
+                      <td style="padding: 16px 12px; font-size: 14px; color: #334155; font-weight: 500;">${item.description || ''}</td>
                       <td style="padding: 16px 12px; text-align: right; font-size: 14px; color: #64748b;">${item.quantity}</td>
                       <td style="padding: 16px 12px; text-align: right; font-size: 14px; color: #64748b;">${formatCurrency(item.rate)}</td>
-                      <td style="padding: 16px 12px; text-align: right; font-size: 14px; font-weight: 600; color: #0f172a;">${formatCurrency(item.quantity * item.rate)}</td>
+                      <td style="padding: 16px 12px; text-align: right; font-size: 14px; font-weight: 700; color: #0f172a;">${formatCurrency(item.quantity * item.rate)}</td>
                     </tr>
                   `).join('') || ''}
                 </tbody>
@@ -113,37 +126,37 @@ export const useInvoicePDF = () => {
                 <div style="width: 280px;">
                   <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #e2e8f0;">
                     <span style="color: #64748b; font-size: 14px;">Subtotal</span>
-                    <span style="font-size: 14px; font-weight: 500;">${formatCurrency(subtotal)}</span>
+                    <span style="font-size: 14px; font-weight: 600;">${formatCurrency(subtotal)}</span>
                   </div>
                   ${invoice.tax_rate > 0 ? `
                   <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #e2e8f0;">
                     <span style="color: #64748b; font-size: 14px;">Tax (${invoice.tax_rate}%)</span>
-                    <span style="font-size: 14px; font-weight: 500;">${formatCurrency(taxAmount)}</span>
+                    <span style="font-size: 14px; font-weight: 600;">${formatCurrency(taxAmount)}</span>
                   </div>
                   ` : ''}
                   ${invoice.discount > 0 ? `
                   <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #e2e8f0; color: #10b981;">
                     <span style="font-size: 14px;">Discount</span>
-                    <span style="font-size: 14px; font-weight: 500;">-${formatCurrency(discountAmount)}</span>
+                    <span style="font-size: 14px; font-weight: 600;">-${formatCurrency(discountAmount)}</span>
                   </div>
                   ` : ''}
-                  <div style="display: flex; justify-content: space-between; padding: 16px 0; font-size: 20px; font-weight: 700; color: #0f172a; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); margin-top: 8px; border-radius: 8px; padding: 16px;">
+                  <div style="display: flex; justify-content: space-between; padding: 16px 0; font-size: 20px; font-weight: 700; color: ${isMinimal ? '#0f172a' : '#ffffff'}; background: ${isMinimal ? '#f8fafc' : (isBold ? '#0f172a' : accentColor)}; margin-top: 8px; border-radius: 8px; padding: 16px;">
                     <span>Total</span>
-                    <span style="color: #3b82f6;">${formatCurrency(total)}</span>
+                    <span>${formatCurrency(total)}</span>
                   </div>
                 </div>
               </div>
               
               ${invoice.notes ? `
               <div style="margin-top: 40px; padding-top: 24px; border-top: 1px solid #e2e8f0;">
-                <p style="font-size: 11px; color: #94a3b8; text-transform: uppercase; margin: 0 0 8px; letter-spacing: 1px;">Notes</p>
+                <p style="font-size: 11px; color: #94a3b8; text-transform: uppercase; margin: 0 0 8px; letter-spacing: 1px; font-weight: 700;">Notes</p>
                 <p style="font-size: 14px; color: #64748b; line-height: 1.6;">${invoice.notes}</p>
               </div>
               ` : ''}
               
               ${invoice.terms ? `
               <div style="margin-top: 24px; padding-top: 24px; border-top: 1px solid #e2e8f0;">
-                <p style="font-size: 11px; color: #94a3b8; text-transform: uppercase; margin: 0 0 8px; letter-spacing: 1px;">Terms & Conditions</p>
+                <p style="font-size: 11px; color: #94a3b8; text-transform: uppercase; margin: 0 0 8px; letter-spacing: 1px; font-weight: 700;">Terms & Conditions</p>
                 <p style="font-size: 12px; color: #94a3b8; line-height: 1.6;">${invoice.terms}</p>
               </div>
               ` : ''}

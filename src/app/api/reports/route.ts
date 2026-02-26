@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
     const revenueChart = Object.entries(monthlyRevenue).map(([month, revenue]) => ({
       month,
       revenue,
-      expenses: revenue * 0.65 // Mock expenses as 65% of revenue
+      expenses: 0 // Remove mock expenses
     }));
 
     // Payment status distribution
@@ -78,14 +78,17 @@ export async function GET(request: NextRequest) {
 
     const paymentStatus: { [key: string]: number } = {};
     paymentStatusData?.forEach(invoice => {
-      paymentStatus[invoice.status] = (paymentStatus[invoice.status] || 0) + invoice.total_amount;
+      // Grouping logic: pending includes sent, draft, etc.
+      const statusKey = invoice.status === 'paid' ? 'paid' : 
+                        invoice.status === 'overdue' ? 'overdue' : 'pending';
+      paymentStatus[statusKey] = (paymentStatus[statusKey] || 0) + invoice.total_amount;
     });
 
     const paymentStatusChart = [
-      { name: 'Paid', value: paymentStatus.paid || 0, color: 'var(--color-success)' },
-      { name: 'Pending', value: (paymentStatus.sent || 0) + (paymentStatus.overdue || 0), color: 'var(--color-warning)' },
-      { name: 'Overdue', value: paymentStatus.overdue || 0, color: 'var(--color-error)' }
-    ];
+      { name: 'Paid', value: paymentStatus.paid || 0, color: '#10b981' }, // success
+      { name: 'Pending', value: paymentStatus.pending || 0, color: '#f59e0b' }, // warning
+      { name: 'Overdue', value: paymentStatus.overdue || 0, color: '#ef4444' } // error
+    ].filter(item => item.value > 0);
 
     // Client performance data
     const { data: clientData } = await supabase
@@ -100,37 +103,29 @@ export async function GET(request: NextRequest) {
       .eq('user_id', user.id)
       .gte('created_at', startDate.toISOString());
 
-    const monthlyClients: { [key: string]: { new: number; active: number } } = {};
-    const activeClients = new Set();
+    // Better grouping for client performance
+    const months: string[] = [];
+    const tempDate = new Date(startDate);
+    while (tempDate <= now) {
+      months.push(tempDate.toLocaleString('en-US', { month: 'short', year: 'numeric' }));
+      tempDate.setMonth(tempDate.getMonth() + 1);
+    }
 
-    // New clients per month
-    clientData?.forEach(client => {
-      const date = new Date(client.created_at);
-      const monthKey = date.toLocaleString('en-US', { month: 'short', year: 'numeric' });
-      if (!monthlyClients[monthKey]) {
-        monthlyClients[monthKey] = { new: 0, active: 0 };
-      }
-      monthlyClients[monthKey].new++;
+    const clientPerformanceChart = months.map(month => {
+      const monthNew = clientData?.filter(c => 
+        new Date(c.created_at).toLocaleString('en-US', { month: 'short', year: 'numeric' }) === month
+      ).length || 0;
+      
+      const monthActive = new Set(invoiceData?.filter(i => 
+        new Date(i.created_at).toLocaleString('en-US', { month: 'short', year: 'numeric' }) === month
+      ).map(i => i.client_id)).size;
+
+      return {
+        month,
+        newClients: monthNew,
+        activeClients: monthActive
+      };
     });
-
-    // Active clients (those with invoices)
-    invoiceData?.forEach(invoice => {
-      activeClients.add(invoice.client_id);
-    });
-
-    // Calculate cumulative active clients
-    const sortedMonths = Object.keys(monthlyClients).sort();
-    let cumulativeActive = 0;
-    sortedMonths.forEach(month => {
-      cumulativeActive += monthlyClients[month].new;
-      monthlyClients[month].active = cumulativeActive;
-    });
-
-    const clientPerformanceChart = Object.entries(monthlyClients).map(([month, data]) => ({
-      month,
-      newClients: data.new,
-      activeClients: data.active
-    }));
 
     // KPIs calculation
     const totalRevenue = revenueData?.reduce((sum, inv) => sum + inv.total_amount, 0) || 0;
@@ -138,36 +133,28 @@ export async function GET(request: NextRequest) {
     const paidInvoices = paymentStatusData?.filter(inv => inv.status === 'paid').length || 0;
     const avgInvoiceValue = totalInvoices > 0 ? totalRevenue / totalInvoices : 0;
     const collectionRate = totalInvoices > 0 ? (paidInvoices / totalInvoices) * 100 : 0;
-    const outstandingAmount = paymentStatus.pending || 0;
+    const outstandingAmount = (paymentStatus.pending || 0) + (paymentStatus.overdue || 0);
 
     const kpis = [
       {
         title: 'Total Revenue',
         value: formatter.format(totalRevenue),
-        change: 18.5, // This would need historical comparison
-        icon: 'CurrencyDollarIcon',
-        trend: 'up' as const
+        icon: 'BanknotesIcon',
       },
       {
-        title: 'Average Invoice Value',
+        title: 'Average Deal',
         value: formatter.format(avgInvoiceValue),
-        change: 5.2,
-        icon: 'DocumentTextIcon',
-        trend: 'up' as const
+        icon: 'PresentationChartLineIcon',
       },
       {
         title: 'Collection Rate',
         value: `${collectionRate.toFixed(1)}%`,
-        change: 3.8,
         icon: 'CheckCircleIcon',
-        trend: 'up' as const
       },
       {
-        title: 'Outstanding Amount',
+        title: 'Outstanding',
         value: formatter.format(outstandingAmount),
-        change: 12.3,
-        icon: 'ExclamationCircleIcon',
-        trend: 'down' as const
+        icon: 'ClockIcon',
       }
     ];
 
@@ -215,13 +202,43 @@ export async function GET(request: NextRequest) {
       outstanding: report.outstanding
     }));
 
+    // Fetch Business Profile for branding
+    const { data: businessProfile } = await supabase
+      .from('business_profiles')
+      .select('*')
+      .eq('owner_id', user.id)
+      .single();
+
+    // Fetch all clients for the "Clients Report"
+    const { data: allClients } = await supabase
+      .from('clients')
+      .select('*')
+      .eq('user_id', user.id);
+
+    // Fetch all products for the "Products Report"
+    const { data: allProducts } = await supabase
+      .from('products')
+      .select('*')
+      .eq('user_id', user.id);
+
+    // Fetch all invoices for detailed report
+    const { data: allInvoices } = await supabase
+      .from('invoices')
+      .select('*, clients(company_name)')
+      .eq('user_id', user.id)
+      .order('issue_date', { ascending: false });
+
     return NextResponse.json({
       revenueChart,
       paymentStatusChart,
       clientPerformanceChart,
       kpis,
       reportsTable,
-      currency
+      currency,
+      businessProfile,
+      allClients,
+      allProducts,
+      allInvoices: allInvoices || []
     });
   } catch (error) {
     console.error('Unexpected error:', error);

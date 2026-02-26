@@ -21,9 +21,9 @@ interface ClientPerformanceData {
 interface KPIData {
   title: string;
   value: string;
-  change: number;
+  change?: number;
   icon: string;
-  trend: 'up' | 'down';
+  trend?: 'up' | 'down';
 }
 
 interface ReportRow {
@@ -43,6 +43,10 @@ interface ReportsData {
   kpis: KPIData[];
   reportsTable: ReportRow[];
   currency?: string;
+  businessProfile?: any;
+  allClients?: any[];
+  allProducts?: any[];
+  allInvoices?: any[];
 }
 
 interface UseReportsOptions {

@@ -7,6 +7,7 @@ import type { Invoice } from '@/types/database';
 interface InvoiceWithClient extends Invoice {
   clients?: {
     company_name: string;
+    email?: string;
   };
 }
 
@@ -80,20 +81,10 @@ const InvoiceTableRow = ({
       const spaceBelow = window.innerHeight - rect.bottom;
       const dropdownHeight = 220; // Approximate height of the dropdown
       
-      // Decide whether to open up or down
-      // If there isn't enough space below (less than dropdown height) and there is more space above, open upwards
       const openUpwards = spaceBelow < dropdownHeight && rect.top > dropdownHeight;
 
       const top = openUpwards
-        ? rect.top - dropdownHeight // Open upwards (relative to viewport top, but we need to account for height)
-           // Correction: if fixed positioning, strictly top = rect.top - height
-           // But let's verify exact alignment. 
-           // rect.top is distance from top of viewport to top of button.
-           // We want bottom of dropdown to be at top of button? Or aligned with button?
-           // Usually aligned with bottom of button if down, top of button if up.
-           // Let's refine:
-           // Upwards: top = rect.top - dropdownHeight
-           // Downwards: top = rect.bottom + 4
+        ? rect.top - dropdownHeight
         : rect.bottom + 4;
 
       setDropdownPos({
@@ -108,7 +99,6 @@ const InvoiceTableRow = ({
     const handleScroll = () => {
       if (showActions) setShowActions(false);
     };
-    // Capture scroll events on window to close dropdown on scroll
     window.addEventListener('scroll', handleScroll, true);
     window.addEventListener('resize', handleScroll);
     return () => {
@@ -131,7 +121,7 @@ const InvoiceTableRow = ({
           <span className="text-sm font-medium text-foreground data-text">{invoice.invoice_number}</span>
         </td>
         <td className="px-4 py-4">
-          <span className="text-sm text-foreground">{invoice.clients?.company_name || 'Unknown Client'}</span>
+          <span className="text-sm text-foreground">{invoice.clients?.company_name || ''}</span>
         </td>
         <td className="px-4 py-4">
           <span className="text-sm font-medium text-foreground data-text">
@@ -163,133 +153,94 @@ const InvoiceTableRow = ({
   }
 
   return (
-    <tr className="border-b border-border hover:bg-muted/50 transition-smooth">
-      <td className="px-4 py-4">
+    <tr className={`border-b border-divider/50 transition-all duration-300 ${isSelected ? 'bg-primary/[0.03]' : 'hover:bg-muted/30'}`}>
+      <td className="px-5 py-5">
         <input
           type="checkbox"
           checked={isSelected}
           onChange={() => onSelect(invoice.id)}
-          className="w-4 h-4 rounded border-input text-primary focus:ring-2 focus:ring-ring cursor-pointer"
+          className="w-5 h-5 rounded-lg border-2 border-divider text-primary focus:ring-4 focus:ring-primary/10 cursor-pointer transition-all checked:border-primary"
         />
       </td>
-      <td className="px-4 py-4">
-        <span className="text-sm font-medium text-foreground data-text">{invoice.invoice_number}</span>
+      <td className="px-5 py-5">
+        <span className="text-xs font-black text-muted-foreground uppercase tracking-widest bg-muted px-2 py-1 rounded">
+            {invoice.invoice_number}
+        </span>
       </td>
-      <td className="px-4 py-4">
-        <span className="text-sm text-foreground">{invoice.clients?.company_name || 'Unknown Client'}</span>
+      <td className="px-5 py-5">
+        <div className="flex flex-col">
+            <span className="text-sm font-black text-foreground uppercase tracking-tight">{invoice.clients?.company_name || ''}</span>
+            <span className="text-[10px] text-muted-foreground font-medium truncate max-w-[200px]">{invoice.clients?.email || ''}</span>
+        </div>
       </td>
-      <td className="px-4 py-4">
-        <span className="text-sm font-medium text-foreground data-text">
+      <td className="px-5 py-5">
+        <span className="text-sm font-black text-foreground tabular-nums">
           {new Intl.NumberFormat('en-US', { style: 'currency', currency: invoice.currency || 'KES' }).format(invoice.total_amount)}
         </span>
       </td>
-      <td className="px-4 py-4">
-        <span className="text-sm text-muted-foreground">{new Date(invoice.issue_date).toLocaleDateString()}</span>
+      <td className="px-5 py-5">
+        <div className="flex flex-col">
+            <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Issued</span>
+            <span className="text-xs font-bold text-foreground">{new Date(invoice.issue_date).toLocaleDateString()}</span>
+        </div>
       </td>
-      <td className="px-4 py-4">
-        <span className="text-sm text-muted-foreground">{new Date(invoice.due_date).toLocaleDateString()}</span>
+      <td className="px-5 py-5">
+        <div className="flex flex-col">
+            <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Due</span>
+            <span className="text-xs font-bold text-foreground">{new Date(invoice.due_date).toLocaleDateString()}</span>
+        </div>
       </td>
-      <td className="px-4 py-4">
-        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium caption ${getStatusColor(invoice.status)}`}>
+      <td className="px-5 py-5">
+        <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-tighter ${getStatusColor(invoice.status)}`}>
           <Icon name={getStatusIcon(invoice.status) as any} size={14} />
-          {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
+          {invoice.status}
         </span>
       </td>
-      <td className="px-4 py-4">
+      <td className="px-5 py-5">
         <div className="relative">
           <button
             ref={buttonRef}
             onClick={toggleActions}
-            className="p-2 hover:bg-muted rounded-md transition-smooth"
+            className="w-10 h-10 flex items-center justify-center rounded-xl bg-muted/50 text-muted-foreground hover:bg-primary hover:text-white transition-all"
             aria-label="Invoice actions"
           >
-            <Icon name="EllipsisVerticalIcon" size={20} className="text-muted-foreground" />
+            <Icon name="EllipsisVerticalIcon" size={20} />
           </button>
 
           {showActions && (
             <>
-              <div
-                className="fixed inset-0 z-40"
-                 onClick={(e) => {
-                  e.stopPropagation();
-                  setShowActions(false);
-                }}
-              />
+              <div className="fixed inset-0 z-40" onClick={(e) => { e.stopPropagation(); setShowActions(false); }} />
               <div 
-                className="fixed w-48 bg-card border border-border rounded-lg shadow-elevation-3 py-1 z-50 text-foreground"
-                style={{ 
-                  top: dropdownPos.top, 
-                  right: dropdownPos.right,
-                  // We calculated top relative to window, so fixed positioning places it correctly.
-                }}
+                className="fixed w-56 bg-card border border-divider rounded-2xl shadow-2xl py-2 z-50 animate-in zoom-in-95 duration-200"
+                style={{ top: dropdownPos.top, right: dropdownPos.right }}
               >
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onEdit(invoice.id);
-                    setShowActions(false);
-                  }}
-                  className="w-full flex items-center gap-3 px-4 py-2 text-sm text-foreground hover:bg-muted transition-smooth"
-                >
-                  <Icon name="PencilIcon" size={18} />
-                  <span>Edit</span>
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onPreview(invoice.id);
-                    setShowActions(false);
-                  }}
-                  className="w-full flex items-center gap-3 px-4 py-2 text-sm text-foreground hover:bg-muted transition-smooth"
-                >
-                  <Icon name="EyeIcon" size={18} />
-                  <span>Preview</span>
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDuplicate(invoice.id);
-                    setShowActions(false);
-                  }}
-                  className="w-full flex items-center gap-3 px-4 py-2 text-sm text-foreground hover:bg-muted transition-smooth"
-                >
-                  <Icon name="DocumentDuplicateIcon" size={18} />
-                  <span>Duplicate</span>
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDownload(invoice.id);
-                    setShowActions(false);
-                  }}
-                  className="w-full flex items-center gap-3 px-4 py-2 text-sm text-foreground hover:bg-muted transition-smooth"
-                >
-                  <Icon name="ArrowDownTrayIcon" size={18} />
-                  <span>Download PDF</span>
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onSend(invoice.id);
-                    setShowActions(false);
-                  }}
-                  className="w-full flex items-center gap-3 px-4 py-2 text-sm text-foreground hover:bg-muted transition-smooth"
-                >
-                  <Icon name="PaperAirplaneIcon" size={18} />
-                  <span>Send</span>
-                </button>
-                <div className="h-px bg-border my-1" />
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDelete(invoice.id);
-                    setShowActions(false);
-                  }}
-                  className="w-full flex items-center gap-3 px-4 py-2 text-sm text-error hover:bg-error/10 transition-smooth"
-                >
-                  <Icon name="TrashIcon" size={18} />
-                  <span>Delete</span>
-                </button>
+                  <div className="px-4 py-2 border-b border-divider mb-1">
+                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Record Operations</p>
+                  </div>
+                  {[
+                    { label: 'Modify Record', icon: 'PencilIcon', action: onEdit },
+                    { label: 'Review Document', icon: 'EyeIcon', action: onPreview },
+                    { label: 'Clone Dataset', icon: 'DocumentDuplicateIcon', action: onDuplicate },
+                    { label: 'Extract PDF', icon: 'ArrowDownTrayIcon', action: onDownload },
+                    { label: 'Dispatch Email', icon: 'PaperAirplaneIcon', action: onSend },
+                  ].map((item) => (
+                    <button
+                      key={item.label}
+                      onClick={(e) => { e.stopPropagation(); item.action(invoice.id); setShowActions(false); }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-foreground hover:bg-muted transition-colors"
+                    >
+                      <Icon name={item.icon as any} size={18} className="text-primary" />
+                      <span>{item.label}</span>
+                    </button>
+                  ))}
+                  <div className="h-px bg-divider my-1" />
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onDelete(invoice.id); setShowActions(false); }}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-error hover:bg-error/10 transition-colors"
+                  >
+                    <Icon name="TrashIcon" size={18} />
+                    <span>Purge Data</span>
+                  </button>
               </div>
             </>
           )}

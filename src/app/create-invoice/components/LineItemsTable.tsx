@@ -2,15 +2,16 @@
 
 import { useState } from 'react';
 import Icon from '@/components/ui/AppIcon';
-import type { InvoiceItem } from '@/types/database';
+import type { InvoiceItem, Product } from '@/types/database';
 
 interface LineItemsTableProps {
   items: InvoiceItem[];
   onItemsChange: (items: InvoiceItem[]) => void;
   currency: string;
+  products: Product[];
 }
 
-const LineItemsTable = ({ items, onItemsChange, currency }: LineItemsTableProps) => {
+const LineItemsTable = ({ items, onItemsChange, currency, products }: LineItemsTableProps) => {
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const addNewItem = () => {
@@ -39,6 +40,26 @@ const LineItemsTable = ({ items, onItemsChange, currency }: LineItemsTableProps)
     onItemsChange(updatedItems);
   };
 
+  const handleProductSelect = (id: string, productId: string) => {
+    if (productId === 'manual') return;
+    const product = products.find(p => p.id === productId);
+    if (product) {
+      const updatedItems = items.map((item) => {
+        if (item.id === id) {
+          const updated = { 
+            ...item, 
+            description: product.name,
+            rate: Number(product.price),
+            amount: Number(product.price) * Number(item.quantity)
+          };
+          return updated;
+        }
+        return item;
+      });
+      onItemsChange(updatedItems);
+    }
+  };
+
   const removeItem = (id: string) => {
     onItemsChange(items.filter((item) => item.id !== id));
   };
@@ -52,6 +73,14 @@ const LineItemsTable = ({ items, onItemsChange, currency }: LineItemsTableProps)
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(amount);
+  };
+
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency,
+      minimumFractionDigits: 2,
+    }).format(price);
   };
 
   return (
@@ -73,7 +102,7 @@ const LineItemsTable = ({ items, onItemsChange, currency }: LineItemsTableProps)
         <table className="w-full border border-border rounded-md">
           <thead className="bg-muted">
             <tr>
-              <th className="px-4 py-3 text-left text-sm font-medium text-foreground">Description</th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-foreground">Description / Product</th>
               <th className="px-4 py-3 text-left text-sm font-medium text-foreground w-24">Quantity</th>
               <th className="px-4 py-3 text-left text-sm font-medium text-foreground w-32">Rate ({currency})</th>
               <th className="px-4 py-3 text-left text-sm font-medium text-foreground w-32">Amount ({currency})</th>
@@ -85,13 +114,27 @@ const LineItemsTable = ({ items, onItemsChange, currency }: LineItemsTableProps)
               items.map((item) => (
                 <tr key={item.id} className="border-t border-border hover:bg-muted/50 transition-smooth">
                   <td className="px-4 py-3">
-                    <input
-                      type="text"
-                      value={item.description}
-                      onChange={(e) => updateItem(item.id, 'description', e.target.value)}
-                      placeholder="Service or product description"
-                      className="w-full px-3 py-2 bg-card border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                    />
+                    <div className="space-y-2">
+                      {products.length > 0 && (
+                        <select
+                          className="w-full px-3 py-1 bg-muted border border-border rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+                          onChange={(e) => handleProductSelect(item.id, e.target.value)}
+                          value=""
+                        >
+                          <option value="">-- Quick Pick Product --</option>
+                          {products.map(p => (
+                            <option key={p.id} value={p.id}>{p.name} ({formatPrice(Number(p.price))})</option>
+                          ))}
+                        </select>
+                      )}
+                      <input
+                        type="text"
+                        value={item.description}
+                        onChange={(e) => updateItem(item.id, 'description', e.target.value)}
+                        placeholder="Service or product description"
+                        className="w-full px-3 py-2 bg-card border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                      />
+                    </div>
                   </td>
                   <td className="px-4 py-3">
                     <input
@@ -158,7 +201,19 @@ const LineItemsTable = ({ items, onItemsChange, currency }: LineItemsTableProps)
                 </button>
               </div>
               <div className="space-y-2">
-                <label className="block text-xs font-medium text-foreground">Description</label>
+                <label className="block text-xs font-medium text-foreground">Product / Description</label>
+                {products.length > 0 && (
+                  <select
+                    className="w-full px-3 py-1.5 bg-muted border border-border rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-ring mb-2"
+                    onChange={(e) => handleProductSelect(item.id, e.target.value)}
+                    value=""
+                  >
+                    <option value="">-- Quick Pick Product --</option>
+                    {products.map(p => (
+                      <option key={p.id} value={p.id}>{p.name} ({formatPrice(Number(p.price))})</option>
+                    ))}
+                  </select>
+                )}
                 <input
                   type="text"
                   value={item.description}

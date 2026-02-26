@@ -22,61 +22,52 @@ const BulkActionToolbar = ({
   }
 
   return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
-      <div className="bg-card rounded-lg shadow-elevation-3 border border-border p-4 min-w-[400px]">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <Icon name="CheckCircleIcon" size={20} className="text-primary" />
-              <span className="text-sm font-medium text-foreground">
-                {selectedCount} invoice{selectedCount !== 1 ? 's' : ''} selected
-              </span>
+    <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] w-[95%] max-w-4xl animate-in slide-in-from-bottom-10 duration-500 ease-out">
+      <div className="bg-foreground text-background rounded-[2rem] shadow-2xl p-2 pl-6 overflow-hidden border border-white/10 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-4 py-2">
+            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-white shadow-lg">
+                <span className="text-xs font-black">{selectedCount}</span>
             </div>
-          </div>
+            <div className="hidden sm:block">
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Selection Active</p>
+                <p className="text-xs font-black uppercase tracking-tight">Records Managed</p>
+            </div>
+        </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={onMarkPaid}
-              className="flex items-center gap-2 px-3 py-2 bg-success text-success-foreground rounded-md text-sm font-medium hover:bg-success/90 transition-smooth"
-            >
-              <Icon name="CheckCircleIcon" size={16} />
-              <span>Mark Paid</span>
-            </button>
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar scroll-smooth p-1">
+          <button
+            onClick={onMarkPaid}
+            className="flex items-center gap-2 px-5 py-3 bg-success text-success-foreground rounded-2xl text-xs font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95 whitespace-nowrap"
+          >
+            <Icon name="CheckBadgeIcon" size={16} />
+            <span className="hidden md:inline">Mark as Paid</span>
+            <span className="md:hidden">Paid</span>
+          </button>
 
-            <button
-              onClick={onSendReminders}
-              className="flex items-center gap-2 px-3 py-2 bg-accent text-accent-foreground rounded-md text-sm font-medium hover:bg-accent/90 transition-smooth"
-            >
-              <Icon name="PaperAirplaneIcon" size={16} />
-              <span>Send Reminders</span>
-            </button>
+          <button
+            onClick={onSendReminders}
+            className="flex items-center gap-2 px-5 py-3 bg-primary text-white rounded-2xl text-xs font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95 whitespace-nowrap"
+          >
+            <Icon name="BellIcon" size={16} />
+            <span className="hidden md:inline">Send Batch Reminders</span>
+            <span className="md:hidden">Alert</span>
+          </button>
 
-            <button
-              onClick={onExportPDF}
-              className="flex items-center gap-2 px-3 py-2 bg-muted text-foreground rounded-md text-sm font-medium hover:bg-muted/80 transition-smooth"
-            >
-              <Icon name="ArrowDownTrayIcon" size={16} />
-              <span>Export PDF</span>
-            </button>
+          <button
+            onClick={onDelete}
+            className="flex items-center justify-center w-12 h-12 bg-destructive/10 text-destructive rounded-2xl transition-all hover:bg-destructive hover:text-white active:scale-95"
+            title="Purge Selection"
+          >
+            <Icon name="TrashIcon" size={20} />
+          </button>
 
-            <div className="h-6 w-px bg-border" />
-
-            <button
-              onClick={onDelete}
-              className="flex items-center gap-2 px-3 py-2 bg-error text-error-foreground rounded-md text-sm font-medium hover:bg-error/90 transition-smooth"
-            >
-              <Icon name="TrashIcon" size={16} />
-              <span>Delete</span>
-            </button>
-
-            <button
-              onClick={onClearSelection}
-              className="flex items-center gap-2 px-3 py-2 text-muted-foreground hover:text-foreground rounded-md text-sm font-medium transition-smooth"
-            >
-              <Icon name="XMarkIcon" size={16} />
-              <span>Clear</span>
-            </button>
-          </div>
+          <button
+            onClick={onClearSelection}
+            className="flex items-center justify-center w-12 h-12 bg-white/5 text-white/50 rounded-2xl transition-all hover:bg-white/10 hover:text-white active:scale-95"
+            title="Cancel Selection"
+          >
+            <Icon name="XMarkIcon" size={20} />
+          </button>
         </div>
       </div>
     </div>

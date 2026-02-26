@@ -5,6 +5,7 @@ export { useInvoiceItems } from './useInvoiceItems';
 export { usePayments } from './usePayments';
 export { useDashboard } from './useDashboard';
 export { useReports } from './useReports';
+export { useReportPDF } from './useReportPDF';
 export { useSettings } from './useSettings';
 
 // Auth hooks

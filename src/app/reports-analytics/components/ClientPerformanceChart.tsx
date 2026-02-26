@@ -16,46 +16,58 @@ const ClientPerformanceChart = ({ data }: ClientPerformanceChartProps) => {
   return (
     <div className="w-full h-80" aria-label="Client Performance Line Chart">
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(100, 116, 139, 0.2)" />
+        <LineChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+          <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(100, 116, 139, 0.1)" />
           <XAxis 
             dataKey="month" 
-            stroke="var(--color-text-secondary)"
-            style={{ fontSize: '14px' }}
+            axisLine={false}
+            tickLine={false}
+            stroke="rgba(100, 116, 139, 0.5)"
+            style={{ fontSize: '11px', fontWeight: 'bold' }}
+            dy={10}
           />
           <YAxis 
-            stroke="var(--color-text-secondary)"
-            style={{ fontSize: '14px' }}
+            axisLine={false}
+            tickLine={false}
+            stroke="rgba(100, 116, 139, 0.5)"
+            style={{ fontSize: '11px', fontWeight: 'bold' }}
           />
           <Tooltip 
             contentStyle={{
-              backgroundColor: 'var(--color-card)',
+              backgroundColor: 'white',
               border: '1px solid var(--color-border)',
-              borderRadius: '8px',
-              color: 'var(--color-foreground)'
+              borderRadius: '12px',
+              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+              padding: '12px'
             }}
+            itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
           />
           <Legend 
+            verticalAlign="bottom" 
+            align="center"
             wrapperStyle={{ paddingTop: '20px' }}
             iconType="circle"
+            formatter={(value) => <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{value}</span>}
           />
           <Line 
             type="monotone" 
             dataKey="newClients" 
-            stroke="var(--color-success)" 
-            strokeWidth={3}
-            name="New Clients"
-            dot={{ r: 5 }}
-            activeDot={{ r: 7 }}
+            stroke="#10b981" 
+            strokeWidth={4}
+            name="Acquisitions"
+            dot={{ fill: '#10b981', r: 5, strokeWidth: 2, stroke: 'white' }}
+            activeDot={{ r: 7, strokeWidth: 2, stroke: 'white' }}
+            animationDuration={2000}
           />
           <Line 
             type="monotone" 
             dataKey="activeClients" 
             stroke="var(--color-primary)" 
-            strokeWidth={3}
-            name="Active Clients"
-            dot={{ r: 5 }}
-            activeDot={{ r: 7 }}
+            strokeWidth={4}
+            name="Participating"
+            dot={{ fill: 'var(--color-primary)', r: 5, strokeWidth: 2, stroke: 'white' }}
+            activeDot={{ r: 7, strokeWidth: 2, stroke: 'white' }}
+            animationDuration={2000}
           />
         </LineChart>
       </ResponsiveContainer>

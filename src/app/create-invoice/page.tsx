@@ -5,7 +5,7 @@ import type { Metadata } from 'next';
 import NavigationWrapper from '@/components/common/NavigationWrapper';
 import CreateInvoiceInteractive from './components/CreateInvoiceInteractive';
 import { createClient } from '@/lib/supabase/server';
-import type { Client } from '@/types/database';
+import type { Client, Product } from '@/types/database';
 
 export const metadata: Metadata = {
   title: 'Create Invoice - InvoiceFlow',
@@ -36,12 +36,37 @@ async function getInitialClients(): Promise<Client[]> {
   return clients || [];
 }
 
+async function getInitialProducts(): Promise<Product[]> {
+  const supabase = createClient();
+
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return [];
+  }
+
+  const { data: products, error } = await supabase
+    .from('products')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('name', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching products:', error);
+    return [];
+  }
+
+  return products || [];
+}
+
 interface CreateInvoicePageProps {
   searchParams: { [key: string]: string | string[] | undefined };
 }
 
 export default async function CreateInvoicePage({ searchParams }: CreateInvoicePageProps) {
-  const initialClients = await getInitialClients();
+  const [initialClients, initialProducts] = await Promise.all([
+    getInitialClients(),
+    getInitialProducts(),
+  ]);
   const editId = typeof searchParams.edit === 'string' ? searchParams.edit : undefined;
   const duplicateId = typeof searchParams.duplicate === 'string' ? searchParams.duplicate : undefined;
 
@@ -49,6 +74,7 @@ export default async function CreateInvoicePage({ searchParams }: CreateInvoiceP
     <NavigationWrapper>
       <CreateInvoiceInteractive 
         initialClients={initialClients} 
+        initialProducts={initialProducts}
         editId={editId} 
         duplicateId={duplicateId} 
       />

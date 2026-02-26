@@ -8,15 +8,25 @@ interface TemplateSelectorProps {
 }
 
 const templates = [
-  { id: 'default', name: 'InvoiceFlow', description: 'Default template with InvoiceFlow branding' },
-  { id: 'professional', name: 'Business Classic', description: 'Professional design with logo support' },
-  { id: 'modern', name: 'Modern', description: 'Sleek sidebar layout with logo support' },
-  { id: 'classic', name: 'Classic', description: 'Traditional serif typography with logo' },
-  { id: 'minimal', name: 'Minimal', description: 'Clean design with logo support' },
-  { id: 'executive', name: 'Executive', description: 'Premium dark theme with logo' },
-  { id: 'elegant', name: 'Elegant', description: 'Sophisticated serif design with logo' },
-  { id: 'simple', name: 'Simple Plain', description: 'Plain design - no logo required' },
-  { id: 'creative', name: 'Creative', description: 'Colorful design - no logo required' },
+  { id: 'default', name: 'InvoiceFlow Default', description: 'Original template with branding and watermark' },
+  { id: 'invoiceflow_clean', name: 'InvoiceFlow Clean', description: 'Professional layout without watermarks' },
+  { id: 'invoiceflow_business', name: 'InvoiceFlow Business', description: 'Elegant business-first professional design' },
+  { id: 'invoiceflow_modern', name: 'InvoiceFlow Modern', description: 'Sleek compact professional styling' },
+  { id: 'invoiceflow_enterprise', name: 'InvoiceFlow Enterprise', description: 'Strict enterprise-grade formal design' },
+  { id: 'invoiceflow_luxe', name: 'InvoiceFlow Luxe', description: 'Premium minimal professional aesthetic' },
+  { id: 'premium_corporate', name: 'Corporate Elite', description: 'Ultra-professional corporate design' },
+  { id: 'premium_modern', name: 'Modern Pro', description: 'Sleek, contemporary professional layout' },
+  { id: 'premium_classic', name: 'Classic Executive', description: 'Timeless professional executive design' },
+  { id: 'premium_minimal', name: 'Minimal Luxe', description: 'Clean, minimalist premium aesthetic' },
+  { id: 'premium_bold', name: 'Bold Professional', description: 'Strong, impactful professional design' },
+  { id: 'professional', name: 'Business Classic', description: 'Standard professional design' },
+  { id: 'modern', name: 'Modern Sidebar', description: 'Sidebar layout with logo support' },
+  { id: 'classic', name: 'Classic Serif', description: 'Traditional serif typography' },
+  { id: 'minimal', name: 'Minimal Simple', description: 'Basic clean design' },
+  { id: 'executive', name: 'Executive Dark', description: 'Dark balanced accent theme' },
+  { id: 'elegant', name: 'Elegant Boutique', description: 'Sophisticated design' },
+  { id: 'simple', name: 'Simple Plain', description: 'Plain text - no logo' },
+  { id: 'creative', name: 'Creative Gradient', description: 'Bold artistic design' },
 ];
 
 const TemplateSelector = ({ selectedTemplate, onTemplateChange }: TemplateSelectorProps) => {

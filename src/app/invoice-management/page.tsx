@@ -22,7 +22,8 @@ async function getInitialInvoices(): Promise<Invoice[]> {
     .select(`
       *,
       clients (
-        company_name
+        company_name,
+        email
       )
     `)
     .eq('user_id', user.id)

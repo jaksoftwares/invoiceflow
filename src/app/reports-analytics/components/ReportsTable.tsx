@@ -17,71 +17,76 @@ interface ReportsTableProps {
 
 const ReportsTable = ({ data, currency = 'KES' }: ReportsTableProps) => {
   return (
-    <div className="bg-card rounded-lg shadow-elevation-1 overflow-hidden">
-      <div className="px-6 py-4 border-b border-border">
-        <h3 className="text-lg font-heading font-semibold text-foreground">
-          Client Performance Report
-        </h3>
-        <p className="text-sm text-muted-foreground mt-1">
-          Detailed breakdown of client metrics and financial performance
-        </p>
+    <div className="bg-card rounded-2xl border border-border/50 shadow-sm overflow-hidden">
+      <div className="px-8 py-6 border-b border-border/50 flex items-center justify-between bg-muted/5">
+        <div>
+          <h3 className="text-xl font-heading font-black text-foreground tracking-tight">
+            Comprehensive Performance Report
+          </h3>
+          <p className="text-sm text-muted-foreground mt-1">
+            Detailed breakdown of client metrics and financial performance.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+           <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest bg-muted px-2 py-1 rounded">
+             {data.length} Entities
+           </span>
+        </div>
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-muted/50">
-            <tr>
-              <th className="px-6 py-3 text-left text-sm font-medium text-foreground">Client</th>
-              <th className="px-6 py-3 text-left text-sm font-medium text-foreground">Invoices</th>
-              <th className="px-6 py-3 text-left text-sm font-medium text-foreground">Total Revenue</th>
-              <th className="px-6 py-3 text-left text-sm font-medium text-foreground">Avg Invoice</th>
-              <th className="px-6 py-3 text-left text-sm font-medium text-foreground">Payment Rate</th>
-              <th className="px-6 py-3 text-left text-sm font-medium text-foreground">Outstanding</th>
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="bg-muted/10 border-b border-border/50">
+              <th className="px-8 py-4 text-[10px] font-black text-muted-foreground uppercase tracking-widest">Client</th>
+              <th className="px-8 py-4 text-[10px] font-black text-muted-foreground uppercase tracking-widest">Invoices</th>
+              <th className="px-8 py-4 text-[10px] font-black text-muted-foreground uppercase tracking-widest text-right">Revenue</th>
+              <th className="px-8 py-4 text-[10px] font-black text-muted-foreground uppercase tracking-widest text-right">Avg Val</th>
+              <th className="px-8 py-4 text-[10px] font-black text-muted-foreground uppercase tracking-widest">Payment Rate</th>
+              <th className="px-8 py-4 text-[10px] font-black text-muted-foreground uppercase tracking-widest text-right">Outstanding</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-border/50">
             {data.map((row) => (
-              <tr key={row.id} className="border-b border-border hover:bg-muted/50 transition-smooth">
-                <td className="px-6 py-4">
+              <tr key={row.id} className="hover:bg-muted/5 transition-smooth group">
+                <td className="px-8 py-5">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                      <Icon name="BuildingOfficeIcon" size={16} className="text-primary" />
+                    <div className="w-9 h-9 bg-primary/5 rounded-lg border border-primary/10 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-smooth">
+                      <Icon name="BuildingOfficeIcon" size={18} className="text-primary group-hover:text-white transition-smooth" />
                     </div>
-                    <span className="text-sm font-medium text-foreground">{row.client}</span>
+                    <span className="text-sm font-bold text-foreground">{row.client}</span>
                   </div>
                 </td>
-                <td className="px-6 py-4">
-                  <span className="text-sm text-foreground">{row.invoiceCount}</span>
+                <td className="px-8 py-5">
+                  <span className="text-sm font-medium text-foreground">{row.invoiceCount}</span>
                 </td>
-                <td className="px-6 py-4">
-                  <span className="text-sm font-medium text-foreground">
-                    {new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(row.totalRevenue)}
-                  </span>
+                <td className="px-8 py-5 text-right font-black text-foreground">
+                  {new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 }).format(row.totalRevenue)}
                 </td>
-                <td className="px-6 py-4">
-                  <span className="text-sm text-foreground">
-                    {new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(row.avgInvoiceValue)}
-                  </span>
+                <td className="px-8 py-5 text-right font-medium text-muted-foreground">
+                  {new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 }).format(row.avgInvoiceValue)}
                 </td>
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-2">
-                    <span className={`text-sm font-medium ${
+                <td className="px-8 py-5">
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 max-w-[80px] h-1.5 bg-muted rounded-full overflow-hidden">
+                       <div className={`h-full rounded-full ${
+                         row.paymentRate >= 95 ? 'bg-success' :
+                         row.paymentRate >= 70 ? 'bg-warning' : 'bg-error'
+                       }`} style={{ width: `${row.paymentRate}%` }} />
+                    </div>
+                    <span className={`text-xs font-black ${
                       row.paymentRate >= 95 ? 'text-success' :
-                      row.paymentRate >= 90 ? 'text-warning' : 'text-error'
+                      row.paymentRate >= 70 ? 'text-warning' : 'text-error'
                     }`}>
-                      {row.paymentRate}%
+                      {row.paymentRate.toFixed(0)}%
                     </span>
-                    <div className={`w-2 h-2 rounded-full ${
-                      row.paymentRate >= 95 ? 'bg-success' :
-                      row.paymentRate >= 90 ? 'bg-warning' : 'bg-error'
-                    }`} />
                   </div>
                 </td>
-                <td className="px-6 py-4">
-                  <span className={`text-sm font-medium ${
-                    row.outstanding > 0 ? 'text-warning' : 'text-success'
+                <td className="px-8 py-5 text-right">
+                  <span className={`text-sm font-black ${
+                    row.outstanding > 0 ? 'text-error' : 'text-success'
                   }`}>
-                    {new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(row.outstanding)}
+                    {new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 }).format(row.outstanding)}
                   </span>
                 </td>
               </tr>
@@ -90,21 +95,18 @@ const ReportsTable = ({ data, currency = 'KES' }: ReportsTableProps) => {
         </table>
       </div>
 
-      <div className="px-6 py-4 border-t border-border bg-muted/30">
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">
-            Showing {data.length} clients
-          </span>
-          <div className="flex items-center gap-4">
-            <span className="text-muted-foreground">
-              Total Revenue: <span className="font-medium text-foreground">
-                {new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(data.reduce((sum, row) => sum + row.totalRevenue, 0))}
-              </span>
+      <div className="px-8 py-6 border-t border-border/50 bg-muted/5 flex items-center justify-between">
+        <div className="flex items-center gap-8">
+          <div className="flex flex-col">
+            <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Total Gross</span>
+            <span className="text-xl font-black text-foreground">
+              {new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 }).format(data.reduce((sum, row) => sum + row.totalRevenue, 0))}
             </span>
-            <span className="text-muted-foreground">
-              Total Outstanding: <span className="font-medium text-foreground">
-                {new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(data.reduce((sum, row) => sum + row.outstanding, 0))}
-              </span>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Total Outstanding</span>
+            <span className="text-xl font-black text-error">
+              {new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 }).format(data.reduce((sum, row) => sum + row.outstanding, 0))}
             </span>
           </div>
         </div>

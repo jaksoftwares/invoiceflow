@@ -75,7 +75,15 @@ export default async function DashboardPage() {
     // Determine primary currency from recent invoices or default to KES
     const currency = recentInvoices?.[0]?.currency || 'KES';
 
+    // Fetch user profile
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('first_name, last_name')
+      .eq('id', user.id)
+      .single();
+
     initialData = {
+      profile,
       metrics: {
         totalInvoices: totalInvoices || 0,
         paidInvoices: paidInvoices || 0,

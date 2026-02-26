@@ -216,21 +216,21 @@ const ClientManagementInteractive = ({ initialClients = [] }: ClientManagementIn
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-10">
           <div>
-            <h1 className="text-3xl font-heading font-semibold text-foreground mb-2">
-              Client Management
+            <h1 className="text-4xl font-heading font-black text-foreground tracking-tight">
+              My CLients
             </h1>
-            <p className="text-muted-foreground">
-              Manage your client database and billing relationships
+            <p className="text-muted-foreground mt-2 text-lg">
+              Centralized management of your business relationships and billing history.
             </p>
           </div>
           <button
             onClick={() => setIsAddModalOpen(true)}
-            className="flex items-center gap-2 px-6 py-3 bg-accent text-accent-foreground rounded-md font-medium hover:-translate-y-[1px] hover:shadow-elevation-2 transition-smooth">
+            className="flex items-center gap-2 px-8 py-4 bg-primary text-primary-foreground rounded-2xl font-bold text-sm shadow-elevation-2 hover:shadow-elevation-3 transition-smooth">
 
             <Icon name="PlusIcon" size={20} />
-            <span>Add New Client</span>
+            <span>Register New Client</span>
           </button>
         </div>
 

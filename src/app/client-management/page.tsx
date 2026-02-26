@@ -6,7 +6,7 @@ import type { Client } from '@/types/database';
 
 export const metadata: Metadata = {
   title: 'Client Management - InvoiceFlow',
-  description: 'Manage your client database with comprehensive contact details, billing history, and relationship tracking for streamlined business operations.',
+  description: 'Manage your client information with comprehensive contact details, billing history, and relationship tracking for streamlined business operations.',
 };
 
 async function getInitialClients(): Promise<Client[]> {

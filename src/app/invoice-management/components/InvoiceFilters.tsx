@@ -13,9 +13,10 @@ interface FilterState {
 interface InvoiceFiltersProps {
   onFilterChange: (filters: FilterState) => void;
   totalResults: number;
+  availableClients?: { id: string; name: string }[];
 }
 
-const InvoiceFilters = ({ onFilterChange, totalResults }: InvoiceFiltersProps) => {
+const InvoiceFilters = ({ onFilterChange, totalResults, availableClients = [] }: InvoiceFiltersProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [filters, setFilters] = useState<FilterState>({
     dateRange: { start: '', end: '' },
@@ -29,14 +30,6 @@ const InvoiceFilters = ({ onFilterChange, totalResults }: InvoiceFiltersProps) =
     { value: 'paid', label: 'Paid' },
     { value: 'pending', label: 'Pending' },
     { value: 'overdue', label: 'Overdue' }
-  ];
-
-  const clients = [
-    { value: 'all', label: 'All Clients' },
-    { value: 'acme-corp', label: 'Acme Corporation' },
-    { value: 'tech-solutions', label: 'Tech Solutions Inc' },
-    { value: 'global-retail', label: 'Global Retail Group' },
-    { value: 'creative-agency', label: 'Creative Agency LLC' }
   ];
 
   const handleFilterUpdate = (key: keyof FilterState, value: any) => {
@@ -57,117 +50,119 @@ const InvoiceFilters = ({ onFilterChange, totalResults }: InvoiceFiltersProps) =
   };
 
   return (
-    <div className="bg-card rounded-lg shadow-elevation-1 mb-6">
-      <div className="p-4 lg:p-6">
-        <div className="flex items-center justify-between mb-4 lg:mb-0">
+    <div className="bg-card rounded-2xl border border-divider shadow-sm overflow-hidden h-fit">
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="w-full flex items-center justify-between p-5 hover:bg-muted/30 transition-smooth group"
+        >
           <div className="flex items-center gap-3">
-            <Icon name="FunnelIcon" size={24} className="text-primary" />
-            <h2 className="text-lg font-heading font-semibold text-foreground">Filters</h2>
-            <span className="px-3 py-1 bg-muted text-muted-foreground text-sm rounded-full caption">
-              {totalResults} results
-            </span>
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all">
+              <Icon name="FunnelIcon" size={20} />
+            </div>
+            <div className="text-left">
+              <h2 className="text-sm font-black text-foreground uppercase tracking-widest">Filter Invoices</h2>
+              <p className="text-[10px] text-muted-foreground uppercase font-black tracking-tighter">
+                {totalResults} results discovered
+              </p>
+            </div>
           </div>
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="lg:hidden p-2 hover:bg-muted rounded-md transition-smooth"
-            aria-label="Toggle filters"
-          >
-            <Icon name={isExpanded ? 'ChevronUpIcon' : 'ChevronDownIcon'} size={20} />
-          </button>
-        </div>
+          <Icon name={isExpanded ? 'ChevronUpIcon' : 'ChevronDownIcon'} size={20} className={`transition-transform duration-300 ml-4 ${!isExpanded ? 'lg:rotate-180' : ''}`} />
+        </button>
 
-        <div className={`${isExpanded ? 'block' : 'hidden'} lg:block mt-4 lg:mt-6`}>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className={`${isExpanded ? 'block' : 'hidden'} lg:block px-5 pb-5 border-t border-divider pt-5`}>
+          <div className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Date Range
+              <label className="block text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-3">
+                Calendar Period
               </label>
-              <div className="space-y-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <input
                   type="date"
                   value={filters.dateRange.start}
                   onChange={(e) => handleFilterUpdate('dateRange', { ...filters.dateRange, start: e.target.value })}
-                  className="w-full px-3 py-2 bg-background border border-input rounded-md text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-smooth"
-                  placeholder="Start date"
+                  className="w-full px-4 py-3 bg-muted/50 border border-transparent rounded-xl text-xs font-bold text-foreground focus:bg-background focus:border-primary transition-all"
+                  placeholder="From"
                 />
                 <input
                   type="date"
                   value={filters.dateRange.end}
                   onChange={(e) => handleFilterUpdate('dateRange', { ...filters.dateRange, end: e.target.value })}
-                  className="w-full px-3 py-2 bg-background border border-input rounded-md text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-smooth"
-                  placeholder="End date"
+                  className="w-full px-4 py-3 bg-muted/50 border border-transparent rounded-xl text-xs font-bold text-foreground focus:bg-background focus:border-primary transition-all"
+                  placeholder="To"
                 />
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Payment Status
-              </label>
-              <select
-                value={filters.paymentStatus}
-                onChange={(e) => handleFilterUpdate('paymentStatus', e.target.value)}
-                className="w-full px-3 py-2 bg-background border border-input rounded-md text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-smooth"
-              >
-                {paymentStatuses.map((status) => (
-                  <option key={status.value} value={status.value}>
-                    {status.label}
-                  </option>
-                ))}
-              </select>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-3">
+                  Payment Status
+                </label>
+                <select
+                  value={filters.paymentStatus}
+                  onChange={(e) => handleFilterUpdate('paymentStatus', e.target.value)}
+                  className="w-full px-4 py-3 bg-muted/50 border border-transparent rounded-xl text-xs font-bold text-foreground focus:bg-background focus:border-primary transition-all appearance-none cursor-pointer"
+                >
+                  {paymentStatuses.map((status) => (
+                    <option key={status.value} value={status.value}>
+                      {status.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-3">
+                  Quick Search (Client)
+                </label>
+                <select
+                  value={filters.client}
+                  onChange={(e) => handleFilterUpdate('client', e.target.value)}
+                  className="w-full px-4 py-3 bg-muted/50 border border-transparent rounded-xl text-xs font-bold text-foreground focus:bg-background focus:border-primary transition-all appearance-none cursor-pointer"
+                >
+                  <option value="all">All Clients</option>
+                  {availableClients.map((client) => (
+                    <option key={client.id} value={client.name.toLowerCase().replace(/\s+/g,'-')}>
+                      {client.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Client
+              <label className="block text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-3">
+                Value range
               </label>
-              <select
-                value={filters.client}
-                onChange={(e) => handleFilterUpdate('client', e.target.value)}
-                className="w-full px-3 py-2 bg-background border border-input rounded-md text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-smooth"
-              >
-                {clients.map((client) => (
-                  <option key={client.value} value={client.value}>
-                    {client.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Amount Range
-              </label>
-              <div className="space-y-2">
+              <div className="grid grid-cols-2 gap-3">
                 <input
                   type="number"
                   value={filters.amountRange.min}
                   onChange={(e) => handleFilterUpdate('amountRange', { ...filters.amountRange, min: e.target.value })}
-                  className="w-full px-3 py-2 bg-background border border-input rounded-md text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-smooth"
-                  placeholder="Min amount"
+                  className="w-full px-4 py-3 bg-muted/50 border border-transparent rounded-xl text-xs font-bold text-foreground focus:bg-background focus:border-primary transition-all"
+                  placeholder="Min Value"
                 />
                 <input
                   type="number"
                   value={filters.amountRange.max}
                   onChange={(e) => handleFilterUpdate('amountRange', { ...filters.amountRange, max: e.target.value })}
-                  className="w-full px-3 py-2 bg-background border border-input rounded-md text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-smooth"
-                  placeholder="Max amount"
+                  className="w-full px-4 py-3 bg-muted/50 border border-transparent rounded-xl text-xs font-bold text-foreground focus:bg-background focus:border-primary transition-all"
+                  placeholder="Max Value"
                 />
               </div>
             </div>
-          </div>
 
-          <div className="flex items-center gap-3 mt-4">
-            <button
-              onClick={handleReset}
-              className="flex items-center gap-2 px-4 py-2 bg-muted text-foreground rounded-md text-sm font-medium transition-smooth hover:bg-opacity-80"
-            >
-              <Icon name="ArrowPathIcon" size={18} />
-              <span>Reset Filters</span>
-            </button>
+            <div className="flex pt-2">
+              <button
+                onClick={handleReset}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3.5 bg-muted text-foreground rounded-xl text-xs font-black uppercase tracking-widest transition-all hover:bg-foreground hover:text-white"
+              >
+                <Icon name="ArrowPathIcon" size={16} />
+                <span>Reset Parameters</span>
+              </button>
+            </div>
           </div>
         </div>
-      </div>
     </div>
   );
 };

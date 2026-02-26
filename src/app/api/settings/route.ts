@@ -13,6 +13,7 @@ const userSettingsSchema = z.object({
   tax_label: z.string().min(1),
   invoice_prefix: z.string().min(1),
   invoice_footer: z.string().optional(),
+  default_currency: z.string().min(1),
   email_notifications: z.object({
     paymentReceived: z.boolean(),
     invoiceOverdue: z.boolean(),
@@ -63,6 +64,7 @@ export async function GET(request: NextRequest) {
         tax_label: 'Tax',
         invoice_prefix: 'INV-',
         invoice_footer: null,
+        default_currency: 'KES',
         email_notifications: {
           paymentReceived: true,
           invoiceOverdue: true,

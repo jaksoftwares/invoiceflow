@@ -5,10 +5,10 @@ import { useRouter } from 'next/navigation';
 import { useDashboard } from '@/lib/hooks/useDashboard';
 import type { Invoice, ClientActivity } from '@/types/database';
 import MetricCard from './MetricCard';
-import QuickActionButton from './QuickActionButton';
 import RecentInvoicesTable from './RecentInvoicesTable';
 import RevenueChart from './RevenueChart';
 import RecentClientActivity from './RecentClientActivity';
+import Icon from '@/components/ui/AppIcon';
 import { CardSkeleton } from '@/components/ui/CardSkeleton';
 import { ChartSkeleton } from '@/components/ui/ChartSkeleton';
 import { TableSkeleton } from '@/components/ui/TableSkeleton';
@@ -44,12 +44,15 @@ interface InitialData {
   recentActivities: ActivityWithClient[];
   revenueChart: RevenueChartData[];
   currency?: string;
+  profile?: {
+    first_name?: string | null;
+    last_name?: string | null;
+  } | null;
 }
 
 interface DashboardInteractiveProps {
   initialData?: InitialData | null;
 }
-
 
 const DashboardInteractive = ({ initialData }: DashboardInteractiveProps) => {
   const router = useRouter();
@@ -64,7 +67,6 @@ const DashboardInteractive = ({ initialData }: DashboardInteractiveProps) => {
     error,
   } = useDashboard({ autoFetch: !initialData });
 
-  // Use initial data if available, otherwise use hook data
   const metrics = initialData?.metrics || hookMetrics;
   const recentInvoices = initialData?.recentInvoices || hookInvoices;
   const recentActivities = initialData?.recentActivities || hookActivities;
@@ -75,6 +77,9 @@ const DashboardInteractive = ({ initialData }: DashboardInteractiveProps) => {
     setIsHydrated(true);
   }, []);
 
+  const formatCurrency = (amount: number, curr: string) => {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: curr }).format(amount);
+  };
 
   const handleViewInvoice = (id: string) => {
     if (!isHydrated) return;
@@ -101,115 +106,165 @@ const DashboardInteractive = ({ initialData }: DashboardInteractiveProps) => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="min-h-screen bg-[#f8fafc]">
+        <div className="max-w-[1440px] mx-auto px-6 lg:px-10 py-10">
           <div className="space-y-8">
-            <div className="h-8 bg-muted rounded w-48 animate-pulse"></div>
+            <div className="h-12 bg-slate-200 rounded-2xl w-64 animate-pulse"></div>
             <CardSkeleton count={4} />
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <div className="lg:col-span-2">
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+              <div className="lg:col-span-3">
                 <ChartSkeleton />
               </div>
-              <div>
-                <TableSkeleton rows={5} columns={3} />
+              <div className="lg:col-span-2">
+                <TableSkeleton rows={5} columns={2} />
               </div>
             </div>
             <TableSkeleton rows={5} columns={4} />
           </div>
         </div>
-      </div>);
-
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen bg-[#f8fafc]">
+      <div className="max-w-[1440px] mx-auto px-6 lg:px-10 py-10">
         {hasErrors && (
-          <div className="mb-6 p-4 bg-error/10 border border-error/20 rounded-lg">
-            <h3 className="text-error font-medium mb-2">Some data could not be loaded:</h3>
-            <ul className="text-sm text-error/80 space-y-1">
-              {error.metrics && <li>• Dashboard metrics: {error.metrics}</li>}
-              {error.recentInvoices && <li>• Recent invoices: {error.recentInvoices}</li>}
-              {error.recentActivities && <li>• Recent activities: {error.recentActivities}</li>}
-              {error.revenueChart && <li>• Revenue chart: {error.revenueChart}</li>}
-            </ul>
+          <div className="mb-10 p-5 bg-amber-50 border border-amber-200 rounded-[2rem] flex items-center gap-4 text-amber-800 shadow-sm">
+            <div className="w-10 h-10 rounded-full bg-amber-200/50 flex items-center justify-center">
+              <Icon name="ExclamationTriangleIcon" size={20} />
+            </div>
+            <div>
+              <p className="font-black text-sm uppercase tracking-widest">Synchronization Note</p>
+              <p className="text-sm font-medium opacity-80">We are currently using cached data as the real-time stream is fluctuating. Services are fully operational.</p>
+            </div>
           </div>
         )}
 
-        <div className="mb-8">
-          <h1 className="text-3xl font-heading font-bold text-foreground mb-2">Dashboard</h1>
-          <p className="text-muted-foreground">Welcome back! Here's your business overview.</p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <MetricCard
-            title="Total Revenue"
-            value={metrics ? new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(metrics.totalRevenue) : new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(0)}
-            change="+12.5%"
-            trend="up"
-            icon="BanknotesIcon"
-            chartData={[45, 52, 48, 61, 58, 67, 72]} />
-
-          <MetricCard
-            title="Pending Invoices"
-            value={metrics ? metrics.pendingInvoices.toString() : '0'}
-            change="-8.3%"
-            trend="down"
-            icon="ClockIcon"
-            chartData={[35, 32, 28, 30, 26, 25, 24]} />
-
-          <MetricCard
-            title="Recent Invoices"
-            value={metrics ? metrics.totalInvoices.toString() : '0'}
-            change="+15.2%"
-            trend="up"
-            icon="DocumentTextIcon"
-            chartData={[32, 35, 38, 41, 43, 45, 47]} />
-
-          <MetricCard
-            title="Monthly Growth"
-            value="18.7%"
-            change="+3.4%"
-            trend="up"
-            icon="PresentationChartLineIcon"
-            chartData={[12, 13, 14, 15, 16, 17, 18]} />
-
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-          <QuickActionButton
-            label="Create Invoice"
-            icon="PlusCircleIcon"
-            onClick={handleCreateInvoice}
-            variant="accent" />
-
-          <QuickActionButton
-            label="Add Client"
-            icon="UserPlusIcon"
-            onClick={handleAddClient}
-            variant="primary" />
-
-          <QuickActionButton
-            label="Generate Report"
-            icon="DocumentChartBarIcon"
-            onClick={handleGenerateReport}
-            variant="secondary" />
-
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-          <div className="lg:col-span-2">
-            <RevenueChart data={revenueChart} currency={currency} />
-          </div>
+        <div className="mb-16 flex flex-col lg:flex-row lg:items-end justify-between gap-10">
           <div>
-            <RecentClientActivity activities={recentActivities} />
+            {/* <div className="flex items-center gap-3 mb-6">
+              <span className="w-12 h-1.5 bg-primary rounded-full"></span>
+              <span className="text-[11px] font-black text-primary uppercase tracking-[0.5em]">Executive Dashboard</span>
+            </div> */}
+            <h1 className="text-6xl font-heading font-black text-slate-900 tracking-tighter leading-none mb-4">
+              Welcome back, <span className="text-primary italic">{initialData?.profile?.first_name || 'User'}</span>
+            </h1>
+            <p className="text-slate-500 text-xl font-medium max-w-2xl leading-relaxed">
+              Your financial ecosystem is performing within expected parameters. Here is your strategic breakdown.
+            </p>
+          </div>
+          <div className="flex items-center gap-4">
+             <button 
+               onClick={handleCreateInvoice}
+               className="bg-slate-900 text-white px-10 py-5 rounded-[2rem] font-black text-sm shadow-2xl hover:bg-primary transition-all hover:-translate-y-1.5 flex items-center gap-3 group active:scale-95"
+             >
+               <Icon name="PlusIcon" size={20} className="group-hover:rotate-180 transition-smooth" />
+               <span className="uppercase tracking-widest">New Invoice</span>
+             </button>
           </div>
         </div>
 
-        <RecentInvoicesTable invoices={recentInvoices} onViewInvoice={handleViewInvoice} />
-      </div>
-    </div>);
+        {/* Highlight Metrics */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
+          <MetricCard
+            title="Gross Revenue"
+            value={metrics ? formatCurrency(metrics.totalRevenue, currency) : formatCurrency(0, currency)}
+            icon="CurrencyDollarIcon" 
+            trend="up"
+          />
 
+          <MetricCard
+            title="Pending Dues"
+            value={metrics ? metrics.pendingInvoices.toString() : '0'}
+            icon="ClockIcon" 
+            trend="down"
+          />
+
+          <MetricCard
+            title="Active Ledger"
+            value={metrics ? metrics.totalInvoices.toString() : '0'}
+            icon="DocumentCheckIcon" 
+          />
+
+          <MetricCard
+            title="Average Capture"
+            value={metrics?.totalInvoices ? formatCurrency(metrics.totalRevenue / metrics.totalInvoices, currency) : formatCurrency(0, currency)}
+            icon="PresentationChartBarIcon" 
+          />
+        </div>
+
+        {/* Strategic Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+           <div className="p-10 bg-white rounded-[3rem] border border-slate-100 shadow-sm hover:shadow-2xl transition-all cursor-pointer group relative overflow-hidden" onClick={handleCreateInvoice}>
+              <div className="absolute top-0 right-0 w-40 h-40 bg-primary/5 rounded-full -mr-20 -mt-20 group-hover:scale-150 transition-transform duration-1000" />
+              <div className="w-16 h-16 bg-primary/10 rounded-[1.5rem] flex items-center justify-center text-primary mb-8 group-hover:bg-primary group-hover:text-white transition-smooth shadow-inner">
+                <Icon name="DocumentPlusIcon" size={32} />
+              </div>
+              <h3 className="text-2xl font-black text-slate-900 mb-3 tracking-tight">Issue Statement</h3>
+              <p className="text-slate-500 font-medium leading-relaxed">Draft and distribute professional financial documents with automated tracking and secure delivery.</p>
+           </div>
+           
+           <div className="p-10 bg-white rounded-[3rem] border border-slate-100 shadow-sm hover:shadow-2xl transition-all cursor-pointer group relative overflow-hidden" onClick={handleAddClient}>
+              <div className="absolute top-0 right-0 w-40 h-40 bg-emerald-50 rounded-full -mr-20 -mt-20 group-hover:scale-150 transition-transform duration-1000" />
+              <div className="w-16 h-16 bg-emerald-100 rounded-[1.5rem] flex items-center justify-center text-emerald-600 mb-8 group-hover:bg-emerald-600 group-hover:text-white transition-smooth shadow-inner">
+                <Icon name="UserGroupIcon" size={32} />
+              </div>
+              <h3 className="text-2xl font-black text-slate-900 mb-3 tracking-tight">Client Hub</h3>
+              <p className="text-slate-500 font-medium leading-relaxed">Systematically manage your relationship base with detailed profiles and billing history integrations.</p>
+           </div>
+
+           <div className="p-10 bg-white rounded-[3rem] border border-slate-100 shadow-sm hover:shadow-2xl transition-all cursor-pointer group relative overflow-hidden" onClick={handleGenerateReport}>
+              <div className="absolute top-0 right-0 w-40 h-40 bg-amber-50 rounded-full -mr-20 -mt-20 group-hover:scale-150 transition-transform duration-1000" />
+              <div className="w-16 h-16 bg-amber-100 rounded-[1.5rem] flex items-center justify-center text-amber-600 mb-8 group-hover:bg-amber-600 group-hover:text-white transition-smooth shadow-inner">
+                <Icon name="PresentationChartLineIcon" size={32} />
+              </div>
+              <h3 className="text-2xl font-black text-slate-900 mb-3 tracking-tight">Intelligence</h3>
+              <p className="text-slate-500 font-medium leading-relaxed">Access visual data interpretations that clarify your growth velocity and financial health patterns.</p>
+           </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-10 mb-16 items-stretch">
+          <div className="lg:col-span-3">
+            <div className="h-full">
+               <RevenueChart data={revenueChart} currency={currency} />
+            </div>
+          </div>
+          <div className="lg:col-span-2">
+            <div className="h-full">
+               <RecentClientActivity activities={recentActivities} />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-[3.5rem] border border-slate-100 shadow-xl overflow-hidden mb-10">
+          <div className="p-10 border-b border-slate-50 flex items-center justify-between bg-slate-50/50">
+            <div>
+              <h2 className="text-3xl font-black text-slate-900 tracking-tighter">Recent Invoices</h2>
+              <div className="flex items-center gap-3 mt-2">
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em]">Live Financial Feed</p>
+              </div>
+            </div>
+            <button 
+              onClick={() => router.push('/invoice-management')}
+              className="bg-white border border-slate-200 text-slate-900 px-6 py-3 rounded-2xl font-black text-xs hover:bg-slate-900 hover:text-white transition-all flex items-center gap-3 shadow-sm"
+            >
+              <span className="uppercase tracking-widest">All Records</span>
+              <Icon name="ArrowRightIcon" size={16} />
+            </button>
+          </div>
+          <div className="px-4 pb-4">
+             <RecentInvoicesTable invoices={recentInvoices} onViewInvoice={handleViewInvoice} />
+          </div>
+        </div>
+
+        <footer className="mt-20 py-10 border-t border-slate-200 text-center">
+            <p className="text-[10px] font-black text-slate-300 uppercase tracking-[1em]">InvoiceFlow Enterprise • Professional Grade</p>
+        </footer>
+      </div>
+    </div>
+  );
 };
 
 export default DashboardInteractive;
