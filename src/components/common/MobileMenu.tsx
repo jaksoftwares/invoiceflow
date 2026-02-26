@@ -33,7 +33,7 @@ const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
 
   const handleLogout = async () => {
     try {
-      const { error } = await supabase.signOut();
+      const { error } = await supabase.auth.signOut();
       if (error) throw error;
       toast.success('Signed out');
       router.push('/auth/login');
