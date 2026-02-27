@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import type { Invoice, InvoiceItem } from '@/types/database';
 import { recordClientActivity } from './activities';
+import { checkUsageLimit, incrementUsage, logActivity } from './subscription';
 
 interface CreateInvoiceParams extends Omit<Invoice, 'id' | 'user_id' | 'created_at' | 'updated_at'> {
   items: Omit<InvoiceItem, 'id' | 'invoice_id' | 'created_at'>[];
@@ -27,6 +28,12 @@ export async function createInvoiceAction(invoiceData: CreateInvoiceParams): Pro
 
   if (clientError || !client) {
     throw new Error('Client not found or access denied');
+  }
+
+  // Check subscription limits
+  const usageCheck = await checkUsageLimit('invoices_created');
+  if (!usageCheck.allowed) {
+    throw new Error(`Limit reached: ${usageCheck.reason}`);
   }
 
   // Generate slug
@@ -70,6 +77,15 @@ export async function createInvoiceAction(invoiceData: CreateInvoiceParams): Pro
     activity: `Invoice #${invoiceData.invoice_number} created for ${formatCurrency(invoiceData.total_amount, invoiceData.currency)}`,
     type: 'invoice_sent',
     metadata: { invoiceId: createdInvoice.id }
+  });
+
+  // Increment usage
+  await incrementUsage('invoices_created');
+  
+  // Log activity
+  await logActivity('invoice_created', createdInvoice.id, { 
+    invoice_number: invoiceData.invoice_number,
+    total_amount: invoiceData.total_amount 
   });
 
   return createdInvoice;

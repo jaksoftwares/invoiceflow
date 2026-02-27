@@ -37,6 +37,12 @@ export const MAIN_NAVIGATION: NavigationItem[] = [
     description: 'Financial insights and analytics'
   },
   { 
+    label: 'Subscriptions', 
+    path: '/dashboard/subscription', 
+    icon: 'CreditCardIcon',
+    description: 'Manage your plan and usage'
+  },
+  { 
     label: 'Settings', 
     path: '/user-profile-settings', 
     icon: 'Cog6ToothIcon',

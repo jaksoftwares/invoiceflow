@@ -2,6 +2,7 @@ import React from 'react';
 import NavigationWrapper from '../../components/common/NavigationWrapper';
 import DashboardInteractive from './components/DashboardInteractive';
 import { createClient } from '@/lib/supabase/server';
+import { getActiveSubscription, getUsageStats, initializeFreeSubscription } from '@/lib/actions/subscription';
 
 export default async function DashboardPage() {
   const supabase = createClient();
@@ -11,7 +12,15 @@ export default async function DashboardPage() {
 
   let initialData = null;
   if (user) {
+    // Initialize free subscription if needed
+    await initializeFreeSubscription();
+
     // Fetch metrics
+    const [sub, usage] = await Promise.all([
+      getActiveSubscription(),
+      getUsageStats(),
+    ]);
+
     const { count: totalInvoices } = await supabase
       .from('invoices')
       .select('*', { count: 'exact', head: true })
@@ -94,6 +103,8 @@ export default async function DashboardPage() {
       recentActivities: recentActivities || [],
       revenueChart,
       currency,
+      subscription: sub,
+      usage: usage,
     };
   }
 

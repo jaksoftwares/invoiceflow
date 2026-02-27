@@ -48,6 +48,8 @@ interface InitialData {
     first_name?: string | null;
     last_name?: string | null;
   } | null;
+  subscription?: any;
+  usage?: any;
 }
 
 interface DashboardInteractiveProps {
@@ -141,6 +143,26 @@ const DashboardInteractive = ({ initialData }: DashboardInteractiveProps) => {
           </div>
         )}
 
+        {(initialData?.usage?.invoices_created / initialData?.subscription?.plans?.max_invoices_per_month) >= 0.8 && (
+          <div className="mb-10 p-6 bg-gradient-to-r from-rose-500 to-orange-500 rounded-[2.5rem] flex flex-col md:flex-row items-center justify-between gap-6 text-white shadow-2xl animate-pulse">
+            <div className="flex items-center gap-5">
+              <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center">
+                <Icon name="BoltIcon" size={28} />
+              </div>
+              <div>
+                <h3 className="text-xl font-black uppercase tracking-tight">Usage Limit Alert</h3>
+                <p className="font-medium opacity-90">You have used {initialData?.usage?.invoices_created} of your {initialData?.subscription?.plans?.max_invoices_per_month} monthly invoices. Upgrade now to avoid service interruption.</p>
+              </div>
+            </div>
+            <button 
+              onClick={() => router.push('/dashboard/subscription')}
+              className="bg-white text-rose-500 px-8 py-4 rounded-2xl font-black text-sm uppercase tracking-widest hover:scale-105 transition-transform active:scale-95 whitespace-nowrap"
+            >
+              Upgrade Plan
+            </button>
+          </div>
+        )}
+
         <div className="mb-16 flex flex-col lg:flex-row lg:items-end justify-between gap-10">
           <div>
             {/* <div className="flex items-center gap-3 mb-6">
@@ -161,6 +183,21 @@ const DashboardInteractive = ({ initialData }: DashboardInteractiveProps) => {
              >
                <Icon name="PlusIcon" size={20} className="group-hover:rotate-180 transition-smooth" />
                <span className="uppercase tracking-widest">New Invoice</span>
+             </button>
+             <button 
+               onClick={() => router.push('/dashboard/subscription')}
+               className="bg-white border-2 border-primary/20 text-primary px-10 py-5 rounded-[2rem] font-black text-sm shadow-xl hover:bg-primary/5 transition-all hover:-translate-y-1.5 flex flex-col items-center justify-center group active:scale-95"
+             >
+               <div className="flex items-center gap-2 mb-1">
+                 <Icon name="CreditCardIcon" size={16} />
+                 <span className="uppercase tracking-widest leading-none">{initialData?.subscription?.plans?.name || 'Free'} Plan</span>
+               </div>
+               <div className="w-full h-1 bg-primary/10 rounded-full overflow-hidden min-w-[120px]">
+                 <div 
+                   className="h-full bg-primary" 
+                   style={{ width: `${Math.min(((initialData?.usage?.invoices_created || 0) / (initialData?.subscription?.plans?.max_invoices_per_month || 5)) * 100, 100)}%` }}
+                 />
+               </div>
              </button>
           </div>
         </div>

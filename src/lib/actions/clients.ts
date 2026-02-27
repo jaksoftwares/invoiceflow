@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import type { Client } from '@/types/database';
 import { recordClientActivity } from './activities';
+import { checkUsageLimit, incrementUsage, logActivity } from './subscription';
 
 export async function createClientAction(clientData: Omit<Client, 'id' | 'user_id' | 'total_billed' | 'outstanding_balance' | 'created_at' | 'updated_at'>): Promise<Client> {
   const supabase = createClient();
@@ -11,6 +12,12 @@ export async function createClientAction(clientData: Omit<Client, 'id' | 'user_i
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) {
     throw new Error('Unauthorized');
+  }
+
+  // Check subscription limits
+  const usageCheck = await checkUsageLimit('clients_created');
+  if (!usageCheck.allowed) {
+    throw new Error(`Limit reached: ${usageCheck.reason}`);
   }
 
   const { data: client, error } = await supabase
@@ -35,6 +42,14 @@ export async function createClientAction(clientData: Omit<Client, 'id' | 'user_i
     clientId: client.id,
     activity: `Added as a new client`,
     type: 'new',
+  });
+
+  // Increment usage
+  await incrementUsage('clients_created');
+
+  // Log activity
+  await logActivity('client_created', client.id, { 
+    company_name: client.company_name 
   });
 
   return client;
