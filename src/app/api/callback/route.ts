@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
 
       if (payment) {
         console.log('Subscription payment record updated. Activating subscription...');
-        await activateSubscription(supabase, payment.user_id, payment.subscription_id);
+        await activateSubscription(supabase, payment.user_id, payment.plan_id, mpesaReceipt, amount);
       } else {
         // 2. If not found in subscriptions, check PAYG transactions
         const { data: payg, error: paygError } = await supabase
@@ -86,7 +86,9 @@ export async function POST(req: NextRequest) {
   }
 }
 
-async function activateSubscription(supabase: any, userId: string, planId: string) {
+import { sendSubscriptionConfirmationEmail } from '@/lib/actions/subscription-emails';
+
+async function activateSubscription(supabase: any, userId: string, planId: string, mpesaReceipt: string, amount: number) {
   // Get the plan details to calculate duration (usually 1 month)
   const { data: plan } = await supabase.from('plans').select('*').eq('id', planId).single();
   
@@ -139,4 +141,13 @@ async function activateSubscription(supabase: any, userId: string, planId: strin
   }
   
   console.log(`Subscription activated for user ${userId} on plan ${plan.name}`);
+
+  // Send confirmation email
+  await sendSubscriptionConfirmationEmail({
+    userId,
+    planName: plan.name,
+    amount,
+    mpesaReceipt,
+    expiryDate: expiry.toISOString()
+  });
 }

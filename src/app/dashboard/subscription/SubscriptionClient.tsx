@@ -13,6 +13,7 @@ interface SubscriptionClientProps {
   plans: any[];
   payments: any[];
   userEmail: string | undefined;
+  initialPhone: string;
 }
 
 export default function SubscriptionClient({ 
@@ -20,31 +21,45 @@ export default function SubscriptionClient({
   initialUsage, 
   plans, 
   payments,
-  userEmail
+  userEmail,
+  initialPhone
 }: SubscriptionClientProps) {
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState(initialPhone || '');
   const [loading, setLoading] = useState<string | null>(null);
   const [activeRequestId, setActiveRequestId] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'alert' | 'error', text: string } | null>(null);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [selectedPlanForUpgrade, setSelectedPlanForUpgrade] = useState<any>(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successData, setSuccessData] = useState<{ plan: string, amount: number } | null>(null);
   const router = useRouter();
 
   const activePlan = initialSubscription?.plans || plans.find(p => p.name === 'Free');
   
-  const handleUpgrade = async (plan: any) => {
+  const handleUpgrade = (plan: any) => {
+    setSelectedPlanForUpgrade(plan);
+    setShowUpgradeModal(true);
+    setMessage(null);
+  };
+
+  const confirmUpgrade = async () => {
+    if (!selectedPlanForUpgrade) return;
+    
     if (!phoneNumber) {
-      setMessage({ type: 'error', text: 'Please enter your M-Pesa phone number first.' });
+      setMessage({ type: 'error', text: 'Please enter a valid M-Pesa phone number.' });
       return;
     }
 
-    setLoading(plan.id);
+    setLoading(selectedPlanForUpgrade.id);
     setMessage(null);
 
     try {
-      const amount = plan.price_monthly || plan.price_lifetime;
-      const result = await initiateStkPush(phoneNumber, amount, 'subscription', plan.id);
+      const amount = selectedPlanForUpgrade.price_monthly || selectedPlanForUpgrade.price_lifetime;
+      const result = await initiateStkPush(phoneNumber, amount, 'subscription', selectedPlanForUpgrade.id);
       
       if (result.success) {
         setActiveRequestId(result.checkoutRequestId || null);
+        setShowUpgradeModal(false); // Close modal while processing push
         setMessage({ 
           type: 'alert', 
           text: 'STK Push sent! Please enter your M-Pesa PIN on your phone. We are waiting for confirmation...' 
@@ -69,6 +84,11 @@ export default function SubscriptionClient({
           
           if (status === 'completed') {
             clearInterval(pollInterval);
+            const plan = plans.find(p => p.id === loading);
+            if (plan) {
+              setSuccessData({ plan: plan.name, amount: plan.price_monthly || plan.price_lifetime });
+              setShowSuccessModal(true);
+            }
             setActiveRequestId(null);
             setLoading(null);
             setMessage({ type: 'success', text: 'Payment successful! Your plan has been upgraded.' });
@@ -141,158 +161,111 @@ export default function SubscriptionClient({
       </div>
 
       {/* Usage Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 bg-card rounded-3xl border border-border p-8 shadow-elevation-1">
-          <div className="flex items-center gap-3 mb-8">
-            <BarChart className="text-primary w-6 h-6" />
-            <h2 className="text-2xl font-heading font-semibold">Current Usage</h2>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-            {/* Invoices Usage */}
-            <div className="space-y-4">
-              <div className="flex justify-between items-end">
-                <div>
-                  <p className="font-medium text-foreground">Invoices Created</p>
-                  <p className="text-sm text-muted-foreground">This billing cycle</p>
-                </div>
-                <span className="text-lg font-bold">
-                  {initialUsage?.invoices_created || 0} / {activePlan?.max_invoices_per_month === 0 ? '∞' : activePlan?.max_invoices_per_month}
-                </span>
-              </div>
-              <div className="h-4 bg-muted rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-primary transition-all duration-500 ease-out"
-                  style={{ width: `${calculateUsagePercent(initialUsage?.invoices_created || 0, activePlan?.max_invoices_per_month)}%` }}
-                />
-              </div>
-            </div>
-
-            {/* Clients Usage */}
-            <div className="space-y-4">
-              <div className="flex justify-between items-end">
-                <div>
-                  <p className="font-medium text-foreground">Clients Added</p>
-                  <p className="text-sm text-muted-foreground">Account lifetime</p>
-                </div>
-                <span className="text-lg font-bold">
-                  {initialUsage?.clients_created || 0} / {activePlan?.max_clients === 0 ? '∞' : activePlan?.max_clients}
-                </span>
-              </div>
-              <div className="h-4 bg-muted rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-accent transition-all duration-500 ease-out"
-                  style={{ width: `${calculateUsagePercent(initialUsage?.clients_created || 0, activePlan?.max_clients)}%` }}
-                />
-              </div>
-            </div>
-
-            {/* Email Sends Usage */}
-            <div className="space-y-4">
-              <div className="flex justify-between items-end">
-                <div>
-                  <p className="font-medium text-foreground">Emails Sent</p>
-                  <p className="text-sm text-muted-foreground">This billing cycle</p>
-                </div>
-                <span className="text-lg font-bold">
-                  {initialUsage?.emails_sent || 0} / {activePlan?.max_email_sends === 0 ? '∞' : activePlan?.max_email_sends}
-                </span>
-              </div>
-              <div className="h-4 bg-muted rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-secondary transition-all duration-500 ease-out"
-                  style={{ width: `${calculateUsagePercent(initialUsage?.emails_sent || 0, activePlan?.max_email_sends)}%` }}
-                />
-              </div>
-            </div>
-
-            {/* Products Usage */}
-            <div className="space-y-4">
-              <div className="flex justify-between items-end">
-                <div>
-                  <p className="font-medium text-foreground">Products Added</p>
-                  <p className="text-sm text-muted-foreground">Account lifetime</p>
-                </div>
-                <span className="text-lg font-bold">
-                  {initialUsage?.products_created || 0} / {activePlan?.max_products === 0 ? '∞' : activePlan?.max_products}
-                </span>
-              </div>
-              <div className="h-4 bg-muted rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-success transition-all duration-500 ease-out"
-                  style={{ width: `${calculateUsagePercent(initialUsage?.products_created || 0, activePlan?.max_products)}%` }}
-                />
-              </div>
-            </div>
-          </div>
+      <div className="bg-card rounded-3xl border border-border p-8 shadow-elevation-1">
+        <div className="flex items-center gap-3 mb-8">
+          <BarChart className="text-primary w-6 h-6" />
+          <h2 className="text-2xl font-heading font-semibold">Current Usage</h2>
         </div>
-
-        {/* M-Pesa Checkout Card */}
-        <div className="relative overflow-hidden bg-white dark:bg-slate-900 rounded-3xl border-2 border-primary/30 p-8 shadow-elevation-2 flex flex-col justify-center">
-          {/* Subtle background decoration */}
-          <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-40 h-40 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/2 w-40 h-40 bg-accent/10 rounded-full blur-3xl pointer-events-none" />
-          
-          <div className="relative z-10">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center border border-primary/20">
-                <CreditCard className="text-primary w-5 h-5" />
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
+          {/* Invoices Usage */}
+          <div className="space-y-4">
+            <div className="flex justify-between items-end">
+              <div>
+                <p className="font-medium text-foreground">Invoices Created</p>
+                <p className="text-sm text-muted-foreground">This billing cycle</p>
               </div>
-              <h2 className="text-2xl font-heading font-black text-slate-900 dark:text-white tracking-tight">Payment Details</h2>
+              <span className="text-lg font-bold">
+                {initialUsage?.invoices_created || 0} / {activePlan?.max_invoices_per_month === 0 ? '∞' : activePlan?.max_invoices_per_month}
+              </span>
             </div>
-            
-            <p className="text-slate-600 dark:text-slate-400 font-medium mb-8 leading-relaxed">
-              Link your M-Pesa phone number to enable <span className="text-primary font-bold">one-click upgrades</span> and instant <span className="text-accent font-bold">PAYG</span> purchases.
-            </p>
-            
-            <div className="space-y-5">
-              <div className="space-y-2">
-                <label className="text-xs font-black uppercase tracking-widest text-primary ml-1">
-                  M-Pesa Phone Number
-                </label>
-                <div className="relative group">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-primary transition-colors">
-                    <span className="text-sm font-bold">+254</span>
-                  </div>
-                  <input 
-                    type="text" 
-                    placeholder="712345678"
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
-                    className="w-full pl-16 pr-4 py-4 rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all font-bold text-lg shadow-inner"
-                  />
-                </div>
-                <p className="text-[10px] text-slate-500 dark:text-slate-500 mt-1 ml-1">
-                  We'll send an STK push to this number for all transactions.
-                </p>
-              </div>
+            <div className="h-4 bg-muted rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-primary transition-all duration-500 ease-out"
+                style={{ width: `${calculateUsagePercent(initialUsage?.invoices_created || 0, activePlan?.max_invoices_per_month)}%` }}
+              />
+            </div>
+          </div>
 
-              {message && (
-                <div className={`p-4 rounded-2xl border-2 flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2 ${
-                  message.type === 'success' 
-                    ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-500/30 text-emerald-600 dark:text-emerald-400' 
-                    : message.type === 'alert'
-                    ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-500/30 text-amber-600 dark:text-amber-400'
-                    : 'bg-rose-50 dark:bg-rose-950/20 border-rose-500/30 text-rose-600 dark:text-rose-400'
-                }`}>
-                  <div className={`p-1.5 rounded-full ${
-                    message.type === 'success' ? 'bg-emerald-500/20' : 
-                    message.type === 'alert' ? 'bg-amber-500/20' : 
-                    'bg-rose-500/20'
-                  }`}>
-                    {message.type === 'alert' ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    ) : (
-                      <Icon name={message.type === 'success' ? 'CheckIcon' : 'XMarkIcon'} size={14} />
-                    )}
-                  </div>
-                  <span className="text-sm font-bold">{message.text}</span>
-                </div>
-              )}
+          {/* Clients Usage */}
+          <div className="space-y-4">
+            <div className="flex justify-between items-end">
+              <div>
+                <p className="font-medium text-foreground">Clients Added</p>
+                <p className="text-sm text-muted-foreground">Account lifetime</p>
+              </div>
+              <span className="text-lg font-bold">
+                {initialUsage?.clients_created || 0} / {activePlan?.max_clients === 0 ? '∞' : activePlan?.max_clients}
+              </span>
+            </div>
+            <div className="h-4 bg-muted rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-accent transition-all duration-500 ease-out"
+                style={{ width: `${calculateUsagePercent(initialUsage?.clients_created || 0, activePlan?.max_clients)}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Email Sends Usage */}
+          <div className="space-y-4">
+            <div className="flex justify-between items-end">
+              <div>
+                <p className="font-medium text-foreground">Emails Sent</p>
+                <p className="text-sm text-muted-foreground">This billing cycle</p>
+              </div>
+              <span className="text-lg font-bold">
+                {initialUsage?.emails_sent || 0} / {activePlan?.max_email_sends === 0 ? '∞' : activePlan?.max_email_sends}
+              </span>
+            </div>
+            <div className="h-4 bg-muted rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-secondary transition-all duration-500 ease-out"
+                style={{ width: `${calculateUsagePercent(initialUsage?.emails_sent || 0, activePlan?.max_email_sends)}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Products Usage */}
+          <div className="space-y-4">
+            <div className="flex justify-between items-end">
+              <div>
+                <p className="font-medium text-foreground">Products Added</p>
+                <p className="text-sm text-muted-foreground">Account lifetime</p>
+              </div>
+              <span className="text-lg font-bold">
+                {initialUsage?.products_created || 0} / {activePlan?.max_products === 0 ? '∞' : activePlan?.max_products}
+              </span>
+            </div>
+            <div className="h-4 bg-muted rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-success transition-all duration-500 ease-out"
+                style={{ width: `${calculateUsagePercent(initialUsage?.products_created || 0, activePlan?.max_products)}%` }}
+              />
             </div>
           </div>
         </div>
       </div>
+
+      {message && message.type !== 'success' && (
+        <div className={`p-6 rounded-3xl border-2 flex items-center gap-4 animate-in fade-in slide-in-from-bottom-2 ${
+          message.type === 'alert'
+            ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-500/30 text-amber-600 dark:text-amber-400'
+            : 'bg-rose-50 dark:bg-rose-950/20 border-rose-500/30 text-rose-600 dark:text-rose-400'
+        }`}>
+          <div className={`p-2 rounded-full ${
+            message.type === 'alert' ? 'bg-amber-500/20' : 'bg-rose-500/20'
+          }`}>
+            {message.type === 'alert' ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <Icon name="XMarkIcon" size={20} />
+            )}
+          </div>
+          <div>
+            <p className="font-bold">{message.text}</p>
+          </div>
+        </div>
+      )}
 
       {/* Plans Selection */}
       <h2 className="text-3xl font-heading font-bold mt-12 mb-8 text-center">Available Plans</h2>
@@ -422,6 +395,150 @@ export default function SubscriptionClient({
           </table>
         </div>
       </div>
+
+      {/* Upgrade Choice Modal */}
+      {showUpgradeModal && selectedPlanForUpgrade && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[110] flex items-center justify-center p-4 animate-in fade-in duration-300">
+           <div className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-[2.5rem] border border-primary/20 shadow-2xl overflow-hidden animate-in zoom-in slide-in-from-bottom-4 duration-500">
+              <div className="bg-primary/5 p-8 border-b border-primary/10">
+                 <div className="flex items-center gap-4 mb-6">
+                    <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center">
+                       <CreditCard className="text-primary w-6 h-6" />
+                    </div>
+                    <div>
+                       <h2 className="text-2xl font-black text-slate-900 dark:text-white leading-tight">Secure Upgrade</h2>
+                       <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">Complete your payment via M-Pesa</p>
+                    </div>
+                 </div>
+
+                 <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-primary/20 flex items-center justify-between">
+                    <div>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">Selected Plan</p>
+                        <p className="text-lg font-black text-slate-900 dark:text-white capitalize">{selectedPlanForUpgrade.name}</p>
+                    </div>
+                    <div className="text-right">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">Price</p>
+                        <p className="text-lg font-black text-primary uppercase">KES {selectedPlanForUpgrade.price_monthly || selectedPlanForUpgrade.price_lifetime}</p>
+                    </div>
+                 </div>
+              </div>
+
+              <div className="p-8 space-y-6">
+                 <div className="space-y-3">
+                    <label className="text-xs font-black uppercase tracking-widest text-primary ml-1">
+                       M-Pesa Phone Number
+                    </label>
+                    <div className="relative group">
+                       <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-primary transition-colors">
+                          <span className="text-sm font-bold">+254</span>
+                       </div>
+                       <input 
+                         type="text" 
+                         placeholder="712345678"
+                         value={phoneNumber}
+                         onChange={(e) => setPhoneNumber(e.target.value)}
+                         className="w-full pl-16 pr-4 py-4 rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all font-bold text-lg"
+                       />
+                    </div>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-500 mt-1 ml-1 text-center italic">
+                       An STK push will be sent to this number.
+                    </p>
+                 </div>
+
+                 {message && message.type === 'error' && (
+                    <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/20 border-2 border-rose-500/30 text-rose-600 dark:text-rose-400 flex items-center gap-3">
+                       <Icon name="XMarkIcon" size={16} />
+                       <span className="text-xs font-bold">{message.text}</span>
+                    </div>
+                 )}
+
+                 <div className="grid grid-cols-2 gap-4 pt-2">
+                    <button 
+                      onClick={() => setShowUpgradeModal(false)}
+                      className="py-4 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-slate-200 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      onClick={confirmUpgrade}
+                      disabled={loading === selectedPlanForUpgrade.id}
+                      className="py-4 bg-primary text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-elevation-2 hover:shadow-elevation-4 hover:-translate-y-1 transition-all disabled:opacity-50 disabled:translate-y-0 flex items-center justify-center gap-2"
+                    >
+                      {loading === selectedPlanForUpgrade.id ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      ) : (
+                        <>
+                          Confirm & Pay
+                          <ArrowUpRight className="w-4 h-4" />
+                        </>
+                      )}
+                    </button>
+                 </div>
+              </div>
+           </div>
+        </div>
+      )}
+
+      {/* Success Success Success Modal */}
+      {showSuccessModal && successData && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md z-[110] flex items-center justify-center p-4 animate-in fade-in duration-300">
+           <div className="bg-white dark:bg-slate-900 w-full max-w-xl rounded-[2.5rem] border border-emerald-500/20 shadow-2xl overflow-hidden animate-in zoom-in slide-in-from-bottom-4 duration-500">
+              <div className="relative bg-emerald-500 py-12 px-8 text-center text-white overflow-hidden">
+                 {/* Decorative elements */}
+                 <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+                 <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/2" />
+                 
+                 <div className="relative z-10">
+                    <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-6 backdrop-blur-sm border border-white/30 animate-bounce">
+                       <CheckCircle className="w-10 h-10 text-white" />
+                    </div>
+                    <h2 className="text-3xl font-black uppercase tracking-tighter mb-2">Upgrade Successful!</h2>
+                    <p className="text-emerald-50 font-bold opacity-90 capitalize">Welcome to the {successData!.plan} Plan</p>
+                 </div>
+              </div>
+
+              <div className="p-10 space-y-8">
+                 <div className="flex items-center justify-between p-6 bg-slate-50 dark:bg-slate-800/50 rounded-3xl border border-border">
+                    <div>
+                       <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">Total Impact</p>
+                       <p className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">KES {successData!.amount}</p>
+                    </div>
+                    <div className="text-right">
+                       <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">Status</p>
+                       <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-full text-xs font-black uppercase tracking-widest">
+                          <Icon name="CheckBadgeIcon" size={14} />
+                          Active
+                       </span>
+                    </div>
+                 </div>
+
+                 <div className="space-y-4">
+                    <p className="text-sm font-bold text-slate-600 dark:text-slate-400 leading-relaxed text-center">
+                       Payment confirmed! We&apos;ve issued an automated receipt to <span className="text-primary font-black underline decoration-primary/30">{userEmail}</span>. Your new limits are active immediately.
+                    </p>
+                    
+                    <div className="flex flex-col gap-3">
+                       <button 
+                         onClick={() => {
+                           setShowSuccessModal(false);
+                           router.push('/dashboard');
+                         }}
+                         className="w-full py-4 bg-primary text-white rounded-2xl font-black uppercase tracking-widest text-sm shadow-elevation-2 hover:shadow-elevation-4 hover:-translate-y-1 transition-all"
+                       >
+                         Enter Dashboard
+                       </button>
+                       <button 
+                         onClick={() => setShowSuccessModal(false)}
+                         className="w-full py-4 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-slate-200 transition-colors"
+                       >
+                         Stay on Billing
+                       </button>
+                    </div>
+                 </div>
+              </div>
+           </div>
+        </div>
+      )}
     </div>
   );
 }

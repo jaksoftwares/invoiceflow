@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Icon from '@/components/ui/AppIcon';
 import { toast } from 'sonner';
 import ProfileTab from './ProfileTab';
@@ -49,6 +50,7 @@ interface UsageStats {
 }
 
 const SettingsInteractive = () => {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
   const [isHydrated, setIsHydrated] = useState(false);
   
@@ -176,7 +178,7 @@ const SettingsInteractive = () => {
   };
 
   const handleUpgrade = () => {
-    toast.success('Upgrade functionality coming soon');
+    router.push('/dashboard/subscription');
   };
 
   const handleCancelSubscription = () => {

@@ -15,6 +15,12 @@ export default async function SubscriptionPage() {
     supabase.from('plans').select('*').order('price_monthly', { ascending: true })
   ]);
 
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('phone')
+    .eq('id', user.id)
+    .single();
+
   const { data: payments } = await supabase
     .from('subscription_payments')
     .select('*')
@@ -30,6 +36,7 @@ export default async function SubscriptionPage() {
           plans={plansResult.data || []}
           payments={payments || []}
           userEmail={user.email}
+          initialPhone={profile?.phone || ''}
         />
       </div>
     </NavigationWrapper>
