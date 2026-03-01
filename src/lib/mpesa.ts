@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { sendSubscriptionInvoiceEmail } from '@/lib/actions/subscription-emails';
 
 /**
  * M-Pesa Integration Service (Production - Buy Goods)
@@ -14,8 +15,8 @@ export interface MpesaResponse {
 }
 
 const MPESA_ENV = process.env.MPESA_ENV || 'production';
-const MPESA_SHORTCODE = process.env.MPESA_SHORTCODE || '3020359'; // Store Number / Business ShortCode
-const MPESA_PARTY_B = process.env.MPESA_PARTY_B || '4781510'; // Till Number
+const MPESA_SHORTCODE = process.env.MPESA_SHORTCODE || '3020359'; 
+const MPESA_PARTY_B = process.env.MPESA_PARTY_B || '4781510'; 
 const MPESA_PASSKEY = process.env.MPESA_PASSKEY || 'ecc3379b9fa0a724a83155caaa3ee3f0900326a703dd0e434b5ccc9fad4117b1';
 const MPESA_TRANSACTION_TYPE = process.env.MPESA_TRANSACTION_TYPE || 'CustomerBuyGoodsOnline';
 
@@ -75,7 +76,7 @@ export async function initiateStkPush(phoneNumber: string, amount: number, payme
     PartyB: MPESA_PARTY_B,
     PhoneNumber: formattedPhone,
     CallBackURL: process.env.MPESA_CALLBACK_URL || 'https://invoiceflow.dovepeakdigital.com/api/callback',
-    AccountReference: referenceId.slice(0, 12), // Max 12 chars for AccountReference often
+    AccountReference: referenceId.slice(0, 12), 
     TransactionDesc: `InvoiceFlow ${paymentType}`
   };
 
@@ -111,15 +112,37 @@ async function recordPendingPayment(phone: string, amount: number, type: string,
   if (!user) return;
 
   if (type === 'subscription') {
+    const planId = referenceId;
+    
+    // Get plan info for email
+    const { data: plan } = await supabase.from('plans').select('name').eq('id', planId).single();
+
+    // Check if they have an existing subscription to link to
+    const { data: subscription } = await supabase
+      .from('subscriptions')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
     await supabase.from('subscription_payments').insert({
       user_id: user.id,
       amount,
       phone_number: phone,
       status: 'pending',
-      payment_type: 'subscription',
-      subscription_id: referenceId,
+      payment_type: 'upgrade',
+      subscription_id: subscription?.id || null, 
+      plan_id: planId, // Using the new column from upgrade_schema_v2.sql
       checkout_request_id: checkoutRequestId
     });
+
+    // Send the Billing Invoice email instantly!
+    await sendSubscriptionInvoiceEmail({
+        userId: user.id,
+        planName: plan?.name || 'Pro',
+        amount,
+        invoiceNumber: checkoutRequestId.slice(0, 10).toUpperCase()
+    });
+
   } else {
     await supabase.from('payg_transactions').insert({
       user_id: user.id,

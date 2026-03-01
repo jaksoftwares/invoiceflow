@@ -109,3 +109,81 @@ export async function sendSubscriptionConfirmationEmail({
     return { success: false, error };
   }
 }
+
+interface InvoiceEmailParams {
+  userId: string;
+  planName: string;
+  amount: number;
+  invoiceNumber: string;
+}
+
+export async function sendSubscriptionInvoiceEmail({
+  userId,
+  planName,
+  amount,
+  invoiceNumber
+}: InvoiceEmailParams) {
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+  
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('email, first_name')
+    .eq('id', userId)
+    .single();
+
+  const targetEmail = profile?.email;
+  const firstName = profile?.first_name || 'Customer';
+
+  if (!targetEmail) return;
+
+  const formattedAmount = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'KES' }).format(amount);
+
+  const htmlBody = `
+    <div style="font-family: 'Inter', sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 24px; padding: 40px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);">
+      <div style="text-align: center; margin-bottom: 32px;">
+         <h1 style="color: #0f172a; font-size: 24px; font-weight: 800; margin: 0; text-transform: uppercase; letter-spacing: -0.025em;">Billing Invoice</h1>
+         <p style="color: #64748b; font-size: 16px; margin: 8px 0 0;">Transaction #INV-${invoiceNumber.slice(0, 8).toUpperCase()}</p>
+      </div>
+
+      <div style="background: #f8fafc; border-radius: 16px; padding: 24px; margin-bottom: 32px; border: 1px solid #f1f5f9;">
+         <p style="margin: 0 0 16px; color: #475569; font-size: 14px; font-weight: 600;">Hello ${firstName},</p>
+         <p style="margin: 0 0 24px; color: #64748b; font-size: 14px; line-height: 1.5;">This is a billing notice for your request to upgrade to the <strong>${planName}</strong> plan. A payment request has been sent to your M-Pesa phone number.</p>
+         
+         <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+               <td style="color: #64748b; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; padding-bottom: 8px;">Plan Description</td>
+               <td style="color: #64748b; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; padding-bottom: 8px; text-align: right;">Total Amount</td>
+            </tr>
+            <tr>
+               <td style="color: #0f172a; font-size: 16px; font-weight: 700;">InvoiceFlow ${planName} Subscription</td>
+               <td style="color: #0f172a; font-size: 16px; font-weight: 700; text-align: right;">${formattedAmount}</td>
+            </tr>
+         </table>
+      </div>
+
+      <div style="margin-bottom: 32px; padding: 20px; border-radius: 16px; border: 2px dashed #e2e8f0; text-align: center;">
+         <p style="color: #0f172a; font-size: 14px; font-weight: 800; margin: 0;">Status: PAYMENT PENDING</p>
+         <p style="color: #94a3b8; font-size: 12px; margin: 8px 0 0;">Please authorize the STK Push on your phone to complete the upgrade.</p>
+      </div>
+
+      <div style="text-align: center; margin-top: 40px; padding-top: 24px; border-top: 1px solid #f1f5f9;">
+         <p style="color: #94a3b8; font-size: 12px; margin: 0;">&copy; 2026 InvoiceFlow. Proforma Invoice only. A formal receipt will be sent upon payment.</p>
+      </div>
+    </div>
+  `;
+
+  try {
+    await postmarkClient.sendEmail({
+      From: "InvoiceFlow <contact@dovepeakdigital.com>",
+      To: targetEmail,
+      Subject: `Confirm Your InvoiceFlow ${planName} Billing`,
+      HtmlBody: htmlBody,
+      MessageStream: "outbound"
+    });
+  } catch (error) {
+    console.error('Error sending invoice email:', error);
+  }
+}

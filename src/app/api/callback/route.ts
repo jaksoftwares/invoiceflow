@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
+import { sendSubscriptionConfirmationEmail } from '@/lib/actions/subscription-emails';
 
 /**
  * M-Pesa Callback Endpoint (Production)
@@ -14,6 +15,10 @@ export async function POST(req: NextRequest) {
     console.log('--- M-PESA CALLBACK START ---');
     console.log(JSON.stringify(body, null, 2));
     
+    if (!body?.Body?.stkCallback) {
+        return NextResponse.json({ ResultCode: 1, ResultDesc: 'Invalid body' }, { status: 400 });
+    }
+
     const result = body.Body.stkCallback;
     const checkoutRequestId = result.CheckoutRequestID;
     const resultCode = result.ResultCode; // 0 means success
@@ -29,8 +34,8 @@ export async function POST(req: NextRequest) {
 
       console.log(`Payment Success: ${mpesaReceipt}, Amount: ${amount}, Phone: ${phone}`);
 
-      // 1. Try to update subscription_payments first
-      const { data: payment, error: pError } = await supabase
+      // 1. Update subscription_payments record
+      const { data: payment } = await supabase
         .from('subscription_payments')
         .update({
           status: 'completed',
@@ -39,14 +44,17 @@ export async function POST(req: NextRequest) {
         })
         .eq('checkout_request_id', checkoutRequestId)
         .select()
-        .single();
+        .maybeSingle();
 
       if (payment) {
         console.log('Subscription payment record updated. Activating subscription...');
-        await activateSubscription(supabase, payment.user_id, payment.plan_id, mpesaReceipt, amount);
+        // Correct plan ID is now explicitly tracked in plan_id column
+        // Fallback to currency for older records during transition
+        const planId = payment.plan_id || (payment as any).currency;
+        await activateSubscription(supabase, payment.user_id, planId, mpesaReceipt, amount);
       } else {
-        // 2. If not found in subscriptions, check PAYG transactions
-        const { data: payg, error: paygError } = await supabase
+        // 2. Check PAYG transactions if not found in subscriptions
+        const { data: payg } = await supabase
           .from('payg_transactions')
           .update({
             status: 'completed',
@@ -54,11 +62,10 @@ export async function POST(req: NextRequest) {
           })
           .eq('checkout_request_id', checkoutRequestId)
           .select()
-          .single();
+          .maybeSingle();
           
         if (payg) {
           console.log('PAYG transaction record updated.');
-          // Additional PAYG logic if needed (e.g. creating invoice if linked)
         } else {
           console.error(`CheckoutRequestID ${checkoutRequestId} not found in any transaction table.`);
         }
@@ -86,11 +93,9 @@ export async function POST(req: NextRequest) {
   }
 }
 
-import { sendSubscriptionConfirmationEmail } from '@/lib/actions/subscription-emails';
-
 async function activateSubscription(supabase: any, userId: string, planId: string, mpesaReceipt: string, amount: number) {
-  // Get the plan details to calculate duration (usually 1 month)
-  const { data: plan } = await supabase.from('plans').select('*').eq('id', planId).single();
+  // Get the plan details
+  const { data: plan } = await supabase.from('plans').select('*').eq('id', planId).maybeSingle();
   
   if (!plan) {
     console.error('Plan not found for ID:', planId);
@@ -101,14 +106,14 @@ async function activateSubscription(supabase: any, userId: string, planId: strin
   const expiry = new Date();
   
   if (plan.name === 'Lifetime') {
-    expiry.setFullYear(now.getFullYear() + 100); // 100 years for lifetime
+    expiry.setFullYear(now.getFullYear() + 100); 
   } else if (plan.name === 'yearly') {
     expiry.setFullYear(now.getFullYear() + 1);
   } else {
-    expiry.setMonth(now.getMonth() + 1); // Default monthly
+    expiry.setMonth(now.getMonth() + 1); 
   }
 
-  // Update or Insert subscription
+  // Update or Insert subscription record
   const { data: existingSub } = await supabase
     .from('subscriptions')
     .select('*')
@@ -142,7 +147,7 @@ async function activateSubscription(supabase: any, userId: string, planId: strin
   
   console.log(`Subscription activated for user ${userId} on plan ${plan.name}`);
 
-  // Send confirmation email
+  // Send the final Receipt/Confirmation email
   await sendSubscriptionConfirmationEmail({
     userId,
     planName: plan.name,
