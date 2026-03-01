@@ -21,11 +21,8 @@ const ReportsTable = ({ data, currency = 'KES' }: ReportsTableProps) => {
       <div className="px-8 py-6 border-b border-border/50 flex items-center justify-between bg-muted/5">
         <div>
           <h3 className="text-xl font-heading font-black text-foreground tracking-tight">
-            Comprehensive Performance Report
+            Performance Summary
           </h3>
-          <p className="text-sm text-muted-foreground mt-1">
-            Detailed breakdown of client metrics and financial performance.
-          </p>
         </div>
         <div className="flex items-center gap-2">
            <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest bg-muted px-2 py-1 rounded">

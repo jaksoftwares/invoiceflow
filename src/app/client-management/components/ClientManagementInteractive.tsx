@@ -184,7 +184,7 @@ const ClientManagementInteractive = ({ initialClients = [] }: ClientManagementIn
   if (loading && currentClients.length === 0) {
     return (
       <div className="min-h-screen bg-background">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-10">
           <div className="animate-pulse space-y-6">
             <div className="h-8 bg-muted rounded w-1/4" />
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -202,7 +202,7 @@ const ClientManagementInteractive = ({ initialClients = [] }: ClientManagementIn
   if (error) {
     return (
       <div className="min-h-screen bg-background">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-10">
           <div className="text-center py-12">
             <Icon name="ExclamationTriangleIcon" size={48} className="mx-auto text-destructive mb-4" />
             <p className="text-foreground font-medium mb-2">Error loading clients</p>
@@ -215,22 +215,22 @@ const ClientManagementInteractive = ({ initialClients = [] }: ClientManagementIn
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-10">
           <div>
-            <h1 className="text-4xl font-heading font-black text-foreground tracking-tight">
-              My CLients
+            <h1 className="text-4xl font-heading font-black text-foreground tracking-tight sm:text-5xl">
+              Client Management
             </h1>
-            <p className="text-muted-foreground mt-2 text-lg">
-              Centralized management of your business relationships and billing history.
+            <p className="text-muted-foreground mt-3 text-lg font-medium">
+              View and manage all your clients.
             </p>
           </div>
           <button
             onClick={() => setIsAddModalOpen(true)}
-            className="flex items-center gap-2 px-8 py-4 bg-primary text-primary-foreground rounded-2xl font-bold text-sm shadow-elevation-2 hover:shadow-elevation-3 transition-smooth">
-
+            className="flex items-center gap-2 px-8 py-4 bg-primary text-primary-foreground rounded-2xl font-bold text-sm shadow-elevation-2 hover:shadow-elevation-3 transition-smooth"
+          >
             <Icon name="PlusIcon" size={20} />
-            <span>Register New Client</span>
+            <span>New Client</span>
           </button>
         </div>
 

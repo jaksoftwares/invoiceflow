@@ -185,11 +185,11 @@ const SettingsInteractive = () => {
 
   if (!isHydrated) {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="animate-pulse space-y-6">
-            <div className="h-8 bg-muted rounded w-1/4" />
-            <div className="h-96 bg-muted rounded-lg" />
+      <div className="min-h-screen bg-background text-foreground">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          <div className="animate-pulse space-y-8">
+            <div className="h-10 bg-muted rounded-xl w-1/4" />
+            <div className="h-[600px] bg-muted rounded-2xl" />
           </div>
         </div>
       </div>
@@ -206,10 +206,10 @@ const SettingsInteractive = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-heading font-bold text-foreground mb-2">Settings</h1>
-          <p className="text-muted-foreground">Manage your account preferences and configurations</p>
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div className="mb-10">
+          <h1 className="text-4xl font-heading font-black text-foreground tracking-tight sm:text-5xl">Settings</h1>
+          <p className="text-muted-foreground mt-3 text-lg font-medium">Manage your account and app preferences.</p>
         </div>
 
         {/* Horizontal Tab Navigation */}

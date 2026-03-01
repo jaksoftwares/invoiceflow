@@ -130,15 +130,15 @@ const DashboardInteractive = ({ initialData }: DashboardInteractiveProps) => {
 
   return (
     <div className="min-h-screen bg-[#f8fafc]">
-      <div className="max-w-[1440px] mx-auto px-6 lg:px-10 py-10">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {hasErrors && (
           <div className="mb-10 p-5 bg-amber-50 border border-amber-200 rounded-[2rem] flex items-center gap-4 text-amber-800 shadow-sm">
             <div className="w-10 h-10 rounded-full bg-amber-200/50 flex items-center justify-center">
               <Icon name="ExclamationTriangleIcon" size={20} />
             </div>
             <div>
-              <p className="font-black text-sm uppercase tracking-widest">Synchronization Note</p>
-              <p className="text-sm font-medium opacity-80">We are currently using cached data as the real-time stream is fluctuating. Services are fully operational.</p>
+              <p className="font-black text-sm uppercase tracking-widest">Connection Note</p>
+              <p className="text-sm font-medium opacity-80">Using cached data to ensure stability. Your dashboard is fully functional.</p>
             </div>
           </div>
         )}
@@ -173,7 +173,7 @@ const DashboardInteractive = ({ initialData }: DashboardInteractiveProps) => {
               Welcome back, <span className="text-primary italic">{initialData?.profile?.first_name || 'User'}</span>
             </h1>
             <p className="text-slate-500 text-xl font-medium max-w-2xl leading-relaxed">
-              Your financial ecosystem is performing within expected parameters. Here is your strategic breakdown.
+              Here is an overview of your business performance and recent activities.
             </p>
           </div>
           <div className="flex items-center gap-4">
@@ -205,59 +205,53 @@ const DashboardInteractive = ({ initialData }: DashboardInteractiveProps) => {
         {/* Highlight Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
           <MetricCard
-            title="Gross Revenue"
+            title="Total Revenue"
             value={metrics ? formatCurrency(metrics.totalRevenue, currency) : formatCurrency(0, currency)}
-            icon="CurrencyDollarIcon" 
+            icon="BanknotesIcon" 
             trend="up"
           />
 
           <MetricCard
-            title="Pending Dues"
+            title="Pending Invoices"
             value={metrics ? metrics.pendingInvoices.toString() : '0'}
             icon="ClockIcon" 
             trend="down"
           />
 
           <MetricCard
-            title="Active Ledger"
+            title="Total Invoices"
             value={metrics ? metrics.totalInvoices.toString() : '0'}
             icon="DocumentCheckIcon" 
           />
 
           <MetricCard
-            title="Average Capture"
+            title="Average Value"
             value={metrics?.totalInvoices ? formatCurrency(metrics.totalRevenue / metrics.totalInvoices, currency) : formatCurrency(0, currency)}
-            icon="PresentationChartBarIcon" 
+            icon="ChartBarSquareIcon" 
           />
         </div>
 
-        {/* Strategic Grid */}
+        {/* Quick Actions Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-           <div className="p-10 bg-white rounded-[3rem] border border-slate-100 shadow-sm hover:shadow-2xl transition-all cursor-pointer group relative overflow-hidden" onClick={handleCreateInvoice}>
-              <div className="absolute top-0 right-0 w-40 h-40 bg-primary/5 rounded-full -mr-20 -mt-20 group-hover:scale-150 transition-transform duration-1000" />
-              <div className="w-16 h-16 bg-primary/10 rounded-[1.5rem] flex items-center justify-center text-primary mb-8 group-hover:bg-primary group-hover:text-white transition-smooth shadow-inner">
-                <Icon name="DocumentPlusIcon" size={32} />
+           <div className="p-8 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-elevation-4 transition-all cursor-pointer group flex flex-col items-center text-center" onClick={handleCreateInvoice}>
+              <div className="w-14 h-14 bg-primary/5 rounded-xl flex items-center justify-center text-primary mb-6 group-hover:bg-primary group-hover:text-white transition-all duration-500 shadow-inner">
+                <Icon name="DocumentPlusIcon" size={28} />
               </div>
-              <h3 className="text-2xl font-black text-slate-900 mb-3 tracking-tight">Issue Statement</h3>
-              <p className="text-slate-500 font-medium leading-relaxed">Draft and distribute professional financial documents with automated tracking and secure delivery.</p>
+              <h3 className="text-xl font-black text-slate-900 tracking-tight">Create Invoice</h3>
            </div>
            
-           <div className="p-10 bg-white rounded-[3rem] border border-slate-100 shadow-sm hover:shadow-2xl transition-all cursor-pointer group relative overflow-hidden" onClick={handleAddClient}>
-              <div className="absolute top-0 right-0 w-40 h-40 bg-emerald-50 rounded-full -mr-20 -mt-20 group-hover:scale-150 transition-transform duration-1000" />
-              <div className="w-16 h-16 bg-emerald-100 rounded-[1.5rem] flex items-center justify-center text-emerald-600 mb-8 group-hover:bg-emerald-600 group-hover:text-white transition-smooth shadow-inner">
-                <Icon name="UserGroupIcon" size={32} />
+           <div className="p-8 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-elevation-4 transition-all cursor-pointer group flex flex-col items-center text-center" onClick={handleAddClient}>
+              <div className="w-14 h-14 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 mb-6 group-hover:bg-emerald-600 group-hover:text-white transition-all duration-500 shadow-inner">
+                <Icon name="UserGroupIcon" size={28} />
               </div>
-              <h3 className="text-2xl font-black text-slate-900 mb-3 tracking-tight">Client Hub</h3>
-              <p className="text-slate-500 font-medium leading-relaxed">Systematically manage your relationship base with detailed profiles and billing history integrations.</p>
+              <h3 className="text-xl font-black text-slate-900 tracking-tight">Manage Clients</h3>
            </div>
 
-           <div className="p-10 bg-white rounded-[3rem] border border-slate-100 shadow-sm hover:shadow-2xl transition-all cursor-pointer group relative overflow-hidden" onClick={handleGenerateReport}>
-              <div className="absolute top-0 right-0 w-40 h-40 bg-amber-50 rounded-full -mr-20 -mt-20 group-hover:scale-150 transition-transform duration-1000" />
-              <div className="w-16 h-16 bg-amber-100 rounded-[1.5rem] flex items-center justify-center text-amber-600 mb-8 group-hover:bg-amber-600 group-hover:text-white transition-smooth shadow-inner">
-                <Icon name="PresentationChartLineIcon" size={32} />
+           <div className="p-8 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-elevation-4 transition-all cursor-pointer group flex flex-col items-center text-center" onClick={handleGenerateReport}>
+              <div className="w-14 h-14 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600 mb-6 group-hover:bg-amber-600 group-hover:text-white transition-all duration-500 shadow-inner">
+                <Icon name="PresentationChartLineIcon" size={28} />
               </div>
-              <h3 className="text-2xl font-black text-slate-900 mb-3 tracking-tight">Intelligence</h3>
-              <p className="text-slate-500 font-medium leading-relaxed">Access visual data interpretations that clarify your growth velocity and financial health patterns.</p>
+              <h3 className="text-xl font-black text-slate-900 tracking-tight">Analytics</h3>
            </div>
         </div>
 
@@ -280,7 +274,7 @@ const DashboardInteractive = ({ initialData }: DashboardInteractiveProps) => {
               <h2 className="text-3xl font-black text-slate-900 tracking-tighter">Recent Invoices</h2>
               <div className="flex items-center gap-3 mt-2">
                 <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em]">Live Financial Feed</p>
+                <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em]">Latest Invoices</p>
               </div>
             </div>
             <button 
@@ -297,7 +291,7 @@ const DashboardInteractive = ({ initialData }: DashboardInteractiveProps) => {
         </div>
 
         <footer className="mt-20 py-10 border-t border-slate-200 text-center">
-            <p className="text-[10px] font-black text-slate-300 uppercase tracking-[1em]">InvoiceFlow Enterprise • Professional Grade</p>
+            <p className="text-[10px] font-black text-slate-300 uppercase tracking-[1em]">InvoiceFlow • Professional Billing</p>
         </footer>
       </div>
     </div>

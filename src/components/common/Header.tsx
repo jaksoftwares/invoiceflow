@@ -12,17 +12,21 @@ import { toast } from 'sonner';
 import { MAIN_NAVIGATION } from '@/lib/constants/navigation';
 
 interface HeaderProps {
+  isOpen?: boolean;
   onMobileMenuToggle?: (isOpen: boolean) => void;
 }
 
-const Header = ({ onMobileMenuToggle }: HeaderProps) => {
+const Header = ({ isOpen: propIsOpen, onMobileMenuToggle }: HeaderProps) => {
   const pathname = usePathname();
   const router = useRouter();
   const { user } = useAuth();
   const { profile, loading } = useSettings();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [internalIsMobileMenuOpen, setInternalIsMobileMenuOpen] = useState(false);
+
+  // Use prop if provided, otherwise use internal state
+  const isMobileMenuOpen = propIsOpen !== undefined ? propIsOpen : internalIsMobileMenuOpen;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -34,7 +38,7 @@ const Header = ({ onMobileMenuToggle }: HeaderProps) => {
 
   const handleMobileMenuToggle = () => {
     const newState = !isMobileMenuOpen;
-    setIsMobileMenuOpen(newState);
+    setInternalIsMobileMenuOpen(newState);
     onMobileMenuToggle?.(newState);
   };
 
@@ -77,7 +81,7 @@ const Header = ({ onMobileMenuToggle }: HeaderProps) => {
   if (!user) {
     return (
       <header className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 ${isScrolled ? 'bg-card/80 backdrop-blur-md border-b border-border shadow-sm py-2' : 'bg-transparent py-4'}`}>
-        <div className="max-w-7xl mx-auto flex items-center justify-between px-6">
+        <div className="max-w-[1600px] mx-auto flex items-center justify-between px-4 sm:px-6 lg:px-8">
           <Logo />
           <div className="flex items-center gap-4">
             <Link href="/auth/login" className="px-4 py-2 text-sm font-bold text-foreground hover:text-primary transition-smooth">
@@ -94,7 +98,7 @@ const Header = ({ onMobileMenuToggle }: HeaderProps) => {
 
   return (
     <header className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 ${isScrolled ? 'bg-card/90 backdrop-blur-lg border-b border-border py-2' : 'bg-card border-b border-border py-3'}`}>
-      <div className="max-w-7xl mx-auto flex items-center justify-between px-6">
+      <div className="max-w-[1600px] mx-auto flex items-center justify-between px-4 sm:px-6 lg:px-8">
         <div className="flex items-center gap-8">
           <Logo />
           <nav className="hidden lg:flex items-center gap-1">
@@ -116,13 +120,7 @@ const Header = ({ onMobileMenuToggle }: HeaderProps) => {
         </div>
 
         <div className="flex items-center gap-4">
-          <Link
-            href="/create-invoice"
-            className="hidden sm:flex items-center gap-2 px-6 py-2.5 bg-accent text-accent-foreground rounded-xl text-sm font-black shadow-lg shadow-accent/20 transition-all hover:scale-[1.02] active:scale-[0.98] hover:shadow-xl"
-          >
-            <Icon name="PlusIcon" size={18} />
-            <span>New Invoice</span>
-          </Link>
+
 
           <div className="relative">
             <button

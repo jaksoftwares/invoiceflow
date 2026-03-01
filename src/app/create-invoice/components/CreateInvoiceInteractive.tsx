@@ -328,15 +328,15 @@ const CreateInvoiceInteractive = ({ initialClients, initialProducts, editId, dup
 
   if (!isHydrated || loadingInvoice) {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="h-12 bg-muted rounded-md animate-pulse mb-6" />
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 space-y-6">
-              <div className="h-96 bg-muted rounded-md animate-pulse" />
-              <div className="h-64 bg-muted rounded-md animate-pulse" />
+      <div className="min-h-screen bg-background text-foreground">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          <div className="h-16 bg-muted rounded-2xl animate-pulse mb-10" />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 space-y-8">
+              <div className="h-[400px] bg-muted rounded-2xl animate-pulse" />
+              <div className="h-[300px] bg-muted rounded-2xl animate-pulse" />
             </div>
-            <div className="h-96 bg-muted rounded-md animate-pulse" />
+            <div className="h-[700px] bg-muted rounded-2xl animate-pulse" />
           </div>
         </div>
       </div>
@@ -346,22 +346,22 @@ const CreateInvoiceInteractive = ({ initialClients, initialProducts, editId, dup
   return (
     <>
       <div className="min-h-screen bg-background">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex items-center justify-between mb-6">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          <div className="flex items-center justify-between gap-6 mb-10">
             <div>
-              <h1 className="text-3xl font-heading font-bold text-foreground">
+              <h1 className="text-4xl font-heading font-black text-foreground tracking-tight sm:text-5xl">
                 {editId ? 'Edit Invoice' : duplicateId ? 'Duplicate Invoice' : 'Create Invoice'}
               </h1>
-              <p className="text-sm text-muted-foreground mt-1">
-                {editId ? 'Update existing invoice details' : duplicateId ? 'Create a new invoice from existing details' : 'Generate professional invoices for your clients'}
+              <p className="text-muted-foreground mt-3 text-lg font-medium">
+                {editId ? 'Update existing invoice details.' : duplicateId ? 'Create a new invoice from existing details.' : 'Draft and send professional invoices.'}
               </p>
             </div>
             <button
               onClick={() => router.push('/invoice-management')}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-foreground hover:bg-muted rounded-md transition-smooth"
+              className="flex items-center gap-3 px-6 py-3 text-sm font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-all active:scale-[0.98]"
             >
               <Icon name="ArrowLeftIcon" size={18} />
-              <span className="hidden sm:inline">Back to Invoices</span>
+              <span className="hidden sm:inline">Back</span>
             </button>
           </div>
 

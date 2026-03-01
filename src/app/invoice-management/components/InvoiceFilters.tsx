@@ -17,7 +17,6 @@ interface InvoiceFiltersProps {
 }
 
 const InvoiceFilters = ({ onFilterChange, totalResults, availableClients = [] }: InvoiceFiltersProps) => {
-  const [isExpanded, setIsExpanded] = useState(false);
   const [filters, setFilters] = useState<FilterState>({
     dateRange: { start: '', end: '' },
     paymentStatus: 'all',
@@ -50,119 +49,99 @@ const InvoiceFilters = ({ onFilterChange, totalResults, availableClients = [] }:
   };
 
   return (
-    <div className="bg-card rounded-2xl border border-divider shadow-sm overflow-hidden h-fit">
-        <button
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="w-full flex items-center justify-between p-5 hover:bg-muted/30 transition-smooth group"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all">
-              <Icon name="FunnelIcon" size={20} />
-            </div>
-            <div className="text-left">
-              <h2 className="text-sm font-black text-foreground uppercase tracking-widest">Filter Invoices</h2>
-              <p className="text-[10px] text-muted-foreground uppercase font-black tracking-tighter">
-                {totalResults} results discovered
-              </p>
-            </div>
-          </div>
-          <Icon name={isExpanded ? 'ChevronUpIcon' : 'ChevronDownIcon'} size={20} className={`transition-transform duration-300 ml-4 ${!isExpanded ? 'lg:rotate-180' : ''}`} />
-        </button>
-
-        <div className={`${isExpanded ? 'block' : 'hidden'} lg:block px-5 pb-5 border-t border-divider pt-5`}>
-          <div className="space-y-6">
-            <div>
-              <label className="block text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-3">
-                Calendar Period
-              </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <input
-                  type="date"
-                  value={filters.dateRange.start}
-                  onChange={(e) => handleFilterUpdate('dateRange', { ...filters.dateRange, start: e.target.value })}
-                  className="w-full px-4 py-3 bg-muted/50 border border-transparent rounded-xl text-xs font-bold text-foreground focus:bg-background focus:border-primary transition-all"
-                  placeholder="From"
-                />
-                <input
-                  type="date"
-                  value={filters.dateRange.end}
-                  onChange={(e) => handleFilterUpdate('dateRange', { ...filters.dateRange, end: e.target.value })}
-                  className="w-full px-4 py-3 bg-muted/50 border border-transparent rounded-xl text-xs font-bold text-foreground focus:bg-background focus:border-primary transition-all"
-                  placeholder="To"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-3">
-                  Payment Status
-                </label>
-                <select
-                  value={filters.paymentStatus}
-                  onChange={(e) => handleFilterUpdate('paymentStatus', e.target.value)}
-                  className="w-full px-4 py-3 bg-muted/50 border border-transparent rounded-xl text-xs font-bold text-foreground focus:bg-background focus:border-primary transition-all appearance-none cursor-pointer"
-                >
-                  {paymentStatuses.map((status) => (
-                    <option key={status.value} value={status.value}>
-                      {status.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-3">
-                  Quick Search (Client)
-                </label>
-                <select
-                  value={filters.client}
-                  onChange={(e) => handleFilterUpdate('client', e.target.value)}
-                  className="w-full px-4 py-3 bg-muted/50 border border-transparent rounded-xl text-xs font-bold text-foreground focus:bg-background focus:border-primary transition-all appearance-none cursor-pointer"
-                >
-                  <option value="all">All Clients</option>
-                  {availableClients.map((client) => (
-                    <option key={client.id} value={client.name.toLowerCase().replace(/\s+/g,'-')}>
-                      {client.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-3">
-                Value range
-              </label>
-              <div className="grid grid-cols-2 gap-3">
-                <input
-                  type="number"
-                  value={filters.amountRange.min}
-                  onChange={(e) => handleFilterUpdate('amountRange', { ...filters.amountRange, min: e.target.value })}
-                  className="w-full px-4 py-3 bg-muted/50 border border-transparent rounded-xl text-xs font-bold text-foreground focus:bg-background focus:border-primary transition-all"
-                  placeholder="Min Value"
-                />
-                <input
-                  type="number"
-                  value={filters.amountRange.max}
-                  onChange={(e) => handleFilterUpdate('amountRange', { ...filters.amountRange, max: e.target.value })}
-                  className="w-full px-4 py-3 bg-muted/50 border border-transparent rounded-xl text-xs font-bold text-foreground focus:bg-background focus:border-primary transition-all"
-                  placeholder="Max Value"
-                />
-              </div>
-            </div>
-
-            <div className="flex pt-2">
-              <button
-                onClick={handleReset}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3.5 bg-muted text-foreground rounded-xl text-xs font-black uppercase tracking-widest transition-all hover:bg-foreground hover:text-white"
-              >
-                <Icon name="ArrowPathIcon" size={16} />
-                <span>Reset Parameters</span>
-              </button>
+    <div className="w-full bg-card rounded-3xl border border-divider shadow-elevation-2 p-6">
+      <div className="flex flex-col lg:flex-row items-end gap-6">
+        {/* Status Filter */}
+        <div className="w-full lg:w-56 shrink-0">
+          <label className="block text-xs font-black text-muted-foreground uppercase tracking-widest mb-3 ml-1">
+            Payment Status
+          </label>
+          <div className="relative group">
+            <select
+              value={filters.paymentStatus}
+              onChange={(e) => handleFilterUpdate('paymentStatus', e.target.value)}
+              className="w-full h-14 pl-5 pr-12 bg-muted/50 border border-transparent rounded-2xl text-sm font-black text-foreground focus:bg-background focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all appearance-none cursor-pointer"
+            >
+              {paymentStatuses.map((status) => (
+                <option key={status.value} value={status.value}>
+                  {status.label}
+                </option>
+              ))}
+            </select>
+            <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground group-focus-within:text-primary transition-colors">
+              <Icon name="ChevronDownIcon" size={18} />
             </div>
           </div>
         </div>
+
+        {/* Client Filter */}
+        <div className="w-full lg:w-72 shrink-0">
+          <label className="block text-xs font-black text-muted-foreground uppercase tracking-widest mb-3 ml-1">
+            Client Entity
+          </label>
+          <div className="relative group">
+            <select
+              value={filters.client}
+              onChange={(e) => handleFilterUpdate('client', e.target.value)}
+              className="w-full h-14 pl-5 pr-12 bg-muted/50 border border-transparent rounded-2xl text-sm font-black text-foreground focus:bg-background focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all appearance-none cursor-pointer"
+            >
+              <option value="all">All Clients</option>
+              {availableClients.map((client) => (
+                <option key={client.id} value={client.name.toLowerCase().replace(/\s+/g,'-')}>
+                  {client.name}
+                </option>
+              ))}
+            </select>
+            <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground group-focus-within:text-primary transition-colors">
+              <Icon name="ChevronDownIcon" size={18} />
+            </div>
+          </div>
+        </div>
+
+        {/* Amount Range */}
+        <div className="w-full flex-1">
+          <label className="block text-xs font-black text-muted-foreground uppercase tracking-widest mb-3 ml-1">
+            Value Range
+          </label>
+          <div className="flex items-center gap-3">
+            <div className="relative flex-1 group">
+              <input
+                type="number"
+                value={filters.amountRange.min}
+                onChange={(e) => handleFilterUpdate('amountRange', { ...filters.amountRange, min: e.target.value })}
+                className="w-full h-14 px-5 bg-muted/50 border border-transparent rounded-2xl text-sm font-black text-foreground placeholder:text-muted-foreground/30 focus:bg-background focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all pr-12"
+                placeholder="Min"
+              />
+            </div>
+            <div className="text-muted-foreground font-black text-[10px] uppercase tracking-widest opacity-30">To</div>
+            <div className="relative flex-1 group">
+              <input
+                type="number"
+                value={filters.amountRange.max}
+                onChange={(e) => handleFilterUpdate('amountRange', { ...filters.amountRange, max: e.target.value })}
+                className="w-full h-14 px-5 bg-muted/50 border border-transparent rounded-2xl text-sm font-black text-foreground placeholder:text-muted-foreground/30 focus:bg-background focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all pr-12"
+                placeholder="Max"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Results Count & Reset */}
+        <div className="w-full lg:w-auto flex items-center justify-between gap-6">
+          <div className="flex flex-col items-center justify-center p-2 bg-primary/5 rounded-2xl border border-primary/10 min-w-[120px]">
+            <span className="text-[9px] font-black text-primary uppercase tracking-widest mb-0.5">Discovered</span>
+            <span className="text-lg font-black text-primary">{totalResults}</span>
+          </div>
+          <button
+            onClick={handleReset}
+            className="flex-1 lg:flex-none flex items-center justify-center gap-3 px-8 h-14 bg-slate-900 border border-transparent text-white rounded-2xl text-xs font-black uppercase tracking-[0.2em] transition-all hover:bg-slate-800 hover:shadow-lg active:scale-95 group shrink-0"
+            title="Clear all filters"
+          >
+            <Icon name="ArrowPathIcon" size={20} className="group-hover:rotate-180 transition-transform duration-700" />
+            <span>Reset</span>
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

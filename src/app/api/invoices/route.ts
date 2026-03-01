@@ -124,10 +124,39 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch invoices' }, { status: 500 });
     }
 
+    // Fetch aggregate statistics for the filtered result (ignoring pagination)
+    let statsQuery = supabase
+      .from('invoices')
+      .select('status, total_amount')
+      .eq('user_id', user.id);
+
+    if (status) statsQuery = statsQuery.eq('status', status);
+    if (client_id) statsQuery = statsQuery.eq('client_id', client_id);
+    if (business_id) statsQuery = statsQuery.eq('business_id', business_id);
+    if (issue_date_from) statsQuery = statsQuery.gte('issue_date', issue_date_from);
+    if (issue_date_to) statsQuery = statsQuery.lte('issue_date', issue_date_to);
+    if (due_date_from) statsQuery = statsQuery.gte('due_date', due_date_from);
+    if (due_date_to) statsQuery = statsQuery.lte('due_date', due_date_to);
+    
+    // Note: complex search filters might need more logic here if they affect stats
+    // For now, we'll fetch the filtered set of statuses/amounts
+    const { data: allResultsForStats } = await statsQuery;
+
+    const stats = (allResultsForStats || []).reduce((acc, inv) => {
+      if (inv.status === 'paid') acc.totalRevenue += inv.total_amount;
+      if (inv.status === 'sent' || inv.status === 'overdue') acc.pendingAmount += inv.total_amount;
+      if (inv.status === 'overdue') acc.overdueCount += 1;
+      return acc;
+    }, { totalRevenue: 0, pendingAmount: 0, overdueCount: 0 });
+
     const totalPages = Math.ceil((count || 0) / limit);
 
     return NextResponse.json({
       invoices,
+      stats: {
+        ...stats,
+        totalCount: count || 0,
+      },
       pagination: {
         page,
         limit,

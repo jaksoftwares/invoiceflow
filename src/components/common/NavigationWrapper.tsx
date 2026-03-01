@@ -14,7 +14,7 @@ const NavigationWrapper = ({ children }: NavigationWrapperProps) => {
 
   return (
     <>
-      <Header onMobileMenuToggle={setIsMobileMenuOpen} />
+      <Header isOpen={isMobileMenuOpen} onMobileMenuToggle={setIsMobileMenuOpen} />
       <MobileMenu isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} />
       <div className="pt-16 min-h-screen bg-background flex flex-col">
         <div className="flex-grow">

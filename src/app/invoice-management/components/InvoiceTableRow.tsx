@@ -180,13 +180,13 @@ const InvoiceTableRow = ({
       </td>
       <td className="px-5 py-5">
         <div className="flex flex-col">
-            <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Issued</span>
+            <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Date</span>
             <span className="text-xs font-bold text-foreground">{new Date(invoice.issue_date).toLocaleDateString()}</span>
         </div>
       </td>
       <td className="px-5 py-5">
         <div className="flex flex-col">
-            <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Due</span>
+            <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Due Date</span>
             <span className="text-xs font-bold text-foreground">{new Date(invoice.due_date).toLocaleDateString()}</span>
         </div>
       </td>
@@ -215,14 +215,14 @@ const InvoiceTableRow = ({
                 style={{ top: dropdownPos.top, right: dropdownPos.right }}
               >
                   <div className="px-4 py-2 border-b border-divider mb-1">
-                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Record Operations</p>
+                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Actions</p>
                   </div>
                   {[
-                    { label: 'Modify Record', icon: 'PencilIcon', action: onEdit },
-                    { label: 'Review Document', icon: 'EyeIcon', action: onPreview },
-                    { label: 'Clone Dataset', icon: 'DocumentDuplicateIcon', action: onDuplicate },
-                    { label: 'Extract PDF', icon: 'ArrowDownTrayIcon', action: onDownload },
-                    { label: 'Dispatch Email', icon: 'PaperAirplaneIcon', action: onSend },
+                    { label: 'Edit', icon: 'PencilIcon', action: onEdit },
+                    { label: 'Preview', icon: 'EyeIcon', action: onPreview },
+                    { label: 'Duplicate', icon: 'DocumentDuplicateIcon', action: onDuplicate },
+                    { label: 'Download PDF', icon: 'ArrowDownTrayIcon', action: onDownload },
+                    { label: 'Send Email', icon: 'PaperAirplaneIcon', action: onSend },
                   ].map((item) => (
                     <button
                       key={item.label}
@@ -239,7 +239,7 @@ const InvoiceTableRow = ({
                     className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-error hover:bg-error/10 transition-colors"
                   >
                     <Icon name="TrashIcon" size={18} />
-                    <span>Purge Data</span>
+                    <span>Delete</span>
                   </button>
               </div>
             </>

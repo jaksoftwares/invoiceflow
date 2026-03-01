@@ -8,60 +8,33 @@ interface MetricCardProps {
   change?: string;
   trend?: 'up' | 'down';
   icon: string;
-  chartData?: number[];
 }
 
-
-const MetricCard = ({ title, value, change, trend, icon, chartData }: MetricCardProps) => {
-  const maxValue = chartData ? Math.max(...chartData) : 0;
-  const minValue = chartData ? Math.min(...chartData) : 0;
-  const range = maxValue - minValue || 1;
-
+const MetricCard = ({ title, value, change, trend, icon }: MetricCardProps) => {
   return (
-    <div className="bg-card rounded-2xl p-6 border border-border/50 shadow-sm transition-all hover:shadow-md hover:border-primary/20 group">
-      <div className="flex items-start justify-between mb-4">
-        <div>
-          <p className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-1 group-hover:text-primary transition-smooth">{title}</p>
-          <h3 className="text-3xl font-heading font-black text-foreground tracking-tight">{value}</h3>
-        </div>
-        <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-smooth ${
-          trend === 'up' ? 'bg-success/10 text-success group-hover:bg-success group-hover:text-white' : 
-          trend === 'down' ? 'bg-error/10 text-error group-hover:bg-error group-hover:text-white' :
-          'bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white'
-        }`}>
-          <Icon name={icon} size={24} />
+    <div className="bg-white rounded-2xl p-7 border border-slate-100 shadow-sm transition-all duration-300 hover:shadow-elevation-4 group flex items-center justify-between pointer-events-none sm:pointer-events-auto">
+      <div>
+        <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3 group-hover:text-primary transition-colors duration-300">
+          {title}
+        </h4>
+        <div className="flex items-center gap-3">
+          <span className="text-3xl font-black text-slate-900 tracking-tighter">
+            {value}
+          </span>
+          {change && (
+            <div className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${
+              trend === 'up' ? 'text-emerald-600 bg-emerald-50' : 
+              trend === 'down' ? 'text-rose-600 bg-rose-50' : 
+              'text-slate-500 bg-slate-100'
+            }`}>
+              {change}
+            </div>
+          )}
         </div>
       </div>
-      
-      {change && (
-        <div className="flex items-center gap-2 mb-3">
-          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-            trend === 'up' ? 'bg-success/20 text-success' : 'bg-error/20 text-error'
-          }`}>
-            {change}
-          </span>
-          <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Since last period</span>
-        </div>
-      )}
-
-      {chartData && chartData.length > 0 && (
-        <div className="h-10 flex items-end gap-1.5 mt-4">
-          {chartData.map((value, index) => {
-            const height = ((value - minValue) / range) * 100;
-            return (
-              <div
-                key={index}
-                className={`flex-1 rounded-t-sm transition-all duration-500 delay-[${index * 50}ms] ${
-                  trend === 'up' ? 'bg-success/30 group-hover:bg-success/60' : 
-                  trend === 'down' ? 'bg-error/30 group-hover:bg-error/60' : 
-                  'bg-primary/30 group-hover:bg-primary/60'
-                }`}
-                style={{ height: `${Math.max(height, 8)}%` }}
-              />
-            );
-          })}
-        </div>
-      )}
+      <div className="w-12 h-12 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-primary group-hover:text-white transition-all duration-500 shadow-inner">
+        <Icon name={icon} size={24} />
+      </div>
     </div>
   );
 };

@@ -16,6 +16,7 @@ import { sendInvoiceEmail } from '@/lib/actions/email';
 import { useInvoicePDF } from '@/lib/hooks/useInvoicePDF';
 import { supabase } from '@/lib/supabase/client';
 import InvoicePreview from '@/app/create-invoice/components/InvoicePreview';
+import MetricCard from '@/app/dashboard/components/MetricCard';
 import type { Invoice } from '@/types/database';
 
 interface InvoiceWithClient extends Invoice {
@@ -72,6 +73,7 @@ const InvoiceManagementInteractive = ({ initialInvoices }: InvoiceManagementInte
     deleteInvoice,
     bulkDeleteInvoices,
     bulkUpdateStatus,
+    stats: liveStats,
   } = useInvoices({
     page: currentPage,
     limit: itemsPerPage,
@@ -94,7 +96,15 @@ const InvoiceManagementInteractive = ({ initialInvoices }: InvoiceManagementInte
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [selectedInvoiceForShare, setSelectedInvoiceForShare] = useState<InvoiceWithClient | null>(null);
 
-  const displayInvoices = invoices.length > 0 ? invoices : initialInvoices;
+  const isFiltering = searchQuery.length > 0 || 
+                      filters.paymentStatus !== 'all' || 
+                      filters.client !== 'all' || 
+                      filters.amountRange.min !== '' || 
+                      filters.amountRange.max !== '';
+
+  // Use server invoices if they exist or if we are actively filtering.
+  // Fall back to initial invoices only on first load when nothing is happening.
+  const displayInvoices = (invoices.length > 0 || isFiltering) ? invoices : (loading ? [] : initialInvoices);
 
   const filteredInvoices = displayInvoices.filter(invoice => {
     const matchesSearch = searchQuery === '' ||
@@ -111,6 +121,21 @@ const InvoiceManagementInteractive = ({ initialInvoices }: InvoiceManagementInte
 
     return matchesSearch && matchesStatus && matchesClient && matchesAmount;
   });
+
+  // Calculate default stats from initialInvoices if live stats haven't loaded yet
+  const defaultStats = {
+    totalRevenue: initialInvoices.reduce((sum, inv) => sum + (inv.status === 'paid' ? inv.total_amount : 0), 0),
+    pendingAmount: initialInvoices.reduce((sum, inv) => sum + (inv.status === 'sent' || inv.status === 'overdue' ? inv.total_amount : 0), 0),
+    totalCount: initialInvoices.length,
+    overdueCount: initialInvoices.filter(inv => inv.status === 'overdue').length,
+  };
+
+  const activeStats = liveStats || defaultStats;
+
+  const currency = filteredInvoices[0]?.currency || 'KES';
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount);
+  };
 
   const sortedInvoices = [...filteredInvoices].sort((a, b) => {
     if (!sortConfig) return 0;
@@ -330,7 +355,7 @@ const InvoiceManagementInteractive = ({ initialInvoices }: InvoiceManagementInte
               Invoice Management
             </h1>
             <p className="text-muted-foreground mt-3 text-lg max-w-2xl font-medium">
-              Manage your billing, collections, and financial records in one place.
+              View and manage all your invoices in one place.
             </p>
           </div>
           <div className="flex items-center gap-3 shrink-0">
@@ -339,16 +364,42 @@ const InvoiceManagementInteractive = ({ initialInvoices }: InvoiceManagementInte
                className="w-full sm:w-auto bg-accent text-accent-foreground px-8 py-4 rounded-2xl font-black text-sm shadow-elevation-2 hover:shadow-elevation-4 transition-all hover:-translate-y-1 active:scale-[0.98] flex items-center justify-center gap-2 group"
              >
                <Icon name="PlusCircleIcon" size={20} className="group-hover:rotate-90 transition-transform duration-500" />
-               <span>Issue New Invoice</span>
+               <span>New Invoice</span>
              </button>
           </div>
         </div>
 
-        <div className="flex flex-col xl:flex-row gap-6 items-start mb-8">
-          <div className="flex-1 w-full">
+        {/* Stats Section */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+          <MetricCard
+            title="Total Collected"
+            value={formatCurrency(activeStats.totalRevenue)}
+            icon="BanknotesIcon" 
+            trend="up"
+          />
+          <MetricCard
+            title="Pending Dues"
+            value={formatCurrency(activeStats.pendingAmount)}
+            icon="ClockIcon" 
+          />
+          <MetricCard
+            title="Total Documents"
+            value={activeStats.totalCount.toString()}
+            icon="DocumentTextIcon" 
+          />
+          <MetricCard
+            title="Overdue Alerts"
+            value={activeStats.overdueCount.toString()}
+            icon="ExclamationCircleIcon" 
+            trend={activeStats.overdueCount > 0 ? 'down' : undefined}
+          />
+        </div>
+
+        <div className="flex flex-col gap-6 mb-10">
+          <div className="w-full">
             <InvoiceSearch onSearch={setSearchQuery} />
           </div>
-          <div className="w-full xl:w-[450px] shrink-0">
+          <div className="w-full">
             <InvoiceFilters 
               onFilterChange={setFilters} 
               totalResults={filteredInvoices.length} 
@@ -360,7 +411,7 @@ const InvoiceManagementInteractive = ({ initialInvoices }: InvoiceManagementInte
         {loading && (
           <div className="flex items-center justify-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            <span className="ml-2 text-muted-foreground">Syncing data...</span>
+            <span className="ml-2 text-muted-foreground">Loading...</span>
           </div>
         )}
 
@@ -384,9 +435,9 @@ const InvoiceManagementInteractive = ({ initialInvoices }: InvoiceManagementInte
                     />
                   </th>
                   <th className="px-5 py-4 text-sm font-bold text-foreground">Invoice #</th>
-                  <th className="px-5 py-4 text-sm font-bold text-foreground">Client Entity</th>
+                  <th className="px-5 py-4 text-sm font-bold text-foreground">Client</th>
                   <th className="px-5 py-4 text-sm font-bold text-foreground">Amount</th>
-                  <th className="px-5 py-4 text-sm font-bold text-foreground">Issued</th>
+                  <th className="px-5 py-4 text-sm font-bold text-foreground">Date</th>
                   <th className="px-5 py-4 text-sm font-bold text-foreground">Due Date</th>
                   <th className="px-5 py-4 text-sm font-bold text-foreground">Status</th>
                   <th className="px-5 py-4 text-sm font-bold text-foreground">Actions</th>
@@ -432,8 +483,8 @@ const InvoiceManagementInteractive = ({ initialInvoices }: InvoiceManagementInte
         {paginatedInvoices.length === 0 && !loading && (
           <div className="bg-card rounded-2xl border border-divider p-12 text-center">
             <Icon name="DocumentTextIcon" size={48} className="text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-black text-foreground mb-2">No Records Found</h3>
-            <p className="text-muted-foreground mb-6">Your search parameters didn't match any documents.</p>
+            <h3 className="text-lg font-black text-foreground mb-2">No Invoices Found</h3>
+            <p className="text-muted-foreground mb-6">No invoices match your search.</p>
           </div>
         )}
 
@@ -467,7 +518,7 @@ const InvoiceManagementInteractive = ({ initialInvoices }: InvoiceManagementInte
           }}>
             <div className="bg-card rounded-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl animate-in zoom-in-95 duration-300" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-center justify-between p-6 border-b border-divider">
-                <h3 className="text-xl font-black uppercase tracking-tight">Document Preview</h3>
+                <h3 className="text-xl font-black uppercase tracking-tight">Preview</h3>
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() => {

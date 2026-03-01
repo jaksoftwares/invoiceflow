@@ -35,6 +35,12 @@ interface UseInvoicesReturn {
   loading: boolean;
   error: string | null;
   pagination: PaginationInfo | null;
+  stats: {
+    totalRevenue: number;
+    pendingAmount: number;
+    totalCount: number;
+    overdueCount: number;
+  } | null;
   refetch: () => Promise<void>;
   createInvoice: (invoiceData: Omit<Invoice, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => Promise<Invoice | null>;
   updateInvoice: (id: string, invoiceData: Partial<Omit<Invoice, 'id' | 'user_id' | 'created_at' | 'updated_at'>>) => Promise<Invoice | null>;
@@ -62,6 +68,12 @@ export function useInvoices(options: UseInvoicesOptions = {}): UseInvoicesReturn
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pagination, setPagination] = useState<PaginationInfo | null>(null);
+  const [stats, setStats] = useState<{
+    totalRevenue: number;
+    pendingAmount: number;
+    totalCount: number;
+    overdueCount: number;
+  } | null>(null);
 
   const buildQueryString = useCallback(() => {
     const params = new URLSearchParams();
@@ -93,10 +105,12 @@ export function useInvoices(options: UseInvoicesOptions = {}): UseInvoicesReturn
       const data = await response.json();
       setInvoices(data.invoices || []);
       setPagination(data.pagination || null);
+      setStats(data.stats || null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
       setInvoices([]);
       setPagination(null);
+      setStats(null);
     } finally {
       setLoading(false);
     }
@@ -299,6 +313,7 @@ export function useInvoices(options: UseInvoicesOptions = {}): UseInvoicesReturn
     loading,
     error,
     pagination,
+    stats,
     refetch,
     createInvoice,
     updateInvoice,

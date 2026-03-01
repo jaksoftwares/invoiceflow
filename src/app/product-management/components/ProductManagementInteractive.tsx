@@ -62,12 +62,12 @@ const ProductManagementInteractive = ({ initialProducts = [] }: ProductManagemen
 
   if (loading && currentProducts.length === 0) {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="animate-pulse space-y-6">
-            <div className="h-8 bg-muted rounded w-1/4" />
-            <div className="h-16 bg-muted rounded-lg" />
-            <div className="h-96 bg-muted rounded-lg" />
+      <div className="min-h-screen bg-background text-foreground">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          <div className="animate-pulse space-y-8">
+            <div className="h-10 bg-muted rounded-xl w-1/4" />
+            <div className="h-20 bg-muted rounded-2xl" />
+            <div className="h-[600px] bg-muted rounded-2xl" />
           </div>
         </div>
       </div>
@@ -75,15 +75,15 @@ const ProductManagementInteractive = ({ initialProducts = [] }: ProductManagemen
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+    <div className="min-h-screen bg-background text-foreground">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 mb-10">
           <div>
-            <h1 className="text-3xl font-heading font-semibold text-foreground mb-2">
-              Products & Services
+            <h1 className="text-4xl font-heading font-black text-foreground tracking-tight sm:text-5xl">
+              Product Management
             </h1>
-            <p className="text-muted-foreground">
-              Manage items you frequently add to invoices
+            <p className="text-muted-foreground mt-3 text-lg font-medium">
+              View and manage your products and services.
             </p>
           </div>
           <button
@@ -91,10 +91,10 @@ const ProductManagementInteractive = ({ initialProducts = [] }: ProductManagemen
               setEditingProduct(null);
               setIsAddModalOpen(true);
             }}
-            className="flex items-center gap-2 px-6 py-3 bg-accent text-accent-foreground rounded-md font-medium hover:-translate-y-[1px] hover:shadow-elevation-2 transition-smooth"
+            className="flex items-center gap-3 px-8 py-4 bg-primary text-primary-foreground rounded-2xl font-bold text-sm shadow-elevation-2 hover:shadow-elevation-4 transition-all active:scale-[0.98]"
           >
             <Icon name="PlusIcon" size={20} />
-            <span>Add New Item</span>
+            <span>New Item</span>
           </button>
         </div>
 

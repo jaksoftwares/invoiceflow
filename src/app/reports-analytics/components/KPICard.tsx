@@ -1,3 +1,5 @@
+'use client';
+
 import Icon from '@/components/ui/AppIcon';
 
 interface KPICardProps {
@@ -8,20 +10,30 @@ interface KPICardProps {
   trend?: 'up' | 'down';
 }
 
-const KPICard = ({ title, value, icon }: KPICardProps) => {
+const KPICard = ({ title, value, icon, trend, change }: KPICardProps) => {
   return (
-    <div className="bg-card rounded-2xl p-6 border border-border/50 shadow-sm transition-all hover:shadow-md hover:border-primary/20 group">
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1 group-hover:text-primary transition-smooth">{title}</p>
-          <h3 className="text-2xl font-heading font-black text-foreground tracking-tight">{value}</h3>
-        </div>
-        <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center transition-smooth group-hover:bg-primary group-hover:text-white">
-          <Icon name={icon as any} size={24} className="text-primary group-hover:text-white" />
+    <div className="bg-white rounded-2xl p-7 border border-slate-100 shadow-sm transition-all duration-300 hover:shadow-elevation-4 group flex items-center justify-between">
+      <div>
+        <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3 group-hover:text-primary transition-colors duration-300">
+          {title}
+        </h4>
+        <div className="flex items-center gap-3">
+          <span className="text-3xl font-black text-slate-900 tracking-tighter">
+            {value}
+          </span>
+          {change !== undefined && (
+            <div className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${
+              trend === 'up' ? 'text-emerald-600 bg-emerald-50' : 
+              trend === 'down' ? 'text-rose-600 bg-rose-50' : 
+              'text-slate-500 bg-slate-100'
+            }`}>
+              {change > 0 ? `+${change}%` : `${change}%`}
+            </div>
+          )}
         </div>
       </div>
-      <div className="mt-4 h-1 w-full bg-muted/30 rounded-full overflow-hidden">
-        <div className="h-full bg-primary/40 w-2/3 rounded-full" />
+      <div className="w-12 h-12 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-primary group-hover:text-white transition-all duration-500 shadow-inner">
+        <Icon name={icon as any} size={24} />
       </div>
     </div>
   );

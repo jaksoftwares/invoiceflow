@@ -115,7 +115,6 @@ const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
               </div>
               <div className="flex-1">
                 <span>{item.label}</span>
-                <p className={`text-[10px] font-medium leading-tight ${isActive(item.path) ? 'text-white/70' : 'text-muted-foreground'}`}>{item.description}</p>
               </div>
             </Link>
           ))}
@@ -134,10 +133,7 @@ const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
               <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
                 <Icon name={item.icon as any} size={20} />
               </div>
-              <div>
-                <span>{item.label}</span>
-                <p className="text-[10px] text-accent/70 font-medium leading-tight">{item.description}</p>
-              </div>
+              <span>{item.label}</span>
             </Link>
           ))}
         </nav>
@@ -146,10 +142,10 @@ const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
         <div className="p-4 border-t border-border/50">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center justify-center gap-3 px-4 py-4 rounded-2xl text-base font-black text-destructive bg-destructive/5 hover:bg-destructive/10 transition-all active:scale-[0.98]"
+            className="w-full flex items-center justify-center gap-3 px-4 py-4 rounded-2xl text-base font-black text-rose-500 bg-rose-50 hover:bg-rose-100 transition-all active:scale-[0.98]"
           >
             <Icon name="ArrowRightOnRectangleIcon" size={24} />
-            <span>Terminate Session</span>
+            <span>Sign Out</span>
           </button>
         </div>
       </div>

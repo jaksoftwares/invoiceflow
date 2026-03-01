@@ -166,15 +166,15 @@ const ReportsAnalyticsInteractive = () => {
   if (!isHydrated || loading) {
     return (
       <div className="min-h-screen bg-background">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="animate-pulse space-y-6">
-            <div className="h-12 bg-muted rounded-lg w-1/3" />
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          <div className="animate-pulse space-y-8">
+            <div className="h-10 bg-muted rounded-xl w-1/3" />
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="h-32 bg-muted rounded-lg" />
+                <div key={i} className="h-40 bg-muted rounded-2xl" />
               ))}
             </div>
-            <div className="h-96 bg-muted rounded-lg" />
+            <div className="h-[500px] bg-muted rounded-2xl" />
           </div>
         </div>
       </div>
@@ -183,16 +183,16 @@ const ReportsAnalyticsInteractive = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="text-center">
-            <h1 className="text-3xl font-heading font-bold text-foreground mb-4">
+      <div className="min-h-screen bg-background text-foreground">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          <div className="text-center py-20">
+            <h1 className="text-4xl font-heading font-black text-foreground tracking-tight sm:text-5xl mb-6">
               Reports & Analytics
             </h1>
-            <p className="text-destructive mb-4">Error loading reports data: {error}</p>
+            <p className="text-destructive mb-8 text-lg font-medium">Error loading reports data: {error}</p>
             <button
               onClick={() => refetch()}
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
+              className="px-8 py-4 bg-primary text-primary-foreground rounded-2xl font-bold hover:shadow-elevation-4 transition-all active:scale-[0.95]"
             >
               Try Again
             </button>
@@ -204,14 +204,14 @@ const ReportsAnalyticsInteractive = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-10">
           <div>
-            <h1 className="text-4xl font-heading font-black text-foreground tracking-tight">
+            <h1 className="text-4xl font-heading font-black text-foreground tracking-tight sm:text-5xl">
               Reports & Analytics
             </h1>
-            <p className="text-muted-foreground mt-2 text-lg">
-              Performance tracking and financial intelligence.
+            <p className="text-muted-foreground mt-3 text-lg font-medium">
+              Track and analyze your business performance.
             </p>
           </div>
           <div className="flex items-center gap-3 relative">
