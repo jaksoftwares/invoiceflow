@@ -19,6 +19,7 @@ interface InvoiceCardProps {
   onDownload: (id: string) => void;
   onPreview: (id: string) => void;
   onSend: (id: string) => void;
+  onMarkAsPaid: (id: string) => void;
   onDelete: (id: string) => void;
 }
 
@@ -31,6 +32,7 @@ const InvoiceCard = ({
   onDownload,
   onPreview,
   onSend,
+  onMarkAsPaid,
   onDelete
 }: InvoiceCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -210,14 +212,15 @@ const InvoiceCard = ({
                     { label: 'Clone Record', icon: 'DocumentDuplicateIcon', action: onDuplicate },
                     { label: 'Export PDF', icon: 'ArrowDownTrayIcon', action: onDownload },
                     { label: 'Transmit Email', icon: 'PaperAirplaneIcon', action: onSend },
-                  ].map((item) => (
+                    invoice.status !== 'paid' && { label: 'Mark as Paid', icon: 'CheckBadgeIcon', action: onMarkAsPaid },
+                  ].filter(Boolean).map((item: any) => (
                     <button
                       key={item.label}
-                      onClick={(e) => { e.stopPropagation(); item.action(invoice.id); setShowActions(false); }}
+                      onClick={(e) => { e.stopPropagation(); (item as any).action(invoice.id); setShowActions(false); }}
                       className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-foreground hover:bg-muted transition-colors"
                     >
-                      <Icon name={item.icon as any} size={18} className="text-primary" />
-                      <span>{item.label}</span>
+                      <Icon name={(item as any).icon as any} size={18} className="text-primary" />
+                      <span>{(item as any).label}</span>
                     </button>
                   ))}
                   <div className="h-px bg-divider my-1" />

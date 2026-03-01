@@ -142,11 +142,6 @@ export async function GET(request: NextRequest) {
         icon: 'BanknotesIcon',
       },
       {
-        title: 'Average Deal',
-        value: formatter.format(avgInvoiceValue),
-        icon: 'PresentationChartLineIcon',
-      },
-      {
         title: 'Collection Rate',
         value: `${collectionRate.toFixed(1)}%`,
         icon: 'CheckCircleIcon',

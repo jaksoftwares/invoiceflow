@@ -20,6 +20,7 @@ interface InvoiceTableRowProps {
   onDownload: (id: string) => void;
   onPreview: (id: string) => void;
   onSend: (id: string) => void;
+  onMarkAsPaid: (id: string) => void;
   onDelete: (id: string) => void;
 }
 
@@ -32,6 +33,7 @@ const InvoiceTableRow = ({
   onDownload,
   onPreview,
   onSend,
+  onMarkAsPaid,
   onDelete
 }: InvoiceTableRowProps) => {
   const [showActions, setShowActions] = useState(false);
@@ -223,7 +225,8 @@ const InvoiceTableRow = ({
                     { label: 'Duplicate', icon: 'DocumentDuplicateIcon', action: onDuplicate },
                     { label: 'Download PDF', icon: 'ArrowDownTrayIcon', action: onDownload },
                     { label: 'Send Email', icon: 'PaperAirplaneIcon', action: onSend },
-                  ].map((item) => (
+                    invoice.status !== 'paid' && { label: 'Mark as Paid', icon: 'CheckBadgeIcon', action: onMarkAsPaid },
+                  ].filter(Boolean).map((item: any) => (
                     <button
                       key={item.label}
                       onClick={(e) => { e.stopPropagation(); item.action(invoice.id); setShowActions(false); }}

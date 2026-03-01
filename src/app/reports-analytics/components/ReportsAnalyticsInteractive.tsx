@@ -271,7 +271,7 @@ const ReportsAnalyticsInteractive = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-8 mb-10">
           {kpiData.map((kpi, index) => (
             <KPICard key={index} {...kpi} />
           ))}

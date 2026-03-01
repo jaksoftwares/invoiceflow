@@ -74,6 +74,7 @@ const InvoiceManagementInteractive = ({ initialInvoices }: InvoiceManagementInte
     bulkDeleteInvoices,
     bulkUpdateStatus,
     stats: liveStats,
+    refetch,
   } = useInvoices({
     page: currentPage,
     limit: itemsPerPage,
@@ -338,6 +339,11 @@ const InvoiceManagementInteractive = ({ initialInvoices }: InvoiceManagementInte
     await deleteInvoice(id);
   };
 
+  const handleMarkAsPaid = async (id: string) => {
+    await updateInvoice(id, { status: 'paid' });
+    refetch(); // Refresh to update stats and list
+  };
+
   useEffect(() => {
     setIsHydrated(true);
   }, []);
@@ -455,6 +461,7 @@ const InvoiceManagementInteractive = ({ initialInvoices }: InvoiceManagementInte
                     onDownload={handleDownload}
                     onPreview={handlePreview}
                     onSend={handleSend}
+                    onMarkAsPaid={handleMarkAsPaid}
                     onDelete={handleDelete}
                   />
                 ))}
@@ -475,6 +482,7 @@ const InvoiceManagementInteractive = ({ initialInvoices }: InvoiceManagementInte
               onDownload={handleDownload}
               onPreview={handlePreview}
               onSend={handleSend}
+              onMarkAsPaid={handleMarkAsPaid}
               onDelete={handleDelete}
             />
           ))}
