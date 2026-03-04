@@ -3,7 +3,11 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
-  let response = NextResponse.next()
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  })
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -11,8 +15,16 @@ export async function middleware(request: NextRequest) {
     {
       cookies: {
         getAll: () => request.cookies.getAll(),
-        setAll: (cookies) => {
-          cookies.forEach(({ name, value, options }) => {
+        setAll: (cookiesToSet) => {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            request.cookies.set(name, value)
+          })
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          })
+          cookiesToSet.forEach(({ name, value, options }) => {
             response.cookies.set(name, value, options)
           })
         },
@@ -20,41 +32,36 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // ✅ Use getUser for more professional session verification
   const {
     data: { user },
   } = await supabase.auth.getUser()
+
   const { pathname } = request.nextUrl
 
-  // ✅ Public routes
-  const publicRoutes = ['/', '/about', '/pricing']
-
-  if (publicRoutes.includes(pathname)) {
-    return response
-  }
-
-  // ✅ Redirect logged-in users away from auth
-  if (pathname.startsWith('/auth') && user) {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
-  }
-
-  // ✅ Protected routes
+  // Protected routes list
   const protectedRoutes = [
     '/dashboard',
     '/client-management',
     '/create-invoice',
     '/invoice-management',
     '/reports-analytics',
-    '/reports-analytics',
     '/user-profile-settings',
+    '/product-management',
   ]
 
-  const isProtected = protectedRoutes.some(route =>
-    pathname.startsWith(route)
+  const isProtected = protectedRoutes.some(route => 
+    pathname === route || pathname.startsWith(`${route}/`)
   )
 
+  const isAuthPage = pathname.startsWith('/auth')
+
+  // Redirection logic
   if (isProtected && !user) {
     return NextResponse.redirect(new URL('/auth/login', request.url))
+  }
+
+  if (isAuthPage && user) {
+    return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
   return response
@@ -62,7 +69,14 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!api|_next|favicon.ico|auth).*)',
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     */
+    '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],
 }
 

@@ -8,16 +8,11 @@ const AuthContext = createContext<{ user: User | null; session: Session | null }
 
 export const useAuth = () => useContext(AuthContext)
 
-export function SupabaseAuthProvider({ children }: { children: React.ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null)
-  const [user, setUser] = useState<User | null>(null)
+export function SupabaseAuthProvider({ children, initialSession }: { children: React.ReactNode, initialSession: Session | null }) {
+  const [session, setSession] = useState<Session | null>(initialSession)
+  const [user, setUser] = useState<User | null>(initialSession?.user ?? null)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-    })
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
       setUser(session?.user ?? null)
