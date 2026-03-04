@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Icon from '@/components/ui/AppIcon';
 import AppImage from '@/components/ui/AppImage';
 import { toast } from 'sonner';
+import { useSettings } from '@/lib/hooks/useSettings';
 import { uploadFile } from '@/lib/cloudinary';
 
 interface ProfileData {
@@ -26,6 +27,7 @@ interface ProfileTabProps {
 }
 
 const ProfileTab = ({ profileData: initialData, onSave }: ProfileTabProps) => {
+  const { profile, loading, updateProfile } = useSettings();
   const [formData, setFormData] = useState<ProfileData>({
     firstName: '',
     lastName: '',
@@ -42,38 +44,24 @@ const ProfileTab = ({ profileData: initialData, onSave }: ProfileTabProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<keyof ProfileData, string>>>({});
   const [isUploading, setIsUploading] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetchProfileData();
-  }, []);
-
-  const fetchProfileData = async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch('/api/settings/profile');
-      if (response.ok) {
-        const data = await response.json();
-        setFormData({
-          firstName: data.first_name || '',
-          lastName: data.last_name || '',
-          email: data.email || '',
-          phone: data.phone || '',
-          avatarUrl: data.avatar_url,
-          businessName: data.business_name || '',
-          businessAddress: data.business_address || '',
-          city: data.city || '',
-          state: data.state || '',
-          zipCode: data.zip_code || '',
-          country: data.country || '',
-        });
-      }
-    } catch (error) {
-      console.error('Error fetching profile data:', error);
-    } finally {
-      setIsLoading(false);
+    if (profile) {
+      setFormData({
+        firstName: profile.first_name || '',
+        lastName: profile.last_name || '',
+        email: profile.email || '',
+        phone: profile.phone || '',
+        avatarUrl: profile.avatar_url,
+        businessName: profile.business_name || '',
+        businessAddress: profile.business_address || '',
+        city: profile.city || '',
+        state: profile.state || '',
+        zipCode: profile.zip_code || '',
+        country: profile.country || '',
+      });
     }
-  };
+  }, [profile]);
 
   const validateForm = (): boolean => {
     const newErrors: Partial<Record<keyof ProfileData, string>> = {};
@@ -131,29 +119,21 @@ const ProfileTab = ({ profileData: initialData, onSave }: ProfileTabProps) => {
     }
     if (validateForm()) {
       try {
-        const response = await fetch('/api/settings/profile', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            first_name: formData.firstName,
-            last_name: formData.lastName,
-            phone: formData.phone,
-            business_name: formData.businessName,
-            business_address: formData.businessAddress,
-            city: formData.city,
-            state: formData.state,
-            zip_code: formData.zipCode,
-            country: formData.country,
-            avatar_url: formData.avatarUrl,
-          }),
+        await updateProfile({
+          first_name: formData.firstName,
+          last_name: formData.lastName,
+          phone: formData.phone,
+          business_name: formData.businessName,
+          business_address: formData.businessAddress,
+          city: formData.city,
+          state: formData.state,
+          zip_code: formData.zipCode,
+          country: formData.country,
+          avatar_url: formData.avatarUrl,
         });
 
-        if (response.ok) {
-          toast.success('Profile updated successfully');
-          setIsEditing(false);
-        } else {
-          toast.error('Failed to update profile');
-        }
+        toast.success('Profile updated successfully');
+        setIsEditing(false);
       } catch (error) {
         console.error('Error saving profile:', error);
         toast.error('Failed to update profile');
@@ -162,12 +142,11 @@ const ProfileTab = ({ profileData: initialData, onSave }: ProfileTabProps) => {
   };
 
   const handleCancel = () => {
-    fetchProfileData();
     setErrors({});
     setIsEditing(false);
   };
 
-  if (isLoading) {
+  if (loading.profile) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Icon from '@/components/ui/AppIcon';
 import AppImage from '@/components/ui/AppImage';
 import { toast } from 'sonner';
+import { useSettings } from '@/lib/hooks/useSettings';
 import { uploadFile } from '@/lib/cloudinary';
 
 interface BusinessData {
@@ -33,6 +34,7 @@ interface BusinessTabProps {
 }
 
 const BusinessTab = ({ businessData: initialData, onSave }: BusinessTabProps) => {
+  const { settings, profile, business, loading, updateBusinessSettings } = useSettings();
   const [isEditing, setIsEditing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<keyof BusinessData, string>>>({});
@@ -58,44 +60,29 @@ const BusinessTab = ({ businessData: initialData, onSave }: BusinessTabProps) =>
   });
 
   useEffect(() => {
-    fetchBusinessData();
-  }, []);
-
-  const fetchBusinessData = async () => {
-    try {
-      // Fetch user settings (invoice settings)
-      const settingsResponse = await fetch('/api/settings/business');
-      
-      // Fetch profile data for extended business info
-      const profileResponse = await fetch('/api/settings/profile');
-      
-      const settingsData = settingsResponse.ok ? await settingsResponse.json() : {};
-      const profileData = profileResponse.ok ? await profileResponse.json() : {};
-      
+    if (settings || profile || business) {
       setFormData({
-        companyLogoUrl: settingsData.company_logo_url,
-        defaultTemplate: settingsData.default_template || 'default',
-        defaultPaymentTerms: settingsData.default_payment_terms || 'net30',
-        defaultTaxRate: settingsData.default_tax_rate || 0,
-        taxLabel: settingsData.tax_label || 'Tax',
-        invoicePrefix: settingsData.invoice_prefix || 'INV-',
-        invoiceFooter: settingsData.invoice_footer || '',
-        // Extended business info from profile
-        businessName: profileData.business_name || '',
-        businessEmail: profileData.email || '',
-        businessPhone: profileData.phone || '',
-        businessAddress: profileData.business_address || '',
-        city: profileData.city || '',
-        state: profileData.state || '',
-        zipCode: profileData.zip_code || '',
-        country: profileData.country || '',
-        website: '',
+        companyLogoUrl: settings?.company_logo_url,
+        defaultTemplate: settings?.default_template || 'default',
+        defaultPaymentTerms: settings?.default_payment_terms || 'net30',
+        defaultTaxRate: settings?.default_tax_rate || 0,
+        taxLabel: settings?.tax_label || 'Tax',
+        invoicePrefix: settings?.invoice_prefix || 'INV-',
+        invoiceFooter: settings?.invoice_footer || '',
+        // Extended business info from business profile or deprecated profile fields
+        businessName: business?.name || profile?.business_name || '',
+        businessEmail: business?.email || profile?.email || '',
+        businessPhone: business?.phone || profile?.phone || '',
+        businessAddress: business?.address || profile?.business_address || '',
+        city: business?.city || profile?.city || '',
+        state: business?.state || profile?.state || '',
+        zipCode: business?.zip_code || profile?.zip_code || '',
+        country: business?.country || profile?.country || '',
+        website: business?.website || '',
         industry: '',
       });
-    } catch (error) {
-      console.error('Error fetching business data:', error);
     }
-  };
+  }, [settings, profile, business]);
 
   const validateForm = (): boolean => {
     const newErrors: Partial<Record<keyof BusinessData, string>> = {};
@@ -149,27 +136,18 @@ const BusinessTab = ({ businessData: initialData, onSave }: BusinessTabProps) =>
     
     if (validateForm()) {
       try {
-        // Update invoice/business settings
-        const settingsResponse = await fetch('/api/settings/business', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            company_logo_url: formData.companyLogoUrl,
-            default_template: formData.defaultTemplate,
-            default_payment_terms: formData.defaultPaymentTerms,
-            default_tax_rate: formData.defaultTaxRate,
-            tax_label: formData.taxLabel,
-            invoice_prefix: formData.invoicePrefix,
-            invoice_footer: formData.invoiceFooter,
-          }),
+        await updateBusinessSettings({
+          company_logo_url: formData.companyLogoUrl,
+          default_template: formData.defaultTemplate,
+          default_payment_terms: formData.defaultPaymentTerms,
+          default_tax_rate: formData.defaultTaxRate,
+          tax_label: formData.taxLabel,
+          invoice_prefix: formData.invoicePrefix,
+          invoice_footer: formData.invoiceFooter,
         });
 
-        if (settingsResponse.ok) {
-          toast.success('Business settings updated successfully');
-          setIsEditing(false);
-        } else {
-          toast.error('Failed to update business settings');
-        }
+        toast.success('Business settings updated successfully');
+        setIsEditing(false);
       } catch (error) {
         console.error('Error saving business settings:', error);
         toast.error('Failed to update business settings');
@@ -178,7 +156,6 @@ const BusinessTab = ({ businessData: initialData, onSave }: BusinessTabProps) =>
   };
 
   const handleCancel = () => {
-    fetchBusinessData();
     setErrors({});
     setIsEditing(false);
   };

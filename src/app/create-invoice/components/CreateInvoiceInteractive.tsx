@@ -16,6 +16,7 @@ import { createInvoiceAction, updateInvoiceAction } from '@/lib/actions/invoices
 import { supabase } from '@/lib/supabase/client';
 import { useInvoicePDF } from '@/lib/hooks/useInvoicePDF';
 import { useSettings } from '@/lib/hooks/useSettings';
+import { toast } from 'sonner';
 import { checkFeatureAccess, trackActionAction, checkUsageLimit, getUserPlan } from '@/lib/actions/subscription';
 import PlanLimitModal from '@/components/modals/PlanLimitModal';
 import type { Client, InvoiceItem, BusinessProfile, Product } from '@/types/database';
@@ -231,34 +232,35 @@ const CreateInvoiceInteractive = ({ initialClients, initialProducts, editId, dup
 
   const validateForm = () => {
     if (!selectedClient) {
-      alert('Please select a client');
+      toast.error('Please select a client');
       return false;
     }
     if (!invoiceDetails.invoiceNumber) {
-      alert('Please enter an invoice number');
+      toast.error('Please enter an invoice number');
       return false;
     }
     if (!invoiceDetails.issueDate) {
-      alert('Please select an issue date');
+      toast.error('Please select an issue date');
       return false;
     }
     if (!invoiceDetails.dueDate) {
-      alert('Please select a due date');
+      toast.error('Please select a due date');
       return false;
     }
     if (!invoiceDetails.paymentTerms) {
-      alert('Please select payment terms');
+      toast.error('Please select payment terms');
       return false;
     }
     if (lineItems.length === 0) {
-      alert('Please add at least one line item');
+      toast.error('Please add at least one line item');
       return false;
     }
     const hasEmptyDescription = lineItems.some((item) => !item.description.trim());
     if (hasEmptyDescription) {
-      alert('Please fill in all line item descriptions');
+      toast.error('Please fill in all line item descriptions');
       return false;
     }
+    return true;
     return true;
   };
 
@@ -317,10 +319,10 @@ const CreateInvoiceInteractive = ({ initialClients, initialProducts, editId, dup
 
       if (editId) {
         await updateInvoiceAction(editId, invoiceData);
-        alert(`Invoice ${status === 'draft' ? 'updated' : 'sent'} successfully!`);
+        toast.success(`Invoice ${status === 'draft' ? 'updated' : 'sent'} successfully!`);
       } else {
         await createInvoiceAction(invoiceData);
-        alert(`Invoice ${status === 'draft' ? 'saved' : 'sent'} successfully!`);
+        toast.success(`Invoice ${status === 'draft' ? 'saved' : 'sent'} successfully!`);
       }
 
       router.push('/invoice-management');

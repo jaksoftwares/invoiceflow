@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import '../styles/index.css';
 import { SupabaseAuthProvider } from '../components/providers/SupabaseAuthProvider';
+import { SettingsProvider } from '../components/providers/SettingsProvider';
 import { ToastProvider } from '../components/providers/ToastProvider';
 
 export const metadata: Metadata = {
@@ -22,7 +23,9 @@ export default function RootLayout({
       <body>
         <ToastProvider>
           <SupabaseAuthProvider>
-            {children}
+            <SettingsProvider>
+              {children}
+            </SettingsProvider>
           </SupabaseAuthProvider>
         </ToastProvider>
       </body>

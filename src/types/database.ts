@@ -5,6 +5,7 @@ export interface Profile {
   last_name?: string;
   phone?: string;
   avatar_url?: string;
+  email?: string;
   onboarding_status?: 'pending_signup' | 'profile_incomplete' | 'business_pending' | 'verified' | 'active';
   // Deprecated fields (moved to business_profiles)
   business_name?: string;

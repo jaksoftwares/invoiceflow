@@ -224,12 +224,12 @@ const InvoiceManagementInteractive = ({ initialInvoices }: InvoiceManagementInte
   };
 
   const handleSendReminders = () => {
-    console.log('Send reminders:', selectedInvoices);
+    toast.info('Batch reminders feature is coming soon!');
     setSelectedInvoices([]);
   };
 
   const handleExportPDF = () => {
-    console.log('Export PDF:', selectedInvoices);
+    toast.info('Bulk PDF export feature is coming soon!');
     setSelectedInvoices([]);
   };
 

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Icon from '@/components/ui/AppIcon';
 import { toast } from 'sonner';
+import { useSettings } from '@/lib/hooks/useSettings';
 import ProfileTab from './ProfileTab';
 import BusinessTab from './BusinessTab';
 import NotificationsTab from './NotificationsTab';
@@ -104,64 +105,32 @@ const SettingsInteractive = () => {
     storageLimit: 25,
   });
 
+  const { settings, refetchSettings, updateNotificationSettings } = useSettings();
+
   useEffect(() => {
     setIsHydrated(true);
-    fetchNotificationSettings();
   }, []);
 
-  const fetchNotificationSettings = async () => {
-    try {
-      const response = await fetch('/api/settings/notifications');
-      if (response.ok) {
-        const data = await response.json();
-        // API returns: email_notifications, push_notifications, reminder_settings
-        // Component expects: emailNotifications, pushNotifications, reminderSettings
-        setNotificationSettings({
-          emailNotifications: data.email_notifications || {
-            paymentReceived: true,
-            invoiceOverdue: true,
-            paymentReminder: true,
-            newClient: false,
-            weeklyReport: true,
-            monthlyReport: true,
-          },
-          pushNotifications: data.push_notifications || {
-            paymentReceived: true,
-            invoiceOverdue: true,
-            systemUpdates: false,
-          },
-          reminderSettings: data.reminder_settings || {
-            daysBeforeDue: '3',
-            overdueFrequency: 'daily',
-          },
-        });
-      }
-    } catch (error) {
-      console.error('Error fetching notification settings:', error);
+  useEffect(() => {
+    if (settings) {
+      setNotificationSettings({
+        emailNotifications: settings.email_notifications || notificationSettings.emailNotifications,
+        pushNotifications: settings.push_notifications || notificationSettings.pushNotifications,
+        reminderSettings: settings.reminder_settings || notificationSettings.reminderSettings,
+      });
     }
-  };
+  }, [settings]);
 
   const handleNotificationSave = async (data: NotificationSettings) => {
     try {
-      // Map component format to API format
       const apiData = {
         email_notifications: data.emailNotifications,
         push_notifications: data.pushNotifications,
         reminder_settings: data.reminderSettings,
       };
       
-      const response = await fetch('/api/settings/notifications', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(apiData),
-      });
-
-      if (response.ok) {
-        setNotificationSettings(data);
-        toast.success('Notification settings updated successfully');
-      } else {
-        toast.error('Failed to update notification settings');
-      }
+      await updateNotificationSettings(apiData);
+      toast.success('Notification settings updated successfully');
     } catch (error) {
       console.error('Error saving notification settings:', error);
       toast.error('Failed to update notification settings');
