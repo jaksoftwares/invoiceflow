@@ -92,18 +92,16 @@ export default function SubscriptionClient({
             }
             setActiveRequestId(null);
             setLoading(null);
-            setMessage({ type: 'success', text: 'Payment successful! Your plan has been upgraded.' });
-            
-            // Revalidate and refresh
+            toast.success('Payment confirmed! Activating your plan...');
             router.refresh();
-            
-            // Optional: Hide success message after 5 seconds
-            setTimeout(() => setMessage(null), 5000);
           } else if (status === 'failed') {
             clearInterval(pollInterval);
             setActiveRequestId(null);
             setLoading(null);
-            setMessage({ type: 'error', text: 'Payment was cancelled or failed. Please try again.' });
+            setMessage({ type: 'error', text: 'M-Pesa payment failed or was cancelled.' });
+          } else if (status === 'not_found') {
+            // This handles the gap between STK Push and database persistence
+            setMessage({ type: 'alert', text: 'Initializing transaction... please wait.' });
           }
         } catch (error) {
           console.error('Polling error:', error);

@@ -107,7 +107,11 @@ export async function initiateStkPush(phoneNumber: string, amount: number, payme
 }
 
 async function recordPendingPayment(phone: string, amount: number, type: string, referenceId: string, checkoutRequestId: string) {
-  const supabase = createClient();
+  // Use Admin Client here because RLS might be tricky during background server execution
+  // and we MUST ensure the record is created so the callback can find it.
+  const { createAdminClient } = await import('@/lib/supabase/admin');
+  const supabase = createAdminClient();
+  
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     console.error('No authenticated user found while recording pending payment');
