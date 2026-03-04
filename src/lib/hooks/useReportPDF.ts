@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { BusinessProfile } from '@/types/database';
+import { trackActionAction } from '@/lib/actions/subscription';
 
 interface GenerateReportOptions {
   title: string;
@@ -86,7 +87,7 @@ export const useReportPDF = () => {
       // Table Data
       const tableHeaders = columns.map(col => col.header);
       const tableData = data.map(item => 
-        columns.map(col => col.format ? col.format(item[col.dataKey]) : item[col.dataKey] || '-')
+        columns.map(col => col.format ? col.format(item[col.dataKey], item) : item[col.dataKey] || '-')
       );
 
       autoTable(doc, {
@@ -131,7 +132,11 @@ export const useReportPDF = () => {
         }
       });
 
-      doc.save(fileName || `${title.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`);
+      const finalFileName = fileName || `${title.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+      doc.save(finalFileName);
+      
+      // Track report export usage
+      await trackActionAction('report_exports', undefined, { fileName: finalFileName, title });
       
     } catch (error) {
       console.error('Error generating report PDF', error);

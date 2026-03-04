@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { NextRequest, NextResponse } from 'next/server';
 import { sendSubscriptionConfirmationEmail } from '@/lib/actions/subscription-emails';
 
@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
     const checkoutRequestId = result.CheckoutRequestID;
     const resultCode = result.ResultCode; // 0 means success
 
-    const supabase = createClient();
+    const supabase = createAdminClient();
 
     if (resultCode === 0) {
       // Success

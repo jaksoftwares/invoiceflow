@@ -2,186 +2,93 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import * as subService from '@/lib/services/subscription-service';
 
-export type ActionType = 
-  | 'invoices_created' 
-  | 'emails_sent' 
-  | 'pdf_downloads' 
-  | 'templates_used' 
-  | 'clients_created' 
-  | 'products_created' 
-  | 'report_exports';
+export type ActionType = subService.ActionType;
+
+export interface UsageLimitResult {
+  allowed: boolean;
+  reason?: string;
+  message?: string;
+  current?: number;
+  limit?: number;
+  allowPayg?: boolean;
+}
 
 export async function getActiveSubscription() {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
-
   if (!user) return null;
-
-  const { data: subscription, error } = await supabase
-    .from('subscriptions')
-    .select(`
-      *,
-      plans (*)
-    `)
-    .eq('user_id', user.id)
-    .maybeSingle();
-
-  if (error) {
-    console.error('Error fetching subscription:', error);
-    return null;
-  }
-
-  // If no subscription found, they are on "None" (which we might want to treat as Free or prompt)
-  // Per docs, users without subscription go to PAYG.
-  return subscription;
+  return subService.getActiveSubscription(supabase, user.id);
 }
 
 export async function getUsageStats() {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
-
   if (!user) return null;
-
-  // Get the most recent usage tracking record
-  const { data: usage, error } = await supabase
-    .from('usage_tracking')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('billing_period_start', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (error) {
-    console.error('Error fetching usage stats:', error);
-    return null;
-  }
-
-  return usage;
+  return subService.getUsageStats(supabase, user.id);
 }
 
-/**
- * Checks if the user has reached their limit for a specific action.
- * Returns { allowed: boolean, limit?: number, current?: number, reason?: string }
- */
-export async function checkUsageLimit(action: ActionType) {
+export async function checkUsageLimit(action: ActionType): Promise<UsageLimitResult> {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
-
   if (!user) return { allowed: false, reason: 'unauthorized' };
-
-  const [subscription, usage] = await Promise.all([
-    getActiveSubscription(),
-    getUsageStats()
-  ]);
-
-  if (!subscription) {
-    // No subscription means they must use PAYG or we default to Free plan limits if desired
-    // For now, let's say they are restricted and need to pay or subscribe
-    return { 
-      allowed: false, 
-      reason: 'subscription_required', 
-      message: 'You need an active subscription or use Pay-As-You-Go for this action.' 
-    };
-  }
-
-  const plan = subscription.plans;
-  const currentUsage = usage ? (usage[action as keyof typeof usage] as number) : 0;
-  
-  let limit = 0;
-  switch (action) {
-    case 'invoices_created':
-      limit = plan.max_invoices_per_month;
-      break;
-    case 'clients_created':
-      limit = plan.max_clients;
-      break;
-    case 'products_created':
-      limit = plan.max_products;
-      break;
-    case 'emails_sent':
-      limit = plan.max_email_sends;
-      break;
-    case 'templates_used':
-      limit = plan.max_templates_access;
-      break;
-    // ... add more as needed
-  }
-
-  // limit 0 usually means unlimited in our seed data for Business/Lifetime
-  if (limit === 0 && (plan.name === 'Business' || plan.name === 'Lifetime')) {
-    return { allowed: true, current: currentUsage, limit: Infinity };
-  }
-
-  if (currentUsage >= limit) {
-    return { 
-      allowed: false, 
-      reason: 'limit_reached', 
-      current: currentUsage, 
-      limit,
-      allowPayg: plan.allow_payg_after_limit
-    };
-  }
-
-  return { allowed: true, current: currentUsage, limit };
+  return subService.checkUsageLimit(supabase, user.id, action);
 }
 
-/**
- * Increments the usage counter for an action.
- */
 export async function incrementUsage(action: ActionType) {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
-
   if (!user) return;
-
-  const usage = await getUsageStats();
-  if (!usage) return;
-
-  const { error } = await supabase
-    .from('usage_tracking')
-    .update({ [action]: (usage[action as keyof typeof usage] as number) + 1 })
-    .eq('id', usage.id);
-
-  if (error) {
-    console.error('Error incrementing usage:', error);
-  }
+  
+  await subService.incrementUsage(supabase, user.id, action);
 
   revalidatePath('/dashboard');
+  revalidatePath('/dashboard/subscription');
   revalidatePath('/user-profile-settings');
 }
 
-/**
- * Logs an activity
- */
+export async function checkFeatureAccess(feature: 'watermark_enabled' | 'allow_csv_export' | 'allow_branding' | 'allow_priority_email') {
+  const subscription = await getActiveSubscription();
+  if (!subscription) {
+    return {
+      watermark_enabled: true,
+      allow_csv_export: false,
+      allow_branding: false,
+      allow_priority_email: false
+    }[feature];
+  }
+  return subscription.plans[feature];
+}
+
+export async function getUserPlan() {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  
+  const subscription = await subService.getActiveSubscription(supabase, user.id);
+  if (!subscription) {
+     const { data: freePlan } = await supabase.from('plans').select('*').eq('name', 'Free').single();
+     return freePlan;
+  }
+  return subscription.plans;
+}
+
 export async function logActivity(actionType: string, resourceId?: string, metadata: any = {}) {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
-
   if (!user) return;
-
-  await supabase.from('activity_logs').insert({
-    user_id: user.id,
-    action_type: actionType,
-    resource_id: resourceId,
-    metadata
-  });
+  await subService.logActivity(supabase, user.id, actionType, resourceId, metadata);
 }
 
-/**
- * Initiates a Free subscription for a new user
- */
 export async function initializeFreeSubscription() {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
-
   if (!user) return;
 
-  // Check if they already have one
   const existing = await getActiveSubscription();
   if (existing) return;
 
-  // Get Free plan ID
   const { data: freePlan } = await supabase
     .from('plans')
     .select('id')
@@ -199,16 +106,11 @@ export async function initializeFreeSubscription() {
   });
 }
 
-/**
- * Checks the status of a payment by CheckoutRequestID
- */
 export async function checkPaymentStatus(checkoutRequestId: string) {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
-
   if (!user) return { status: 'unauthorized' };
 
-  // Check subscription_payments
   const { data: subscriptionPayment } = await supabase
     .from('subscription_payments')
     .select('status, payment_type')
@@ -219,7 +121,6 @@ export async function checkPaymentStatus(checkoutRequestId: string) {
     return { status: subscriptionPayment.status, type: 'subscription' };
   }
 
-  // Check payg_transactions
   const { data: paygPayment } = await supabase
     .from('payg_transactions')
     .select('status')
@@ -231,4 +132,23 @@ export async function checkPaymentStatus(checkoutRequestId: string) {
   }
 
   return { status: 'not_found' };
+}
+
+export async function trackActionAction(action: ActionType, resourceId?: string, metadata: any = {}): Promise<{ success: boolean; error?: string } & Partial<UsageLimitResult>> {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: 'Unauthorized' };
+
+  const usageCheck = await subService.checkUsageLimit(supabase, user.id, action);
+  if (!usageCheck.allowed) {
+    return { success: false, error: 'Limit reached', ...usageCheck };
+  }
+
+  await subService.incrementUsage(supabase, user.id, action);
+  await subService.logActivity(supabase, user.id, action, resourceId, metadata);
+
+  revalidatePath('/dashboard');
+  revalidatePath('/dashboard/subscription');
+  
+  return { success: true };
 }

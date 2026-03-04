@@ -109,7 +109,12 @@ export async function initiateStkPush(phoneNumber: string, amount: number, payme
 async function recordPendingPayment(phone: string, amount: number, type: string, referenceId: string, checkoutRequestId: string) {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return;
+  if (!user) {
+    console.error('No authenticated user found while recording pending payment');
+    return;
+  }
+
+  console.log(`Recording pending ${type} payment for user ${user.id}, amount ${amount}`);
 
   if (type === 'subscription') {
     const planId = referenceId;
@@ -124,33 +129,56 @@ async function recordPendingPayment(phone: string, amount: number, type: string,
       .eq('user_id', user.id)
       .maybeSingle();
 
-    await supabase.from('subscription_payments').insert({
+    const { error } = await supabase.from('subscription_payments').insert({
       user_id: user.id,
       amount,
       phone_number: phone,
       status: 'pending',
       payment_type: 'upgrade',
       subscription_id: subscription?.id || null, 
-      plan_id: planId, // Using the new column from upgrade_schema_v2.sql
+      plan_id: planId,
       checkout_request_id: checkoutRequestId
     });
 
-    // Send the Billing Invoice email instantly!
-    await sendSubscriptionInvoiceEmail({
-        userId: user.id,
-        planName: plan?.name || 'Pro',
-        amount,
-        invoiceNumber: checkoutRequestId.slice(0, 10).toUpperCase()
-    });
+    if (error) {
+      console.error('Error recording subscription payment:', error);
+      // We don't throw here to avoid breaking the STK response to user, 
+      // but the callback will fail later if not record exists.
+    } else {
+      // Send the Billing Invoice email instantly!
+      try {
+        await sendSubscriptionInvoiceEmail({
+            userId: user.id,
+            planName: plan?.name || 'Pro',
+            amount,
+            invoiceNumber: checkoutRequestId.slice(0, 10).toUpperCase()
+        });
+      } catch (emailErr) {
+        console.error('Failed to send invoice email:', emailErr);
+      }
+    }
 
   } else {
-    await supabase.from('payg_transactions').insert({
+    // Map action labels to database allowed types if necessary
+    // Database check constraint: 'premium_template', 'email_send', 'pdf_download', 'extra_invoice'
+    let actionType = referenceId;
+    if (actionType === 'templates_used') actionType = 'premium_template';
+    if (actionType === 'emails_sent') actionType = 'email_send';
+    if (actionType === 'pdf_downloads') actionType = 'pdf_download';
+    if (actionType === 'invoices_created') actionType = 'extra_invoice';
+    if (actionType === 'report_exports') actionType = 'pdf_download'; // Assuming reports are PDF downloads
+
+    const { error } = await supabase.from('payg_transactions').insert({
       user_id: user.id,
       amount,
-      action_type: referenceId as any,
+      action_type: actionType as any,
       status: 'pending',
       checkout_request_id: checkoutRequestId
     });
+
+    if (error) {
+      console.error('Error recording PAYG transaction:', error);
+    }
   }
 }
 

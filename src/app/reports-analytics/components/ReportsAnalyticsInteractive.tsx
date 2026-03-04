@@ -10,6 +10,9 @@ import ReportFilters from './ReportFilters';
 import ReportsTable from './ReportsTable';
 import Icon from '@/components/ui/AppIcon';
 import { useReportPDF } from '@/lib/hooks';
+import { checkUsageLimit, trackActionAction } from '@/lib/actions/subscription';
+import PlanLimitModal from '@/components/modals/PlanLimitModal';
+import { toast } from 'sonner';
 
 interface FilterState {
   dateRange: string;
@@ -56,6 +59,8 @@ interface ReportRow {
 const ReportsAnalyticsInteractive = () => {
   const [isHydrated, setIsHydrated] = useState(false);
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
+  const [limitModalOpen, setLimitModalOpen] = useState(false);
+  const [limitActionInfo, setLimitActionInfo] = useState<{ action: string; current: number; limit: number; allowPayg?: boolean } | null>(null);
   const { generateReportPDF } = useReportPDF();
 
   const [filters, setFilters] = useState<FilterState>({
@@ -86,8 +91,22 @@ const ReportsAnalyticsInteractive = () => {
     // Refetch will be triggered by the useEffect in useReports when dateRange changes
   };
 
-  const handleExportClients = () => {
+  const handleExportClients = async () => {
     if (!data?.allClients) return;
+    
+    // Check limit
+    const limitCheck = await checkUsageLimit('report_exports');
+    if (!limitCheck.allowed) {
+      setLimitActionInfo({
+        action: 'report_exports',
+        limit: limitCheck.limit ?? 0,
+        current: limitCheck.current ?? 0,
+        allowPayg: limitCheck.allowPayg ?? false
+      });
+      setLimitModalOpen(true);
+      return;
+    }
+
     generateReportPDF({
       title: 'Full Clients Report',
       subtitle: `As of ${new Date().toLocaleDateString()}`,
@@ -102,11 +121,27 @@ const ReportsAnalyticsInteractive = () => {
       businessProfile,
       fileName: 'Client_Database_Report.pdf'
     });
+    
+    await trackActionAction('report_exports', undefined, { report: 'clients_report' });
     setIsExportMenuOpen(false);
   };
 
-  const handleExportProducts = () => {
+  const handleExportProducts = async () => {
     if (!data?.allProducts) return;
+
+    // Check limit
+    const limitCheck = await checkUsageLimit('report_exports');
+    if (!limitCheck.allowed) {
+      setLimitActionInfo({
+        action: 'report_exports',
+        limit: limitCheck.limit ?? 0,
+        current: limitCheck.current ?? 0,
+        allowPayg: limitCheck.allowPayg ?? false
+      });
+      setLimitModalOpen(true);
+      return;
+    }
+
     generateReportPDF({
       title: 'Products & Services Catalog',
       subtitle: `Price List - Generated ${new Date().toLocaleDateString()}`,
@@ -120,11 +155,27 @@ const ReportsAnalyticsInteractive = () => {
       businessProfile,
       fileName: 'Products_Catalog_Report.pdf'
     });
+    
+    await trackActionAction('report_exports', undefined, { report: 'products_report' });
     setIsExportMenuOpen(false);
   };
 
-  const handleExportPerformance = () => {
+  const handleExportPerformance = async () => {
     if (!reportsTableData) return;
+
+    // Check limit
+    const limitCheck = await checkUsageLimit('report_exports');
+    if (!limitCheck.allowed) {
+      setLimitActionInfo({
+        action: 'report_exports',
+        limit: limitCheck.limit ?? 0,
+        current: limitCheck.current ?? 0,
+        allowPayg: limitCheck.allowPayg ?? false
+      });
+      setLimitModalOpen(true);
+      return;
+    }
+
     generateReportPDF({
       title: 'Business Performance Summary',
       subtitle: 'Client-wise revenue and collection analysis',
@@ -139,11 +190,27 @@ const ReportsAnalyticsInteractive = () => {
       businessProfile,
       fileName: 'Business_Performance_Report.pdf'
     });
+    
+    await trackActionAction('report_exports', undefined, { report: 'performance_report' });
     setIsExportMenuOpen(false);
   };
 
-  const handleExportInvoices = () => {
+  const handleExportInvoices = async () => {
     if (!data?.allInvoices) return;
+
+    // Check limit
+    const limitCheck = await checkUsageLimit('report_exports');
+    if (!limitCheck.allowed) {
+      setLimitActionInfo({
+        action: 'report_exports',
+        limit: limitCheck.limit ?? 0,
+        current: limitCheck.current ?? 0,
+        allowPayg: limitCheck.allowPayg ?? false
+      });
+      setLimitModalOpen(true);
+      return;
+    }
+
     generateReportPDF({
       title: 'Detailed Invoice Records',
       subtitle: `Full Transaction History - ${new Date().toLocaleDateString()}`,
@@ -159,6 +226,8 @@ const ReportsAnalyticsInteractive = () => {
       businessProfile,
       fileName: 'Detailed_Invoice_Ledger.pdf'
     });
+    
+    await trackActionAction('report_exports', undefined, { report: 'invoices_report' });
     setIsExportMenuOpen(false);
   };
    // ... rest of the code ...
@@ -325,6 +394,14 @@ const ReportsAnalyticsInteractive = () => {
           <ReportsTable data={reportsTableData} currency={currency} />
         </div>
       </div>
+      <PlanLimitModal
+        isOpen={limitModalOpen}
+        onClose={() => setLimitModalOpen(false)}
+        action={limitActionInfo?.action || 'report_exports'}
+        current={limitActionInfo?.current || 0}
+        limit={limitActionInfo?.limit || 0}
+        allowPayg={limitActionInfo?.allowPayg}
+      />
     </div>
   );
 };

@@ -12,6 +12,8 @@ import ShareInvoiceModal from '@/components/modals/ShareInvoiceModal';
 import InvoiceCard from './InvoiceCard';
 import { useInvoices } from '@/lib/hooks/useInvoices';
 import { useClients } from '@/lib/hooks/useClients';
+import { checkUsageLimit } from '@/lib/actions/subscription';
+import PlanLimitModal from '@/components/modals/PlanLimitModal';
 import { sendInvoiceEmail } from '@/lib/actions/email';
 import { useInvoicePDF } from '@/lib/hooks/useInvoicePDF';
 import { supabase } from '@/lib/supabase/client';
@@ -95,6 +97,8 @@ const InvoiceManagementInteractive = ({ initialInvoices }: InvoiceManagementInte
   const [previewBusinessProfile, setPreviewBusinessProfile] = useState<any>(null);
 
   const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [limitModalOpen, setLimitModalOpen] = useState(false);
+  const [limitActionInfo, setLimitActionInfo] = useState<{ action: string; current: number; limit: number; allowPayg?: boolean } | null>(null);
   const [selectedInvoiceForShare, setSelectedInvoiceForShare] = useState<InvoiceWithClient | null>(null);
 
   const isFiltering = searchQuery.length > 0 || 
@@ -267,6 +271,19 @@ const InvoiceManagementInteractive = ({ initialInvoices }: InvoiceManagementInte
   const handleDownload = async (id: string) => {
     const invoice = displayInvoices.find((inv: InvoiceWithClient) => inv.id === id);
     if (!invoice) return;
+
+    // Check limit
+    const limitCheck = await checkUsageLimit('pdf_downloads');
+    if (!limitCheck.allowed) {
+      setLimitActionInfo({
+        action: 'pdf_downloads',
+        limit: limitCheck.limit ?? 0,
+        current: limitCheck.current ?? 0,
+        allowPayg: limitCheck.allowPayg ?? false
+      });
+      setLimitModalOpen(true);
+      return;
+    }
     
     const { data: invoiceData } = await supabase
       .from('invoices')
@@ -296,9 +313,22 @@ const InvoiceManagementInteractive = ({ initialInvoices }: InvoiceManagementInte
     }
   };
 
-  const handleSend = (id: string) => {
+  const handleSend = async (id: string) => {
     const invoice = displayInvoices.find((inv: InvoiceWithClient) => inv.id === id);
     if (invoice) {
+      // Check limit
+      const limitCheck = await checkUsageLimit('emails_sent');
+      if (!limitCheck.allowed) {
+        setLimitActionInfo({
+          action: 'emails_sent',
+          limit: limitCheck.limit ?? 0,
+          current: limitCheck.current ?? 0,
+          allowPayg: limitCheck.allowPayg ?? false
+        });
+        setLimitModalOpen(true);
+        return;
+      }
+
       setSelectedInvoiceForShare(invoice);
       setShareModalOpen(true);
     }
@@ -605,6 +635,14 @@ const InvoiceManagementInteractive = ({ initialInvoices }: InvoiceManagementInte
           </div>
         </div>
       </div>
+      <PlanLimitModal
+        isOpen={limitModalOpen}
+        onClose={() => setLimitModalOpen(false)}
+        action={limitActionInfo?.action || 'emails_sent'}
+        current={limitActionInfo?.current || 0}
+        limit={limitActionInfo?.limit || 0}
+        allowPayg={limitActionInfo?.allowPayg}
+      />
     </div>
   );
 };

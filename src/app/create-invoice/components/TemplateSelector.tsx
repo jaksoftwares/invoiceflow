@@ -29,31 +29,86 @@ const templates = [
   { id: 'creative', name: 'Creative Gradient', description: 'Bold artistic design' },
 ];
 
-const TemplateSelector = ({ selectedTemplate, onTemplateChange }: TemplateSelectorProps) => {
+const TemplateSelector = ({ selectedTemplate, onTemplateChange, plan }: { selectedTemplate: string; onTemplateChange: (template: string) => void; plan: any }) => {
+  const maxTemplates = plan?.max_templates_access || 3;
+  const isUnlimited = maxTemplates === 0;
+
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-heading font-semibold text-foreground">Select Template</h3>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {templates.map((template) => (
-          <button
-            key={template.id}
-            type="button"
-            onClick={() => onTemplateChange(template.id)}
-            className={`flex flex-col p-4 text-left border rounded-lg transition-smooth ${
-              selectedTemplate === template.id
-                ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                : 'border-border bg-card hover:border-primary/50'
-            }`}
-          >
-            <div className="flex items-center justify-between mb-2">
-              <span className="font-medium text-foreground">{template.name}</span>
-              {selectedTemplate === template.id && (
-                <Icon name="CheckCircleIcon" size={20} className="text-primary" variant="solid" />
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-heading font-semibold text-foreground">Select Template</h3>
+        {!isUnlimited && (
+          <span className="text-xs bg-muted px-3 py-1 rounded-full font-bold text-muted-foreground uppercase tracking-widest">
+            {maxTemplates} Design{maxTemplates !== 1 ? 's' : ''} Included
+          </span>
+        )}
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {templates.map((template, index) => {
+          const isPremium = template.id.startsWith('premium_');
+          const isLocked = !isUnlimited && index >= maxTemplates;
+          
+          return (
+            <button
+              key={template.id}
+              type="button"
+              onClick={() => {
+                if (isLocked) {
+                  // If locked, we still allow selection but we'll handle the PAYG in the parent
+                  onTemplateChange(template.id);
+                } else {
+                  onTemplateChange(template.id);
+                }
+              }}
+              className={`flex flex-col p-4 text-left border-2 rounded-2xl transition-all relative overflow-hidden group ${
+                selectedTemplate === template.id
+                  ? 'border-primary bg-primary/5 shadow-elevation-2'
+                  : isLocked 
+                    ? 'border-slate-100 dark:border-slate-800 bg-muted/30 grayscale-[0.5] opacity-80 hover:border-slate-200'
+                    : 'border-slate-100 dark:border-slate-800 bg-card hover:border-primary/30'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <span className={`font-bold uppercase tracking-tight text-sm ${selectedTemplate === template.id ? 'text-primary' : 'text-slate-900 dark:text-white'}`}>
+                    {template.name}
+                  </span>
+                  {isLocked && (
+                    <div className="flex items-center gap-1 bg-slate-900 text-white text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-tighter">
+                       <Icon name="LockClosedIcon" size={10} />
+                       <span>PRO</span>
+                    </div>
+                  )}
+                </div>
+                {isPremium ? (
+                  <span className="bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest border border-amber-200 dark:border-amber-900/50">
+                    Premium
+                  </span>
+                ) : (
+                  selectedTemplate === template.id && !isLocked && (
+                    <Icon name="CheckCircleIcon" size={18} className="text-primary" variant="solid" />
+                  )
+                )}
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium leading-relaxed">
+                {template.description}
+              </p>
+              
+              {isLocked && selectedTemplate === template.id && (
+                <div className="mt-2 flex items-center gap-2 text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-950/30 p-2 rounded-lg border border-amber-100 dark:border-amber-900/40 animate-in fade-in slide-in-from-top-1">
+                  <Icon name="CurrencyDollarIcon" size={12} />
+                  <span>PAY AS YOU GO: 10 KES to unlock this design</span>
+                </div>
               )}
-            </div>
-            <p className="text-xs text-muted-foreground">{template.description}</p>
-          </button>
-        ))}
+
+              {selectedTemplate === template.id && !isLocked && (
+                <div className="absolute top-0 right-0 w-8 h-8 bg-primary/10 rounded-bl-3xl flex items-center justify-center">
+                   <div className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" />
+                </div>
+              )}
+            </button>
+          );
+        })}
       </div>
     </div>
   );

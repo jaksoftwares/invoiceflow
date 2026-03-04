@@ -6,6 +6,7 @@ import jsPDF from 'jspdf';
 import type { Invoice, InvoiceItem, Client, BusinessProfile } from '@/types/database';
 import { supabase } from '@/lib/supabase/client';
 import { toast } from 'sonner';
+import { trackActionAction } from '@/lib/actions/subscription';
 
 interface GeneratePDFOptions {
   invoice?: Invoice;
@@ -14,6 +15,7 @@ interface GeneratePDFOptions {
   businessProfile?: BusinessProfile;
   fileName?: string;
   template?: string;
+  watermarkEnabled?: boolean;
 }
 
 export const useInvoicePDF = () => {
@@ -21,7 +23,7 @@ export const useInvoicePDF = () => {
   const previewRef = useRef<HTMLDivElement>(null);
 
   const generatePDF = useCallback(async (options: GeneratePDFOptions = {}) => {
-    const { fileName, invoice, items, client, businessProfile, template } = options;
+    const { fileName, invoice, items, client, businessProfile, template, watermarkEnabled = false } = options;
     
     setIsGenerating(true);
     const toastId = toast.loading('Generating PDF...');
@@ -160,6 +162,12 @@ export const useInvoicePDF = () => {
                 <p style="font-size: 12px; color: #94a3b8; line-height: 1.6;">${invoice.terms}</p>
               </div>
               ` : ''}
+
+              ${watermarkEnabled ? `
+              <div style="margin-top: 50px; text-align: center; border-top: 1px solid #f1f5f9; padding-top: 20px;">
+                <p style="font-size: 10px; color: #94a3b8; letter-spacing: 1px; font-weight: 600;">POWERED BY <span style="color: #3b82f6;">INVOICEFLOW</span></p>
+              </div>
+              ` : ''}
             </div>
           `;
         } else {
@@ -248,6 +256,14 @@ export const useInvoicePDF = () => {
         const finalFileName = fileName || `Invoice-${invoiceNum}-${clientName}.pdf`;
         pdf.save(finalFileName);
         
+        // Track usage (Premium template)
+        if (templateToUse.startsWith('premium_')) {
+          await trackActionAction('templates_used', invoice.id, { template: templateToUse });
+        }
+        
+        // Track PDF download
+        await trackActionAction('pdf_downloads', invoice.id, { fileName: finalFileName });
+
         toast.success('PDF downloaded successfully', { id: toastId });
         setIsGenerating(false);
         return;
@@ -426,6 +442,10 @@ export const useInvoicePDF = () => {
       
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
       pdf.save(fileName);
+      
+      // Track PDF download
+      await trackActionAction('pdf_downloads', undefined, { fileName });
+
       toast.success('PDF downloaded successfully', { id: toastId });
     } catch (err) {
       console.error('Download error:', err);

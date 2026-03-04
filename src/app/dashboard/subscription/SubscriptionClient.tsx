@@ -6,6 +6,7 @@ import { checkPaymentStatus } from '@/lib/actions/subscription';
 import { useRouter } from 'next/navigation';
 import { CheckCircle, XCircle, Zap, Shield, CreditCard, History, ArrowUpRight, BarChart, Loader2 } from 'lucide-react';
 import Icon from '@/components/ui/AppIcon';
+import { toast } from 'sonner';
 
 interface SubscriptionClientProps {
   initialSubscription: any;
@@ -122,22 +123,30 @@ export default function SubscriptionClient({
 
   return (
     <div className="space-y-10 animate-fade-in-up">
-      {/* Processing Overlay */}
+      {/* Processing Modal - Less restrictive than full overlay */}
       {activeRequestId && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6 animate-in fade-in duration-300">
-           <div className="bg-white dark:bg-slate-900 p-10 rounded-[3rem] border-2 border-primary/20 shadow-2xl max-w-md w-full text-center space-y-6 animate-in zoom-in duration-300">
-              <div className="relative mx-auto w-24 h-24">
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md z-[120] flex items-center justify-center p-6 animate-in fade-in duration-300">
+           <div className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border-2 border-primary/20 shadow-2xl max-w-sm w-full text-center space-y-6 animate-in zoom-in slide-in-from-bottom-4 duration-300">
+              <div className="relative mx-auto w-20 h-20">
                  <div className="absolute inset-0 rounded-full border-4 border-primary/10 border-t-primary animate-spin" />
                  <div className="absolute inset-0 flex items-center justify-center">
-                    <Loader2 className="w-10 h-10 text-primary animate-pulse" />
+                    <Icon name="PhoneIcon" size={32} className="text-primary animate-pulse" />
                  </div>
               </div>
-              <div>
-                <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-2 leading-tight">Payment Processing</h3>
-                <p className="text-slate-500 dark:text-slate-400 font-medium">Please authorize the KES {plans.find(p => p.id === loading)?.price_monthly || '---'} payment on your phone.</p>
+              <div className="space-y-2">
+                <h3 className="text-xl font-black text-slate-900 dark:text-white leading-tight">Authorize Payment</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
+                  We&apos;ve sent an STK push to <span className="text-slate-900 dark:text-white font-bold">{phoneNumber}</span>. <br/>
+                  Please enter your M-Pesa PIN.
+                </p>
               </div>
-              <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10">
-                 <p className="text-xs font-black text-primary uppercase tracking-widest leading-loose">Waiting for M-Pesa Confirmation...</p>
+              <div className="pt-2">
+                 <button 
+                  onClick={() => setActiveRequestId(null)}
+                  className="w-full py-3 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-slate-200 transition-colors"
+                 >
+                   Check Later
+                 </button>
               </div>
            </div>
         </div>
@@ -374,7 +383,7 @@ export default function SubscriptionClient({
                   <td className="px-8 py-4 font-medium capitalize">{payment.payment_type} Payment</td>
                   <td className="px-8 py-4 text-sm font-mono">{payment.mpesa_receipt_number || '---'}</td>
                   <td className="px-8 py-4 font-bold">KES {payment.amount}</td>
-                  <td className="px-8 py-4">
+                  <td className="px-8 py-4 flex items-center gap-3">
                     <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${
                       payment.status === 'completed' ? 'bg-success/10 text-success' : 
                       payment.status === 'pending' ? 'bg-warning/10 text-warning' : 
@@ -382,6 +391,23 @@ export default function SubscriptionClient({
                     }`}>
                       {payment.status}
                     </span>
+                    {payment.status === 'pending' && payment.checkout_request_id && (
+                      <button 
+                        onClick={async () => {
+                          const { status } = await checkPaymentStatus(payment.checkout_request_id);
+                          if (status === 'completed') {
+                            toast.success('Payment confirmed!');
+                            router.refresh();
+                          } else {
+                            toast.info(`Payment status is still ${status}`);
+                          }
+                        }}
+                        className="p-1 hover:bg-slate-200 rounded-lg transition-colors text-slate-400 hover:text-primary"
+                        title="Check status"
+                      >
+                         <Icon name="ArrowPathIcon" size={14} />
+                      </button>
+                    )}
                   </td>
                 </tr>
               )) : (

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/api';
 import { z } from 'zod';
+import * as subService from '@/lib/services/subscription-service';
 
 const productSchema = z.object({
   name: z.string().min(1, 'Product name is required'),
@@ -46,6 +47,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Check usage limit
+    const usageCheck = await subService.checkUsageLimit(supabase, user.id, 'products_created');
+    if (!usageCheck.allowed) {
+      return NextResponse.json({ error: 'Product limit reached', details: usageCheck.reason }, { status: 403 });
+    }
+
     const body = await request.json();
     const validationResult = productSchema.safeParse(body);
 
@@ -68,6 +75,10 @@ export async function POST(request: NextRequest) {
       console.error('Database error:', error);
       return NextResponse.json({ error: 'Failed to create product' }, { status: 500 });
     }
+
+    // Increment usage
+    await subService.incrementUsage(supabase, user.id, 'products_created');
+    await subService.logActivity(supabase, user.id, 'product_created', product.id, { name: product.name });
 
     return NextResponse.json(product, { status: 201 });
   } catch (error) {

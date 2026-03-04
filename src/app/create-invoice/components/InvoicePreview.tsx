@@ -22,6 +22,7 @@ interface InvoicePreviewProps {
   terms: string;
   selectedTemplate: string;
   fullSize?: boolean;
+  watermarkEnabled?: boolean;
 }
 
 const InvoicePreview = ({
@@ -36,6 +37,7 @@ const InvoicePreview = ({
   terms,
   selectedTemplate,
   fullSize = false,
+  watermarkEnabled = false,
 }: InvoicePreviewProps) => {
   const [isHydrated, setIsHydrated] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -124,14 +126,16 @@ const InvoicePreview = ({
   const renderDefaultTemplate = () => (
     <div className="bg-white text-slate-800 font-sans relative">
       {/* InvoiceFlow Watermark Background */}
-      <div className="absolute inset-0 opacity-[0.03] pointer-events-none overflow-hidden">
-        <div className="absolute top-1/4 left-1/4 text-[120px] font-black transform -translate-x-1/2 -translate-y-1/2 rotate-12">
-          InvoiceFlow
+      {watermarkEnabled && (
+        <div className="absolute inset-0 opacity-[0.03] pointer-events-none overflow-hidden">
+          <div className="absolute top-1/4 left-1/4 text-[120px] font-black transform -translate-x-1/2 -translate-y-1/2 rotate-12">
+            InvoiceFlow
+          </div>
+          <div className="absolute bottom-1/4 right-1/4 text-[80px] font-black transform translate-x-1/2 translate-y-1/2 -rotate-12">
+            InvoiceFlow
+          </div>
         </div>
-        <div className="absolute bottom-1/4 right-1/4 text-[80px] font-black transform translate-x-1/2 translate-y-1/2 -rotate-12">
-          InvoiceFlow
-        </div>
-      </div>
+      )}
 
       {/* Header with InvoiceFlow Branding */}
       <div className="bg-gradient-to-r from-primary to-primary/80 text-white px-8 py-6 relative">
@@ -152,7 +156,7 @@ const InvoicePreview = ({
           </div>
           <div className="text-right">
             <p className="text-sm font-medium">{formatDate(details.issueDate)}</p>
-            <p className="text-white/70 text-xs mt-1">Powered by InvoiceFlow</p>
+            {watermarkEnabled && <p className="text-white/70 text-xs mt-1">Powered by InvoiceFlow</p>}
           </div>
         </div>
       </div>
@@ -275,9 +279,11 @@ const InvoicePreview = ({
       </div>
 
       {/* Footer with InvoiceFlow Branding */}
-      <div className="bg-primary/5 px-8 py-4 text-center border-t border-primary/20">
-        <p className="text-xs text-primary font-medium">Generated with InvoiceFlow • Professional Invoicing Solution</p>
-      </div>
+      {watermarkEnabled && (
+        <div className="bg-primary/5 px-8 py-4 text-center border-t border-primary/20">
+          <p className="text-xs text-primary font-medium">Generated with InvoiceFlow • Professional Invoicing Solution</p>
+        </div>
+      )}
     </div>
   );
   

@@ -16,6 +16,8 @@ import { createInvoiceAction, updateInvoiceAction } from '@/lib/actions/invoices
 import { supabase } from '@/lib/supabase/client';
 import { useInvoicePDF } from '@/lib/hooks/useInvoicePDF';
 import { useSettings } from '@/lib/hooks/useSettings';
+import { checkFeatureAccess, trackActionAction, checkUsageLimit, getUserPlan } from '@/lib/actions/subscription';
+import PlanLimitModal from '@/components/modals/PlanLimitModal';
 import type { Client, InvoiceItem, BusinessProfile, Product } from '@/types/database';
 
 interface CreateInvoiceInteractiveProps {
@@ -69,6 +71,7 @@ const CreateInvoiceInteractive = ({ initialClients, initialProducts, editId, dup
       setCurrency(settings.default_currency);
     }
   }, [settings, editId, duplicateId]);
+  
   const [notes, setNotes] = useState('');
   const [terms, setTerms] = useState('');
   const [paymentInstructions, setPaymentInstructions] = useState('');
@@ -77,6 +80,23 @@ const CreateInvoiceInteractive = ({ initialClients, initialProducts, editId, dup
   const [isAddClientModalOpen, setIsAddClientModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [watermarkEnabled, setWatermarkEnabled] = useState(true);
+  const [userPlan, setUserPlan] = useState<any>(null);
+  const [limitModalOpen, setLimitModalOpen] = useState(false);
+  const [limitActionInfo, setLimitActionInfo] = useState<{ action: string; current: number; limit: number; allowPayg?: boolean } | null>(null);
+
+  // Fetch Features (Watermark)
+  useEffect(() => {
+    const fetchFeatures = async () => {
+      const [isWatermarkEnabled, plan] = await Promise.all([
+        checkFeatureAccess('watermark_enabled'),
+        getUserPlan()
+      ]);
+      setWatermarkEnabled(isWatermarkEnabled);
+      setUserPlan(plan);
+    };
+    fetchFeatures();
+  }, []);
 
   useEffect(() => {
     setIsHydrated(true);
@@ -94,11 +114,6 @@ const CreateInvoiceInteractive = ({ initialClients, initialProducts, editId, dup
       });
     }
 
-    // Initialize clients state with initial data
-    if (initialClients.length > 0) {
-      // Note: useClients hook manages its own state, so we don't set it directly
-    }
-
     // Fetch Business Profiles
     const fetchBusinessProfiles = async () => {
       try {
@@ -111,7 +126,6 @@ const CreateInvoiceInteractive = ({ initialClients, initialProducts, editId, dup
         
         if (data && data.length > 0) {
           setBusinessProfiles(data);
-          // Only default if not editing or if fetchInvoice hasn't set it yet
           if (!editId) {
             setSelectedBusiness(data[0]);
           }
@@ -147,11 +161,8 @@ const CreateInvoiceInteractive = ({ initialClients, initialProducts, editId, dup
         if (error) throw error;
         if (!invoice) throw new Error('Invoice not found');
 
-        // Populate State
         setSelectedClient(invoice.client as unknown as Client); 
         
-        // If duplicating, keep new invoice number and dates
-        // If editing, use existing invoice number and dates
         if (editId) {
           setInvoiceDetails({
             invoiceNumber: invoice.invoice_number,
@@ -160,8 +171,6 @@ const CreateInvoiceInteractive = ({ initialClients, initialProducts, editId, dup
             paymentTerms: invoice.payment_terms,
           });
         }
-        // If duplicateId, we already set defaults in previous effect (isHydrated effect)
-        // But we might want to carry over payment terms?
         if (duplicateId) {
            setInvoiceDetails(prev => ({
              ...prev,
@@ -169,7 +178,6 @@ const CreateInvoiceInteractive = ({ initialClients, initialProducts, editId, dup
            }));
         }
         
-        // Transform items to match InvoiceItem type
         if (invoice.items) {
           setLineItems(invoice.items.map((item: any) => ({
             ...item,
@@ -188,7 +196,6 @@ const CreateInvoiceInteractive = ({ initialClients, initialProducts, editId, dup
         setPaymentInstructions(invoice.payment_instructions || '');
         setSelectedTemplate(invoice.template || 'professional');
 
-        // Business Profile
         if (invoice.business_id) {
             const { data: business } = await supabase
               .from('business_profiles')
@@ -218,7 +225,7 @@ const CreateInvoiceInteractive = ({ initialClients, initialProducts, editId, dup
     });
     if (newClient) {
       setSelectedClient(newClient);
-      refetchClients(); // Refresh the clients list
+      refetchClients();
     }
   };
 
@@ -262,7 +269,22 @@ const CreateInvoiceInteractive = ({ initialClients, initialProducts, editId, dup
     setIsSaving(true);
     setError(null);
     try {
-      // Calculate totals
+      // Check limit for new invoices (not edits)
+      if (!editId) {
+        const limitCheck = await checkUsageLimit('invoices_created');
+        if (!limitCheck.allowed) {
+          setLimitActionInfo({
+            action: 'invoices_created',
+            limit: limitCheck.limit ?? 0,
+            current: limitCheck.current ?? 0,
+            allowPayg: limitCheck.allowPayg ?? false
+          });
+          setLimitModalOpen(true);
+          setIsSaving(false);
+          return;
+        }
+      }
+
       const subtotal = lineItems.reduce((sum, item) => sum + item.amount, 0);
       const taxAmount = (subtotal * taxRate) / 100;
       const totalAmount = subtotal + taxAmount - discount;
@@ -310,20 +332,58 @@ const CreateInvoiceInteractive = ({ initialClients, initialProducts, editId, dup
     }
   };
 
-  /* Hook for PDF Generation */
   const { generatePDF } = useInvoicePDF();
 
   const handleGeneratePDF = async () => {
     if (!validateForm()) return;
 
-    // Generate PDF from the hidden full-size container
-    // Create descriptive filename: Invoice-INV-number-client-name.pdf
+    // 1. Check Limits (Basic check before we even start)
+    const pdfLimit = await checkUsageLimit('pdf_downloads');
+    if (!pdfLimit.allowed) {
+      setLimitActionInfo({ 
+        action: 'pdf_downloads', 
+        limit: pdfLimit.limit ?? 0, 
+        current: pdfLimit.current ?? 0, 
+        allowPayg: pdfLimit.allowPayg ?? false 
+      });
+      setLimitModalOpen(true);
+      return;
+    }
+
+    // Check template limit if using a premium one
+    const templates = [
+      'default', 'invoiceflow_clean', 'invoiceflow_business', 
+      'invoiceflow_modern', 'invoiceflow_enterprise', 'invoiceflow_luxe'
+    ];
+    const templateIndex = templates.indexOf(selectedTemplate);
+    const maxTemplates = userPlan?.max_templates_access || 3;
+    
+    // If template is outside of allowed range and not unlimited
+    if (maxTemplates !== 0 && (templateIndex === -1 || templateIndex >= maxTemplates)) {
+      const templateLimit = await checkUsageLimit('templates_used');
+      if (!templateLimit.allowed) {
+        setLimitActionInfo({ 
+          action: 'templates_used', 
+          limit: templateLimit.limit ?? 0, 
+          current: templateLimit.current ?? 0, 
+          allowPayg: templateLimit.allowPayg ?? false 
+        });
+        setLimitModalOpen(true);
+        return;
+      }
+    }
+
     const invoiceNum = invoiceDetails.invoiceNumber || 'draft';
     const clientName = selectedClient?.company_name 
       ? selectedClient.company_name.toLowerCase().replace(/[^a-z0-9]/g, '-')
       : 'no-client';
     const fileName = `Invoice-${invoiceNum}-${clientName}.pdf`.toLowerCase();
-    await generatePDF({ fileName });
+    
+    await generatePDF({ 
+      fileName,
+      watermarkEnabled, 
+      template: selectedTemplate
+    });
   };
 
   if (!isHydrated || loadingInvoice) {
@@ -442,7 +502,7 @@ const CreateInvoiceInteractive = ({ initialClients, initialProducts, editId, dup
               </div>
 
               <div className="bg-card border border-border rounded-md p-6 shadow-elevation-1">
-                <TemplateSelector selectedTemplate={selectedTemplate} onTemplateChange={setSelectedTemplate} />
+                <TemplateSelector selectedTemplate={selectedTemplate} onTemplateChange={setSelectedTemplate} plan={userPlan} />
               </div>
 
               <div className="bg-card border border-border rounded-md p-6 shadow-elevation-1">
@@ -475,12 +535,7 @@ const CreateInvoiceInteractive = ({ initialClients, initialProducts, editId, dup
                 </button>
                 <button
                   onClick={() => {
-                     // If it's a new invoice, save it first, then open share modal?
-                     // Or just open share modal and save on send?
-                     // For better UX, let's open share modal if validation passes.
                      if (validateForm()) {
-                        // We need to implement share logic here similar to InvoiceManagement
-                        // But since we might be in 'create' mode without an ID, we should probably save first.
                         handleSave('sent');
                      }
                   }}
@@ -516,6 +571,7 @@ const CreateInvoiceInteractive = ({ initialClients, initialProducts, editId, dup
                   notes={notes}
                   terms={terms}
                   selectedTemplate={selectedTemplate}
+                  watermarkEnabled={watermarkEnabled}
                 />
               </div>
             </div>
@@ -523,7 +579,6 @@ const CreateInvoiceInteractive = ({ initialClients, initialProducts, editId, dup
         </div>
       </div>
 
-      {/* Hidden full-size container for PDF generation - positioned off-screen but visible to html2canvas */}
       <div className="fixed" style={{ left: '-9999px', top: '0', width: '210mm', height: '297mm' }}>
         <div id="invoice-pdf-container" className="w-[210mm] min-h-[297mm] bg-white" style={{ width: '210mm', minHeight: '297mm' }}>
           <InvoicePreview
@@ -538,9 +593,19 @@ const CreateInvoiceInteractive = ({ initialClients, initialProducts, editId, dup
             terms={terms}
             selectedTemplate={selectedTemplate}
             fullSize={true}
+            watermarkEnabled={watermarkEnabled}
           />
         </div>
       </div>
+
+      <PlanLimitModal
+        isOpen={limitModalOpen}
+        onClose={() => setLimitModalOpen(false)}
+        action={limitActionInfo?.action || 'invoices_created'}
+        current={limitActionInfo?.current || 0}
+        limit={limitActionInfo?.limit || 0}
+        allowPayg={limitActionInfo?.allowPayg}
+      />
 
       <AddClientModal
         isOpen={isAddClientModalOpen}

@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { postmarkClient } from '@/lib/postmark';
+import { checkUsageLimit, incrementUsage, logActivity } from './subscription';
 
 export async function sendInvoiceEmail(
   invoiceId: string,
@@ -13,6 +14,12 @@ export async function sendInvoiceEmail(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     throw new Error('Unauthorized');
+  }
+
+  // Check usage limit
+  const usageCheck = await checkUsageLimit('emails_sent');
+  if (!usageCheck.allowed) {
+    throw new Error(`Email limit reached: ${usageCheck.reason}`);
   }
 
   // 1. Fetch Invoice
@@ -98,6 +105,15 @@ export async function sendInvoiceEmail(
         ],
       });
     }
+
+    // Increment usage
+    await incrementUsage('emails_sent');
+    
+    // Log activity
+    await logActivity('invoice_sent', invoiceId, { 
+      to: emailData.to, 
+      invoice_number: invoice.invoice_number 
+    });
 
     return { success: true, messageId: result.MessageID };
   } catch (error) {
