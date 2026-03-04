@@ -4,7 +4,7 @@ import SettingsInteractive from './components/SettingsInteractive';
 
 export const metadata: Metadata = {
   title: 'User Profile Settings - InvoiceFlow',
-  description: 'Manage your account preferences, business configuration, notification settings, security options, and subscription details for your InvoiceFlow account.',
+  description: 'Manage your account preferences, business configuration, notification settings, and security options for your InvoiceFlow account.',
 };
 
 export default function UserProfileSettingsPage() {

@@ -9,9 +9,8 @@ import ProfileTab from './ProfileTab';
 import BusinessTab from './BusinessTab';
 import NotificationsTab from './NotificationsTab';
 import SecurityTab from './SecurityTab';
-import SubscriptionTab from './SubscriptionTab';
 
-type SettingsTab = 'profile' | 'business' | 'notifications' | 'security' | 'subscription';
+type SettingsTab = 'profile' | 'business' | 'notifications' | 'security';
 
 interface NotificationSettings {
   emailNotifications: {
@@ -31,23 +30,6 @@ interface NotificationSettings {
     daysBeforeDue: string;
     overdueFrequency: string;
   };
-}
-
-interface SubscriptionPlan {
-  name: string;
-  price: string;
-  billingCycle: string;
-  features: string[];
-  current: boolean;
-}
-
-interface UsageStats {
-  invoicesSent: number;
-  invoicesLimit: number;
-  clientsAdded: number;
-  clientsLimit: number;
-  storageUsed: number;
-  storageLimit: number;
 }
 
 const SettingsInteractive = () => {
@@ -78,32 +60,6 @@ const SettingsInteractive = () => {
 
   // Security state
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
-
-  // Subscription state
-  const [currentPlan] = useState<SubscriptionPlan>({
-    name: 'Professional',
-    price: '$49',
-    billingCycle: 'per month',
-    features: [
-      'Up to 200 invoices per month',
-      'Up to 100 clients',
-      '25GB storage',
-      'Premium templates',
-      'Priority email support',
-      'Advanced analytics',
-      'Custom branding',
-    ],
-    current: true,
-  });
-
-  const [usageStats] = useState<UsageStats>({
-    invoicesSent: 87,
-    invoicesLimit: 200,
-    clientsAdded: 42,
-    clientsLimit: 100,
-    storageUsed: 8.5,
-    storageLimit: 25,
-  });
 
   const { settings, refetchSettings, updateNotificationSettings } = useSettings();
 
@@ -146,14 +102,6 @@ const SettingsInteractive = () => {
     toast.success(enabled ? 'Two-factor authentication enabled' : 'Two-factor authentication disabled');
   };
 
-  const handleUpgrade = () => {
-    router.push('/dashboard/subscription');
-  };
-
-  const handleCancelSubscription = () => {
-    toast.warning('Please contact support to cancel your subscription');
-  };
-
   if (!isHydrated) {
     return (
       <div className="min-h-screen bg-background text-foreground">
@@ -172,7 +120,6 @@ const SettingsInteractive = () => {
     { id: 'business', label: 'Business', icon: 'BuildingOfficeIcon' },
     { id: 'notifications', label: 'Notifications', icon: 'BellIcon' },
     { id: 'security', label: 'Security', icon: 'ShieldCheckIcon' },
-    { id: 'subscription', label: 'Subscription', icon: 'CreditCardIcon' },
   ];
 
   return (
@@ -222,14 +169,6 @@ const SettingsInteractive = () => {
               onPasswordChange={handlePasswordChange}
               onTwoFactorToggle={handleTwoFactorToggle}
               twoFactorEnabled={twoFactorEnabled}
-            />
-          )}
-          {activeTab === 'subscription' && (
-            <SubscriptionTab
-              currentPlan={currentPlan}
-              usageStats={usageStats}
-              onUpgrade={handleUpgrade}
-              onCancelSubscription={handleCancelSubscription}
             />
           )}
         </div>
