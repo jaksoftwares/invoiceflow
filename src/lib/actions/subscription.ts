@@ -152,3 +152,57 @@ export async function trackActionAction(action: ActionType, resourceId?: string,
   
   return { success: true };
 }
+
+export async function switchPlanAction(planId: string) {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Unauthorized');
+
+  const { data: plan } = await supabase.from('plans').select('*').eq('id', planId).single();
+  if (!plan) throw new Error('Plan not found');
+
+  // Logic: 
+  // 1. If switching to Free, it's always allowed.
+  // 2. If the user already has a completed lifetime payment for this plan, allow it.
+  
+  const isFree = plan.name.toLowerCase() === 'free' || (plan.price_monthly === 0 && plan.price_lifetime === 0);
+  
+  let canSwitchDirectly = isFree;
+
+  if (!canSwitchDirectly) {
+    // Check for previous completed lifetime payments
+    const { data: prevPayment } = await supabase
+      .from('subscription_payments')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('plan_id', planId)
+      .eq('status', 'completed')
+      .maybeSingle();
+
+    if (prevPayment && plan.name.toLowerCase() === 'lifetime') {
+      canSwitchDirectly = true;
+    }
+  }
+
+  if (!canSwitchDirectly) {
+    return { success: false, requiresPayment: true };
+  }
+
+  // Perform the switch
+  const { error } = await supabase
+    .from('subscriptions')
+    .upsert({
+      user_id: user.id,
+      plan_id: planId,
+      status: 'active',
+      billing_cycle: plan.name.toLowerCase() === 'lifetime' ? 'lifetime' : 'monthly',
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'user_id' });
+
+  if (error) throw error;
+
+  revalidatePath('/dashboard');
+  revalidatePath('/dashboard/subscription');
+  
+  return { success: true };
+}

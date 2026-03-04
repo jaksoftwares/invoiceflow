@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { initiateStkPush } from '@/lib/mpesa';
-import { checkPaymentStatus } from '@/lib/actions/subscription';
+import { checkPaymentStatus, switchPlanAction } from '@/lib/actions/subscription';
 import { useRouter } from 'next/navigation';
 import { CheckCircle, XCircle, Zap, Shield, CreditCard, History, ArrowUpRight, BarChart, Loader2 } from 'lucide-react';
 import Icon from '@/components/ui/AppIcon';
@@ -37,10 +37,29 @@ export default function SubscriptionClient({
 
   const activePlan = initialSubscription?.plans || plans.find(p => p.name === 'Free');
   
-  const handleUpgrade = (plan: any) => {
-    setSelectedPlanForUpgrade(plan);
-    setShowUpgradeModal(true);
+  const handleUpgrade = async (plan: any) => {
+    setLoading(plan.id);
     setMessage(null);
+
+    try {
+      // Check if we can switch without payment (Free or Owned Lifetime)
+      const res = await switchPlanAction(plan.id);
+      
+      if (res.success) {
+        toast.success(`Switched to ${plan.name} plan successfully!`);
+        router.refresh();
+        setLoading(null);
+        return;
+      }
+
+      // If we reach here, M-Pesa push is needed
+      setSelectedPlanForUpgrade(plan);
+      setShowUpgradeModal(true);
+    } catch (err) {
+      toast.error('An error occurred. Please try again.');
+    } finally {
+      setLoading(null);
+    }
   };
 
   const confirmUpgrade = async () => {
