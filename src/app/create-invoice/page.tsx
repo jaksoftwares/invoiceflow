@@ -62,7 +62,16 @@ interface CreateInvoicePageProps {
   searchParams: { [key: string]: string | string[] | undefined };
 }
 
+import { redirect } from 'next/navigation';
+
 export default async function CreateInvoicePage({ searchParams }: CreateInvoicePageProps) {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect('/auth/login');
+  }
+
   const [initialClients, initialProducts] = await Promise.all([
     getInitialClients(),
     getInitialProducts(),

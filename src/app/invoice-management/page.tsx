@@ -38,7 +38,16 @@ async function getInitialInvoices(): Promise<Invoice[]> {
   return invoices || [];
 }
 
+import { redirect } from 'next/navigation';
+
 export default async function InvoiceManagementPage() {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect('/auth/login');
+  }
+
   const initialInvoices = await getInitialInvoices();
 
   return (

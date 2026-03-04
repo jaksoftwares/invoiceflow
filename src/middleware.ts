@@ -32,36 +32,39 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  // Use getUser() for secure session validation
+  const { data: { user } } = await supabase.auth.getUser()
 
   const { pathname } = request.nextUrl
 
-  // Protected routes list
-  const protectedRoutes = [
-    '/dashboard',
-    '/client-management',
-    '/create-invoice',
-    '/invoice-management',
-    '/reports-analytics',
-    '/user-profile-settings',
-    '/product-management',
-  ]
-
-  const isProtected = protectedRoutes.some(route => 
-    pathname === route || pathname.startsWith(`${route}/`)
-  )
-
+  // Define protected and public path rules
   const isAuthPage = pathname.startsWith('/auth')
+  const isPublicPage = pathname === '/' || pathname === '/pricing' || pathname === '/about'
+  
+  // Protected paths (anything not explicitly public or auth)
+  const isProtectedPath = !isPublicPage && !isAuthPage && !pathname.startsWith('/api') && !pathname.includes('.')
 
   // Redirection logic
-  if (isProtected && !user) {
-    return NextResponse.redirect(new URL('/auth/login', request.url))
+  if (isProtectedPath && !user) {
+    const redirectUrl = request.nextUrl.clone()
+    redirectUrl.pathname = '/auth/login'
+    redirectUrl.searchParams.set('redirectedFrom', pathname)
+    
+    const redirectResponse = NextResponse.redirect(redirectUrl)
+    // Propagate cookie changes from the supabase client
+    response.cookies.getAll().forEach(cookie => {
+      redirectResponse.cookies.set(cookie.name, cookie.value)
+    })
+    return redirectResponse
   }
 
   if (isAuthPage && user) {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+    const dashboardResponse = NextResponse.redirect(new URL('/dashboard', request.url))
+    // Propagate cookie changes
+    response.cookies.getAll().forEach(cookie => {
+      dashboardResponse.cookies.set(cookie.name, cookie.value)
+    })
+    return dashboardResponse
   }
 
   return response
@@ -71,12 +74,12 @@ export const config = {
   matcher: [
     /*
      * Match all request paths except for the ones starting with:
-     * - api (API routes)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
+     * - robots.txt, sitemap.xml, etc.
      */
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
 

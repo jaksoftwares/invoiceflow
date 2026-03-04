@@ -31,7 +31,16 @@ async function getInitialProducts(): Promise<Product[]> {
   return products || [];
 }
 
+import { redirect } from 'next/navigation';
+
 export default async function ProductManagementPage() {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect('/auth/login');
+  }
+
   const initialProducts = await getInitialProducts();
 
   return (

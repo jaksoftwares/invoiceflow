@@ -4,11 +4,17 @@ import DashboardInteractive from './components/DashboardInteractive';
 import { createClient } from '@/lib/supabase/server';
 import { getActiveSubscription, getUsageStats, initializeFreeSubscription } from '@/lib/actions/subscription';
 
+import { redirect } from 'next/navigation';
+
 export default async function DashboardPage() {
   const supabase = createClient();
 
   // Fetch initial dashboard data on server
   const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect('/auth/login');
+  }
 
   let initialData = null;
   if (user) {
