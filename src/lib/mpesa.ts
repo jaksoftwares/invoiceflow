@@ -50,7 +50,6 @@ async function getMpesaAccessToken() {
 }
 
 export async function initiateStkPush(phoneNumber: string, amount: number, paymentType: 'subscription' | 'payg', referenceId: string): Promise<MpesaResponse> {
-  // 1. Format phone number (2547XXXXXXXX or 2541XXXXXXXX)
   let formattedPhone = phoneNumber.replace(/\+/g, '').replace(/^0/, '254');
   if (!formattedPhone.startsWith('254')) formattedPhone = `254${formattedPhone}`;
 
@@ -94,7 +93,6 @@ export async function initiateStkPush(phoneNumber: string, amount: number, payme
     console.log('M-Pesa STK Response:', data);
     
     if (data.ResponseCode === '0') {
-      // Record pending payment in DB
       await recordPendingPayment(formattedPhone, amount, paymentType, referenceId, data.CheckoutRequestID);
       return { success: true, checkoutRequestId: data.CheckoutRequestID };
     } else {
@@ -107,86 +105,88 @@ export async function initiateStkPush(phoneNumber: string, amount: number, payme
 }
 
 async function recordPendingPayment(phone: string, amount: number, type: string, referenceId: string, checkoutRequestId: string) {
-  // Use Admin Client here because RLS might be tricky during background server execution
-  // and we MUST ensure the record is created so the callback can find it.
-  const { createAdminClient } = await import('@/lib/supabase/admin');
-  const supabase = createAdminClient();
-  
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    console.error('No authenticated user found while recording pending payment');
-    return;
-  }
+  try {
+    const { createClient: createServerClient } = await import('@/lib/supabase/server');
+    const userClient = createServerClient();
+    const { data: { user } } = await userClient.auth.getUser();
 
-  console.log(`Recording pending ${type} payment for user ${user.id}, amount ${amount}`);
+    if (!user) {
+      console.error('CRITICAL: No authenticated user found in recordPendingPayment');
+      return;
+    }
 
-  if (type === 'subscription') {
-    const planId = referenceId;
+    const { createAdminClient } = await import('@/lib/supabase/admin');
+    const supabase = createAdminClient();
     
-    // Get plan info for email
-    const { data: plan } = await supabase.from('plans').select('name').eq('id', planId).single();
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.error('CRITICAL: SUPABASE_SERVICE_ROLE_KEY is missing from environment!');
+    }
 
-    // Check if they have an existing subscription to link to
-    const { data: subscription } = await supabase
-      .from('subscriptions')
-      .select('id')
-      .eq('user_id', user.id)
-      .maybeSingle();
+    console.log(`[PAYMENT] Recording ${type} for ${user.email} (ID: ${user.id}). Request: ${checkoutRequestId}`);
 
-    const { error } = await supabase.from('subscription_payments').insert({
-      user_id: user.id,
-      amount,
-      phone_number: phone,
-      status: 'pending',
-      payment_type: 'upgrade',
-      subscription_id: subscription?.id || null, 
-      plan_id: planId,
-      checkout_request_id: checkoutRequestId
-    });
+    if (type === 'subscription') {
+      const planId = referenceId;
+      const { data: plan } = await supabase.from('plans').select('name').eq('id', planId).single();
 
-    if (error) {
-      console.error('Error recording subscription payment:', error);
-      // We don't throw here to avoid breaking the STK response to user, 
-      // but the callback will fail later if not record exists.
-    } else {
-      // Send the Billing Invoice email instantly!
-      try {
-        await sendSubscriptionInvoiceEmail({
+      const { data: subscription } = await supabase
+        .from('subscriptions')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      const { error: insertError } = await supabase.from('subscription_payments').insert({
+        user_id: user.id,
+        amount,
+        phone_number: phone,
+        status: 'pending',
+        payment_type: 'upgrade',
+        subscription_id: subscription?.id || null, 
+        plan_id: planId,
+        checkout_request_id: checkoutRequestId
+      });
+
+      if (insertError) {
+        console.error('[DATABASE ERROR] Failed to record subscription payment:', insertError);
+      } else {
+        console.log(`[SUCCESS] Pending subscription payment recorded: ${checkoutRequestId}`);
+        try {
+          await sendSubscriptionInvoiceEmail({
             userId: user.id,
             planName: plan?.name || 'Pro',
             amount,
             invoiceNumber: checkoutRequestId.slice(0, 10).toUpperCase()
-        });
-      } catch (emailErr) {
-        console.error('Failed to send invoice email:', emailErr);
+          });
+        } catch (emailErr) {
+          console.error('Failed to send invoice email:', emailErr);
+        }
+      }
+    } else {
+      let actionType = referenceId;
+      if (actionType === 'templates_used') actionType = 'premium_template';
+      if (actionType === 'emails_sent') actionType = 'email_send';
+      if (actionType === 'pdf_downloads') actionType = 'pdf_download';
+      if (actionType === 'invoices_created') actionType = 'extra_invoice';
+      if (actionType === 'report_exports') actionType = 'pdf_download';
+
+      const { error } = await supabase.from('payg_transactions').insert({
+        user_id: user.id,
+        amount,
+        action_type: actionType as any,
+        status: 'pending',
+        checkout_request_id: checkoutRequestId
+      });
+
+      if (error) {
+        console.error('[DATABASE ERROR] Error recording PAYG transaction:', error);
+      } else {
+        console.log(`[SUCCESS] Pending PAYG transaction recorded: ${checkoutRequestId}`);
       }
     }
-
-  } else {
-    // Map action labels to database allowed types if necessary
-    // Database check constraint: 'premium_template', 'email_send', 'pdf_download', 'extra_invoice'
-    let actionType = referenceId;
-    if (actionType === 'templates_used') actionType = 'premium_template';
-    if (actionType === 'emails_sent') actionType = 'email_send';
-    if (actionType === 'pdf_downloads') actionType = 'pdf_download';
-    if (actionType === 'invoices_created') actionType = 'extra_invoice';
-    if (actionType === 'report_exports') actionType = 'pdf_download'; // Assuming reports are PDF downloads
-
-    const { error } = await supabase.from('payg_transactions').insert({
-      user_id: user.id,
-      amount,
-      action_type: actionType as any,
-      status: 'pending',
-      checkout_request_id: checkoutRequestId
-    });
-
-    if (error) {
-      console.error('Error recording PAYG transaction:', error);
-    }
+  } catch (err: any) {
+    console.error('[CRITICAL] Exception in recordPendingPayment:', err);
   }
 }
 
-// Mock for development
 async function mockStkPush(phone: string, amount: number, type: string, referenceId: string): Promise<MpesaResponse> {
   const mockRequestId = `ws_CO_${Math.random().toString(36).substring(7)}`;
   await recordPendingPayment(phone, amount, type, referenceId, mockRequestId);
