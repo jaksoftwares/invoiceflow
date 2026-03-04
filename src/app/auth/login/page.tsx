@@ -58,12 +58,19 @@ export default function LoginPage() {
       }
 
       toast.success('Logged in successfully!')
-      router.push('/dashboard')
+      
+      // Get return URL from query params
+      const params = new URLSearchParams(window.location.search);
+      const returnUrl = params.get('redirectedFrom') || '/dashboard';
+      
+      // Use window.location.href to force a full reload and ensure middleware picks up the cookies
+      window.location.href = returnUrl;
     } catch (error) {
       console.error('Login error:', error);
       toast.error('An unexpected error occurred. Please try again.')
     } finally {
-      setLoading(false)
+      // Don't set loading to false if we are redirecting
+      // setLoading(false)
     }
   }
 
