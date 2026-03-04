@@ -204,14 +204,14 @@ const InvoiceCard = ({
                   style={{ top: dropdownPos.top, right: dropdownPos.right }}
                 >
                   <div className="px-4 py-2 border-b border-divider mb-1">
-                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Global Actions</p>
+                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Actions</p>
                   </div>
                   {[
-                    { label: 'Edit Document', icon: 'PencilIcon', action: onEdit },
-                    { label: 'Live Preview', icon: 'EyeIcon', action: onPreview },
-                    { label: 'Clone Record', icon: 'DocumentDuplicateIcon', action: onDuplicate },
-                    { label: 'Export PDF', icon: 'ArrowDownTrayIcon', action: onDownload },
-                    { label: 'Transmit Email', icon: 'PaperAirplaneIcon', action: onSend },
+                    { label: 'Edit', icon: 'PencilIcon', action: onEdit },
+                    { label: 'Preview', icon: 'EyeIcon', action: onPreview },
+                    { label: 'Duplicate', icon: 'DocumentDuplicateIcon', action: onDuplicate },
+                    { label: 'Download PDF', icon: 'ArrowDownTrayIcon', action: onDownload },
+                    { label: 'Send Email', icon: 'PaperAirplaneIcon', action: onSend },
                     invoice.status !== 'paid' && { label: 'Mark as Paid', icon: 'CheckBadgeIcon', action: onMarkAsPaid },
                   ].filter(Boolean).map((item: any) => (
                     <button
@@ -229,7 +229,7 @@ const InvoiceCard = ({
                     className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-error hover:bg-error/10 transition-colors"
                   >
                     <Icon name="TrashIcon" size={18} />
-                    <span>Purge Data</span>
+                    <span>Delete</span>
                   </button>
                 </div>
               </>
@@ -240,13 +240,13 @@ const InvoiceCard = ({
         {/* Financial Metrics */}
         <div className="grid grid-cols-2 gap-4 py-4 border-y border-divider/50 bg-muted/10 -mx-5 px-5">
           <div>
-            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Valuation</p>
+            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Amount</p>
             <p className="text-xl font-black text-foreground tabular-nums">
               {new Intl.NumberFormat('en-US', { style: 'currency', currency: invoice.currency || 'KES' }).format(invoice.total_amount)}
             </p>
           </div>
           <div className="text-right">
-            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Expiry</p>
+            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Due Date</p>
             <p className="text-sm font-bold text-foreground">
               {new Date(invoice.due_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
             </p>
@@ -256,16 +256,16 @@ const InvoiceCard = ({
         {/* Quick Footer */}
         <div className="mt-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
-                <div className={`w-2 h-2 rounded-full animate-pulse ${invoice.status === 'paid' ? 'bg-success' : 'bg-warning'}`} />
+                <div className={`w-2 h-2 rounded-full ${invoice.status === 'paid' ? 'bg-success' : 'bg-warning'}`} />
                 <span className="text-[10px] font-black text-muted-foreground uppercase tracking-wider">
-                    {invoice.status === 'paid' ? 'Fully Secured' : 'Awaiting Settlement'}
+                    {invoice.status}
                 </span>
             </div>
             <button
                onClick={() => setIsExpanded(!isExpanded)}
                className="flex items-center gap-2 text-[10px] font-black text-primary uppercase tracking-widest hover:underline"
             >
-               <span>{isExpanded ? 'Less Info' : 'More Intel'}</span>
+               <span>{isExpanded ? 'Show Less' : 'Details'}</span>
                <Icon name={isExpanded ? 'ChevronUpIcon' : 'ChevronDownIcon'} size={14} />
             </button>
         </div>
@@ -273,11 +273,11 @@ const InvoiceCard = ({
         {isExpanded && (
           <div className="mt-4 pt-4 border-t border-divider space-y-3 animate-in slide-in-from-top-2 duration-300">
             <div className="flex justify-between">
-              <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Origination</span>
+              <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Issue Date</span>
               <span className="text-xs font-bold text-foreground">{new Date(invoice.issue_date).toLocaleDateString()}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Terms Index</span>
+              <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Terms</span>
               <span className="text-xs font-bold text-foreground">Net {invoice.payment_terms || 0}</span>
             </div>
           </div>
