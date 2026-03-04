@@ -170,17 +170,38 @@ export async function switchPlanAction(planId: string) {
   let canSwitchDirectly = isFree;
 
   if (!canSwitchDirectly) {
-    // Check for previous completed lifetime payments
-    const { data: prevPayment } = await supabase
+    // 1. Check for lifetime payments
+    const { data: payments } = await supabase
       .from('subscription_payments')
-      .select('id')
+      .select('*')
       .eq('user_id', user.id)
       .eq('plan_id', planId)
       .eq('status', 'completed')
-      .maybeSingle();
+      .order('created_at', { ascending: false });
 
-    if (prevPayment && plan.name.toLowerCase() === 'lifetime') {
-      canSwitchDirectly = true;
+    if (payments && payments.length > 0) {
+      if (plan.name.toLowerCase() === 'lifetime') {
+        canSwitchDirectly = true;
+      } else {
+        // 2. Check for active recurring periods (Monthly/Yearly)
+        // Find the most recent payment and see if it's still valid
+        const latestPayment = payments[0];
+        const payDate = new Date(latestPayment.paid_at || latestPayment.created_at);
+        const now = new Date();
+        
+        // Determine the period based on the amount paid vs plan prices
+        let periodDays = 30; // Default to monthly
+        if (plan.price_yearly > 0 && Math.abs(latestPayment.amount - plan.price_yearly) < 1) {
+          periodDays = 365;
+        }
+
+        const expiryDate = new Date(payDate);
+        expiryDate.setDate(expiryDate.getDate() + periodDays);
+
+        if (now < expiryDate) {
+          canSwitchDirectly = true;
+        }
+      }
     }
   }
 

@@ -140,7 +140,7 @@ export default function SubscriptionClient({
 
   return (
     <div className="space-y-10 animate-fade-in-up">
-      {/* Processing Modal - Less restrictive than full overlay */}
+      {/* Processing Modal - STK Push */}
       {activeRequestId && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md z-[120] flex items-center justify-center p-6 animate-in fade-in duration-300">
            <div className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border-2 border-primary/20 shadow-2xl max-w-sm w-full text-center space-y-6 animate-in zoom-in slide-in-from-bottom-4 duration-300">
@@ -164,6 +164,31 @@ export default function SubscriptionClient({
                  >
                    Check Later
                  </button>
+              </div>
+           </div>
+        </div>
+      )}
+
+      {/* Instant Switch Loader - Pure Professionalism */}
+      {loading && !activeRequestId && !showUpgradeModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xl z-[130] flex items-center justify-center p-6 animate-in fade-in duration-500">
+           <div className="text-center space-y-8 animate-in zoom-in duration-500">
+              <div className="relative mx-auto w-24 h-24">
+                 <div className="absolute inset-0 rounded-full border-8 border-white/10 border-t-white animate-spin" />
+                 <div className="absolute inset-0 flex items-center justify-center">
+                    <Zap size={40} className="text-white animate-pulse" />
+                 </div>
+              </div>
+              <div className="space-y-4">
+                 <h2 className="text-3xl font-black text-white tracking-tight">Switching Your Plan</h2>
+                 <p className="text-white/60 font-medium max-w-xs mx-auto">
+                    Optimizing your workspace and synchronizing your new limits...
+                 </p>
+                 <div className="flex items-center justify-center gap-2">
+                    <div className="w-2 h-2 bg-white/40 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                    <div className="w-2 h-2 bg-white/40 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                    <div className="w-2 h-2 bg-white/40 rounded-full animate-bounce" />
+                 </div>
               </div>
            </div>
         </div>
