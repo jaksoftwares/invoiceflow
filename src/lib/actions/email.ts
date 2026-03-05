@@ -22,10 +22,18 @@ export async function sendInvoiceEmail(
     throw new Error(`Email limit reached: ${usageCheck.reason}`);
   }
 
-  // 1. Fetch Invoice
+  // 1. Fetch Invoice with Client details
   const { data: invoice, error: invoiceError } = await supabase
     .from('invoices')
-    .select('business_id, invoice_number, slug')
+    .select(`
+      invoice_number, 
+      slug, 
+      total_amount, 
+      currency, 
+      due_date, 
+      business_id,
+      client:clients(company_name, contact_person)
+    `)
     .eq('id', invoiceId)
     .single();
 
@@ -33,10 +41,10 @@ export async function sendInvoiceEmail(
     throw new Error('Invoice not found');
   }
 
-  // 2. Fetch Business Profile to get Business Name (for Sender Name) and Owner Email (for Reply-To)
+  // 2. Fetch Business Profile
   const { data: business, error: businessError } = await supabase
     .from('business_profiles')
-    .select('name, owner_id')
+    .select('name, logo_url, owner_id')
     .eq('id', invoice.business_id)
     .single();
 
@@ -44,36 +52,107 @@ export async function sendInvoiceEmail(
     throw new Error('Business profile not found');
   }
   
-  // Use current user's email for Reply-To as they are the ones sending it
+  // Use current user's email for Reply-To
   const replyToEmail = user.email || 'no-reply@dovepeakdigital.com'; 
 
-  // 3. Prepare Email content
+  // 3. Prepare Professional Email Content
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
   const invoiceLink = `${baseUrl}/invoice/view/${invoice.slug || invoiceId}`;
-  
+  const clientName = (invoice.client as any)?.company_name || (invoice.client as any)?.contact_person || 'Valued Client';
+  const formatCurrency = (amount: number, currency: string) => new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount);
+  const formatDate = (date: string) => new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
   // Remove data URI prefix for Postmark
   const pdfContent = pdfBase64.split(',')[1];
   
   const htmlBody = `
-    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-      <h2 style="color: #333;">Invoice from ${business.name}</h2>
-      <p style="white-space: pre-wrap;">${emailData.message}</p>
-      <div style="margin: 20px 0;">
-        <a href="${invoiceLink}" style="background-color: #000; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">View Invoice Online</a>
-      </div>
-      <p style="color: #666; font-size: 14px;">Or paste this link into your browser: <br> ${invoiceLink}</p>
-    </div>
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <style>
+        .button:hover { background-color: #2563eb !important; }
+      </style>
+    </head>
+    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; background-color: #f8fafc; color: #1e293b;">
+      <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f8fafc; padding: 40px 20px;">
+        <tr>
+          <td align="center">
+            <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #ffffff; border-radius: 16px; overflow: hidden; shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);">
+              <!-- Header -->
+              <tr>
+                <td style="padding: 40px; background-color: #ffffff; text-align: center; border-bottom: 1px solid #f1f5f9;">
+                  ${business.logo_url ? `<img src="${business.logo_url}" alt="${business.name}" style="height: 60px; margin-bottom: 20px; border-radius: 8px;">` : ''}
+                  <h1 style="margin: 0; font-size: 24px; font-weight: 800; color: #0f172a; letter-spacing: -0.025em;">${business.name}</h1>
+                </td>
+              </tr>
+              
+              <!-- Content -->
+              <tr>
+                <td style="padding: 40px;">
+                  <p style="margin: 0 0 24px; font-size: 16px; line-height: 24px;">Dear ${clientName},</p>
+                  
+                  <p style="margin: 0 0 24px; font-size: 16px; line-height: 24px; white-space: pre-wrap;">${emailData.message}</p>
+
+                  <p style="margin: 0 0 24px; font-size: 16px; line-height: 24px;">This invoice is for your recent purchase or service at <strong>${business.name}</strong>.</p>
+                  
+                  <div style="background-color: #f8fafc; border-radius: 12px; padding: 24px; margin-bottom: 32px; border: 1px solid #f1f5f9;">
+                    <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                      <tr>
+                        <td style="padding-bottom: 8px; font-size: 14px; color: #64748b;">Invoice Number</td>
+                        <td align="right" style="padding-bottom: 8px; font-size: 14px; font-weight: 700; color: #0f172a;">#${invoice.invoice_number}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding-bottom: 8px; font-size: 14px; color: #64748b;">Total Amount</td>
+                        <td align="right" style="padding-bottom: 8px; font-size: 14px; font-weight: 700; color: #0f172a;">${formatCurrency(invoice.total_amount, invoice.currency)}</td>
+                      </tr>
+                      <tr>
+                        <td style="font-size: 14px; color: #64748b;">Due Date</td>
+                        <td align="right" style="font-size: 14px; font-weight: 700; color: #f43f5e;">${formatDate(invoice.due_date)}</td>
+                      </tr>
+                    </table>
+                  </div>
+
+                  <div align="center">
+                    <a href="${invoiceLink}" class="button" style="display: inline-block; padding: 16px 32px; background-color: #3b82f6; color: #ffffff; font-weight: 700; text-decoration: none; border-radius: 12px; font-size: 16px; transition: background-color 0.2s;">View & Pay Invoice</a>
+                  </div>
+                  
+                  <p style="margin: 32px 0 0; font-size: 16px; line-height: 24px; text-align: center; color: #0f172a; font-weight: 600;">
+                    Thank you for choosing ${business.name}!
+                  </p>
+
+                  <p style="margin: 24px 0 0; font-size: 14px; color: #64748b; text-align: center;">
+                    Or copy this link into your browser:<br>
+                    <a href="${invoiceLink}" style="color: #3b82f6; word-break: break-all;">${invoiceLink}</a>
+                  </p>
+                </td>
+              </tr>
+              
+              <!-- Footer -->
+              <tr>
+                <td style="padding: 32px 40px; background-color: #f8fafc; text-align: center; border-top: 1px solid #f1f5f9;">
+                  <p style="margin: 0; font-size: 14px; color: #64748b;">Sent via <strong>InvoiceFlow</strong></p>
+                  <p style="margin: 8px 0 0; font-size: 12px; color: #94a3b8;">Secure invoicing for modern businesses</p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
   `;
 
   // 4. Send via Postmark
   try {
     const result = await postmarkClient.sendEmail({
-      From: `${business.name} <contact@dovepeakdigital.com>`,
+      // From InvoiceFlow but ReplyTo the business
+      From: `InvoiceFlow <contact@dovepeakdigital.com>`,
       To: emailData.to,
       ReplyTo: replyToEmail,
       Subject: emailData.subject,
       HtmlBody: htmlBody,
-      TextBody: `${emailData.message}\n\nView Invoice: ${invoiceLink}`,
+      TextBody: `${emailData.message}\n\nThis invoice is for your recent purchase or service at ${business.name}.\n\nInvoice Details:\nNumber: #${invoice.invoice_number}\nAmount: ${formatCurrency(invoice.total_amount, invoice.currency)}\nDue Date: ${formatDate(invoice.due_date)}\n\nThank you for choosing ${business.name}!\n\nView Invoice: ${invoiceLink}`,
       Attachments: [
         {
           Name: `Invoice_${invoice.invoice_number}.pdf`,
@@ -84,17 +163,15 @@ export async function sendInvoiceEmail(
       ],
     });
 
-    console.log('Postmark sent:', result);
-
     if (emailData.copyMe && user.email) {
        // Send copy to sender
        await postmarkClient.sendEmail({
-        From: `${business.name} <contact@dovepeakdigital.com>`,
+        From: `InvoiceFlow <contact@dovepeakdigital.com>`,
         To: user.email,
         ReplyTo: replyToEmail,
         Subject: `[COPY] ${emailData.subject}`,
-        HtmlBody: `<p style="color: #666;">This is a copy of the invoice sent to ${emailData.to}.</p><hr>` + htmlBody,
-        TextBody: `This is a copy of the invoice sent to ${emailData.to}.\n\n` + `${emailData.message}\n\nView Invoice: ${invoiceLink}`,
+        HtmlBody: `<p style="padding: 20px; background-color: #f0fdf4; color: #166534; font-size: 14px; margin: 0; border-bottom: 1px solid #dcfce7;">This is a copy of the invoice you sent to ${emailData.to}.</p>` + htmlBody,
+        TextBody: `This is a copy of the invoice you sent to ${emailData.to}.\n\n` + `${emailData.message}\n\nView Invoice: ${invoiceLink}`,
         Attachments: [
           {
             Name: `Invoice_${invoice.invoice_number}.pdf`,
@@ -121,4 +198,5 @@ export async function sendInvoiceEmail(
     throw new Error(`Failed to send email: ${(error as Error).message}`);
   }
 }
+
 

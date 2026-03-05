@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 interface PlanLimitModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
   action: string;
   limit: number;
   current: number;
@@ -27,6 +28,7 @@ const ACTION_LABELS: Record<string, { label: string, paygPrice: number }> = {
 export default function PlanLimitModal({ 
   isOpen, 
   onClose, 
+  onSuccess,
   action, 
   limit, 
   current, 
@@ -51,8 +53,12 @@ export default function PlanLimitModal({
             toast.success('Payment verified! You can now proceed with your action.');
             setActiveRequestId(null);
             setIsProcessing(false);
-            onClose();
-            router.refresh();
+            if (onSuccess) {
+              onSuccess();
+            } else {
+              onClose();
+              router.refresh();
+            }
           } else if (status === 'failed') {
             clearInterval(pollInterval);
             toast.error('Payment failed or was cancelled.');

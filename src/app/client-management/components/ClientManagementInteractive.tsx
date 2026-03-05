@@ -11,6 +11,8 @@ import BulkActionsBar from './BulkActionsBar';
 import AddClientModal from './AddClientModal';
 import { useClients } from '@/lib/hooks/useClients';
 import type { Client } from '@/types/database';
+import { checkUsageLimit } from '@/lib/actions/subscription';
+import PlanLimitModal from '@/components/modals/PlanLimitModal';
 
 interface ClientManagementInteractiveProps {
   initialClients?: Client[];
@@ -47,6 +49,10 @@ const ClientManagementInteractive = ({ initialClients = [] }: ClientManagementIn
     key: keyof Client | null;
     direction: 'asc' | 'desc';
   }>({ key: null, direction: 'asc' });
+
+  // Limit Modal State
+  const [limitModalOpen, setLimitModalOpen] = useState(false);
+  const [limitActionInfo, setLimitActionInfo] = useState<{ action: string; current: number; limit: number; allowPayg?: boolean } | null>(null);
 
   const {
     clients,
@@ -176,9 +182,40 @@ const ClientManagementInteractive = ({ initialClients = [] }: ClientManagementIn
     }
   };
 
+  // Pending actions state
+  const [pendingClientData, setPendingClientData] = useState<ClientFormData | null>(null);
+
+  const handleLimitSuccess = async () => {
+    setLimitModalOpen(false);
+    if (pendingClientData) {
+      const data = pendingClientData;
+      setPendingClientData(null);
+      // Wait a bit for the DB to sync then retry
+      setTimeout(async () => {
+        await handleAddClient(data);
+      }, 1500);
+    }
+  };
+
   const handleAddClient = async (clientData: ClientFormData) => {
-    await createClient(clientData);
-    setIsAddModalOpen(false);
+    // Check usage limit before attempting to create
+    const limitCheck = await checkUsageLimit('clients_created');
+    if (!limitCheck.allowed) {
+      setPendingClientData(clientData);
+      setLimitActionInfo({
+        action: 'clients_created',
+        limit: limitCheck.limit ?? 0,
+        current: limitCheck.current ?? 0,
+        allowPayg: limitCheck.allowPayg ?? false
+      });
+      setLimitModalOpen(true);
+      return;
+    }
+
+    const result = await createClient(clientData);
+    if (result) {
+      setIsAddModalOpen(false);
+    }
   };
 
   if (loading && currentClients.length === 0) {
@@ -370,9 +407,19 @@ const ClientManagementInteractive = ({ initialClients = [] }: ClientManagementIn
           onClose={() => setIsAddModalOpen(false)}
           onSubmit={handleAddClient} />
 
+        <PlanLimitModal
+          isOpen={limitModalOpen}
+          onClose={() => setLimitModalOpen(false)}
+          onSuccess={handleLimitSuccess}
+          action={limitActionInfo?.action || 'clients_created'}
+          current={limitActionInfo?.current || 0}
+          limit={limitActionInfo?.limit || 0}
+          allowPayg={limitActionInfo?.allowPayg}
+        />
+
       </div>
     </div>);
-
 };
+
 
 export default ClientManagementInteractive;

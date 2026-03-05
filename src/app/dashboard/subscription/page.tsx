@@ -27,6 +27,12 @@ export default async function SubscriptionPage() {
     .eq('user_id', user.id)
     .order('created_at', { ascending: false });
 
+  const { data: paygTransactions } = await supabase
+    .from('payg_transactions')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false });
+
   return (
     <NavigationWrapper>
       <div className="container mx-auto px-4 py-8">
@@ -35,6 +41,7 @@ export default async function SubscriptionPage() {
           initialUsage={usageStats}
           plans={plansResult.data || []}
           payments={payments || []}
+          paygTransactions={paygTransactions || []}
           userEmail={user.email}
           initialPhone={profile?.phone || ''}
         />

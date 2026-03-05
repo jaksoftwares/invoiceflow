@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Icon from '@/components/ui/AppIcon';
 import { toast } from 'sonner';
 
@@ -10,6 +10,7 @@ interface ShareInvoiceModalProps {
   invoiceId: string;
   clientEmail: string;
   invoiceNumber: string;
+  businessName: string;
   slug?: string;
   onSendEmail: (data: { to: string; subject: string; message: string; copyMe: boolean }) => Promise<void>;
   onCopyLink: () => Promise<void>;
@@ -22,6 +23,7 @@ const ShareInvoiceModal = ({
   invoiceId,
   clientEmail,
   invoiceNumber,
+  businessName,
   slug,
   onSendEmail,
   onCopyLink,
@@ -29,9 +31,20 @@ const ShareInvoiceModal = ({
 }: ShareInvoiceModalProps) => {
   const [activeTab, setActiveTab] = useState<'email' | 'link' | 'whatsapp'>('email');
   const [emailTo, setEmailTo] = useState(clientEmail || '');
-  const [emailSubject, setEmailSubject] = useState(`Invoice ${invoiceNumber} from InvoiceFlow`);
-  const [emailMessage, setEmailMessage] = useState(`Hi,\n\nPlease find attached the invoice ${invoiceNumber} for your recent purchase.\n\nThank you for your business!`);
+  const [emailSubject, setEmailSubject] = useState(`Invoice ${invoiceNumber} from ${businessName || 'InvoiceFlow'}`);
+  const [emailMessage, setEmailMessage] = useState(`I hope this email finds you well.\n\nPlease find the attached invoice ${invoiceNumber} for your recent purchase or service at ${businessName || 'our business'}. You can also view and pay the invoice online by clicking the link in this email.\n\nThank you for choosing ${businessName || 'us'}!\n\nBest regards!`);
+
+  // Ensure fields are reset when modal opens for a new invoice
+  useEffect(() => {
+    if (isOpen) {
+      setEmailTo(clientEmail || '');
+      setEmailSubject(`Invoice ${invoiceNumber} from ${businessName || 'InvoiceFlow'}`);
+      setEmailMessage(`I hope this email finds you well.\n\nPlease find the attached invoice ${invoiceNumber} for your recent purchase or service at ${businessName || 'our business'}. You can also view and pay the invoice online by clicking the link in this email.\n\nThank you for choosing ${businessName || 'us'}!\n\nBest regards!`);
+    }
+  }, [isOpen, clientEmail, invoiceNumber, businessName]);
+
   const [copyMe, setCopyMe] = useState(true);
+
   const [isSending, setIsSending] = useState(false);
 
   if (!isOpen) return null;

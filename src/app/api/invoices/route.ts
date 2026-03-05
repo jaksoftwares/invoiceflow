@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/api';
 import { z } from 'zod';
 import type { Invoice } from '@/types/database';
+import * as subService from '@/lib/services/subscription-service';
 
 // Zod schema for invoice items
 const invoiceItemSchema = z.object({
@@ -80,7 +81,7 @@ export async function GET(request: NextRequest) {
     // Build query
     let query = supabase
       .from('invoices')
-      .select('*, clients(company_name)', { count: 'exact' })
+      .select('*, clients(company_name, email), business:business_profiles(name)', { count: 'exact' })
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
@@ -182,6 +183,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Check usage limit
+    const usageCheck = await subService.checkUsageLimit(supabase, user.id, 'invoices_created');
+    if (!usageCheck.allowed) {
+      return NextResponse.json({ 
+        error: 'Invoice limit reached', 
+        details: usageCheck.reason,
+        current: usageCheck.current,
+        limit: usageCheck.limit,
+        allowPayg: usageCheck.allowPayg
+      }, { status: 403 });
+    }
+
     // Parse and validate request body
     const body = await request.json();
     const validationResult = createInvoiceSchema.safeParse(body);
@@ -218,6 +231,13 @@ export async function POST(request: NextRequest) {
       console.error('Database error in create_invoice_full:', error);
       return NextResponse.json({ error: 'Failed to create invoice' }, { status: 500 });
     }
+
+    // Increment usage
+    await subService.incrementUsage(supabase, user.id, 'invoices_created');
+    await subService.logActivity(supabase, user.id, 'invoice_created', invoiceId as string, { 
+      invoice_number: invoiceFields.invoice_number,
+      total_amount: invoiceFields.total_amount
+    });
 
     return NextResponse.json({ id: invoiceId, ...invoiceFields, items }, { status: 201 });
   } catch (error) {

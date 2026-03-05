@@ -161,13 +161,8 @@ async function recordPendingPayment(phone: string, amount: number, type: string,
         }
       }
     } else {
-      let actionType = referenceId;
-      if (actionType === 'templates_used') actionType = 'premium_template';
-      if (actionType === 'emails_sent') actionType = 'email_send';
-      if (actionType === 'pdf_downloads') actionType = 'pdf_download';
-      if (actionType === 'invoices_created') actionType = 'extra_invoice';
-      if (actionType === 'report_exports') actionType = 'pdf_download';
-
+      const actionType = referenceId; 
+      
       const { error } = await supabase.from('payg_transactions').insert({
         user_id: user.id,
         amount,

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/api';
 import { z } from 'zod';
 import type { Client } from '@/types/database';
+import * as subService from '@/lib/services/subscription-service';
 
 // Zod schema for creating a client
 const createClientSchema = z.object({
@@ -105,6 +106,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Check usage limit
+    const usageCheck = await subService.checkUsageLimit(supabase, user.id, 'clients_created');
+    if (!usageCheck.allowed) {
+      return NextResponse.json({ 
+        error: 'Client limit reached', 
+        details: usageCheck.reason,
+        current: usageCheck.current,
+        limit: usageCheck.limit,
+        allowPayg: usageCheck.allowPayg
+      }, { status: 403 });
+    }
+
     // Parse and validate request body
     const body = await request.json();
     const validationResult = createClientSchema.safeParse(body);
@@ -131,6 +144,12 @@ export async function POST(request: NextRequest) {
       console.error('Database error:', error);
       return NextResponse.json({ error: 'Failed to create client' }, { status: 500 });
     }
+
+    // Increment usage
+    await subService.incrementUsage(supabase, user.id, 'clients_created');
+    await subService.logActivity(supabase, user.id, 'client_created', client.id, { 
+      company_name: client.company_name 
+    });
 
     return NextResponse.json(client, { status: 201 });
   } catch (error) {

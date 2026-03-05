@@ -24,9 +24,22 @@ interface PaginationInfo {
   hasPrev: boolean;
 }
 
-interface InvoiceWithClient extends Invoice {
+export interface InvoiceWithClient extends Invoice {
   clients?: {
     company_name: string;
+    email?: string;
+    address?: string;
+    contact_person?: string;
+  };
+  business?: {
+    id: string;
+    name: string;
+    logo_url?: string;
+    address?: string;
+    city?: string;
+    country?: string;
+    email?: string;
+    phone?: string;
   };
 }
 

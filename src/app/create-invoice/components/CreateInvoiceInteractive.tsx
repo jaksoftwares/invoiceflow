@@ -86,6 +86,28 @@ const CreateInvoiceInteractive = ({ initialClients, initialProducts, editId, dup
   const [limitModalOpen, setLimitModalOpen] = useState(false);
   const [limitActionInfo, setLimitActionInfo] = useState<{ action: string; current: number; limit: number; allowPayg?: boolean } | null>(null);
 
+  // Pending actions state
+  const [pendingAction, setPendingAction] = useState<{ type: 'create_client' | 'save_invoice' | 'generate_pdf'; data?: any } | null>(null);
+
+  const handleLimitSuccess = async () => {
+    setLimitModalOpen(false);
+    if (pendingAction) {
+      const { type, data } = pendingAction;
+      setPendingAction(null);
+      
+      // Short delay for DB persistence
+      setTimeout(async () => {
+        if (type === 'create_client') {
+          await handleClientAdded(data);
+        } else if (type === 'save_invoice') {
+          await handleSave(data as 'draft' | 'sent');
+        } else if (type === 'generate_pdf') {
+          await handleGeneratePDF();
+        }
+      }, 1500);
+    }
+  };
+
   // Fetch Features (Watermark)
   useEffect(() => {
     const fetchFeatures = async () => {
@@ -219,6 +241,20 @@ const CreateInvoiceInteractive = ({ initialClients, initialProducts, editId, dup
 
 
   const handleClientAdded = async (clientData: { company_name: string; contact_person?: string; email?: string; phone?: string; address?: string }) => {
+    // Check usage limit before attempting to create
+    const limitCheck = await checkUsageLimit('clients_created');
+    if (!limitCheck.allowed) {
+      setPendingAction({ type: 'create_client', data: clientData });
+      setLimitActionInfo({
+        action: 'clients_created',
+        limit: limitCheck.limit ?? 0,
+        current: limitCheck.current ?? 0,
+        allowPayg: limitCheck.allowPayg ?? false
+      });
+      setLimitModalOpen(true);
+      return;
+    }
+
     const newClient = await createClient({
       ...clientData,
       status: 'active',
@@ -229,6 +265,7 @@ const CreateInvoiceInteractive = ({ initialClients, initialProducts, editId, dup
       refetchClients();
     }
   };
+
 
   const validateForm = () => {
     if (!selectedClient) {
@@ -275,6 +312,7 @@ const CreateInvoiceInteractive = ({ initialClients, initialProducts, editId, dup
       if (!editId) {
         const limitCheck = await checkUsageLimit('invoices_created');
         if (!limitCheck.allowed) {
+          setPendingAction({ type: 'save_invoice', data: status });
           setLimitActionInfo({
             action: 'invoices_created',
             limit: limitCheck.limit ?? 0,
@@ -342,6 +380,7 @@ const CreateInvoiceInteractive = ({ initialClients, initialProducts, editId, dup
     // 1. Check Limits (Basic check before we even start)
     const pdfLimit = await checkUsageLimit('pdf_downloads');
     if (!pdfLimit.allowed) {
+      setPendingAction({ type: 'generate_pdf' });
       setLimitActionInfo({ 
         action: 'pdf_downloads', 
         limit: pdfLimit.limit ?? 0, 
@@ -364,6 +403,7 @@ const CreateInvoiceInteractive = ({ initialClients, initialProducts, editId, dup
     if (maxTemplates !== 0 && (templateIndex === -1 || templateIndex >= maxTemplates)) {
       const templateLimit = await checkUsageLimit('templates_used');
       if (!templateLimit.allowed) {
+        setPendingAction({ type: 'generate_pdf' });
         setLimitActionInfo({ 
           action: 'templates_used', 
           limit: templateLimit.limit ?? 0, 
@@ -603,6 +643,7 @@ const CreateInvoiceInteractive = ({ initialClients, initialProducts, editId, dup
       <PlanLimitModal
         isOpen={limitModalOpen}
         onClose={() => setLimitModalOpen(false)}
+        onSuccess={handleLimitSuccess}
         action={limitActionInfo?.action || 'invoices_created'}
         current={limitActionInfo?.current || 0}
         limit={limitActionInfo?.limit || 0}

@@ -10,7 +10,7 @@ import InvoiceTableRow from './InvoiceTableRow';
 import { toast } from 'sonner';
 import ShareInvoiceModal from '@/components/modals/ShareInvoiceModal';
 import InvoiceCard from './InvoiceCard';
-import { useInvoices } from '@/lib/hooks/useInvoices';
+import { useInvoices, type InvoiceWithClient } from '@/lib/hooks/useInvoices';
 import { useClients } from '@/lib/hooks/useClients';
 import { checkUsageLimit } from '@/lib/actions/subscription';
 import PlanLimitModal from '@/components/modals/PlanLimitModal';
@@ -20,25 +20,6 @@ import { supabase } from '@/lib/supabase/client';
 import InvoicePreview from '@/app/create-invoice/components/InvoicePreview';
 import MetricCard from '@/app/dashboard/components/MetricCard';
 import type { Invoice } from '@/types/database';
-
-interface InvoiceWithClient extends Invoice {
-  clients?: {
-    company_name: string;
-    email?: string;
-    address?: string;
-    contact_person?: string;
-  };
-  business?: {
-    id: string;
-    name: string;
-    logo_url?: string;
-    address?: string;
-    city?: string;
-    country?: string;
-    email?: string;
-    phone?: string;
-  };
-}
 
 interface FilterState {
   dateRange: { start: string; end: string };
@@ -100,6 +81,24 @@ const InvoiceManagementInteractive = ({ initialInvoices }: InvoiceManagementInte
   const [limitModalOpen, setLimitModalOpen] = useState(false);
   const [limitActionInfo, setLimitActionInfo] = useState<{ action: string; current: number; limit: number; allowPayg?: boolean } | null>(null);
   const [selectedInvoiceForShare, setSelectedInvoiceForShare] = useState<InvoiceWithClient | null>(null);
+
+  // Pending actions state
+  const [pendingAction, setPendingAction] = useState<{ type: 'download' | 'send'; id: string } | null>(null);
+
+  const handleLimitSuccess = async () => {
+    setLimitModalOpen(false);
+    if (pendingAction) {
+      const { type, id } = pendingAction;
+      setPendingAction(null);
+      setTimeout(async () => {
+        if (type === 'download') {
+          await handleDownload(id);
+        } else if (type === 'send') {
+          await handleSend(id);
+        }
+      }, 1500);
+    }
+  };
 
   const isFiltering = searchQuery.length > 0 || 
                       filters.paymentStatus !== 'all' || 
@@ -275,6 +274,7 @@ const InvoiceManagementInteractive = ({ initialInvoices }: InvoiceManagementInte
     // Check limit
     const limitCheck = await checkUsageLimit('pdf_downloads');
     if (!limitCheck.allowed) {
+      setPendingAction({ type: 'download', id });
       setLimitActionInfo({
         action: 'pdf_downloads',
         limit: limitCheck.limit ?? 0,
@@ -308,7 +308,13 @@ const InvoiceManagementInteractive = ({ initialInvoices }: InvoiceManagementInte
           ? invoiceData.client.company_name.toLowerCase().replace(/[^a-z0-9]/g, '-')
           : 'no-client';
         const fileName = `Invoice-${invoiceNum}-${clientName}.pdf`;
-        downloadFromDOM(fileName);
+        downloadFromDOM(fileName, {
+          invoice: invoiceData,
+          items: itemsData,
+          business: invoiceData.business,
+          client: invoiceData.client
+        });
+
       }, 500);
     }
   };
@@ -319,6 +325,7 @@ const InvoiceManagementInteractive = ({ initialInvoices }: InvoiceManagementInte
       // Check limit
       const limitCheck = await checkUsageLimit('emails_sent');
       if (!limitCheck.allowed) {
+        setPendingAction({ type: 'send', id });
         setLimitActionInfo({
           action: 'emails_sent',
           limit: limitCheck.limit ?? 0,
@@ -542,6 +549,7 @@ const InvoiceManagementInteractive = ({ initialInvoices }: InvoiceManagementInte
             invoiceId={selectedInvoiceForShare.id}
             clientEmail={selectedInvoiceForShare.clients?.email || ''} 
             invoiceNumber={selectedInvoiceForShare.invoice_number}
+            businessName={selectedInvoiceForShare.business?.name || ''}
             slug={selectedInvoiceForShare.slug}
             onSendEmail={handleSendEmail}
             onCopyLink={handleCopyLink}
@@ -638,6 +646,7 @@ const InvoiceManagementInteractive = ({ initialInvoices }: InvoiceManagementInte
       <PlanLimitModal
         isOpen={limitModalOpen}
         onClose={() => setLimitModalOpen(false)}
+        onSuccess={handleLimitSuccess}
         action={limitActionInfo?.action || 'emails_sent'}
         current={limitActionInfo?.current || 0}
         limit={limitActionInfo?.limit || 0}

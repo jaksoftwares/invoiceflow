@@ -13,6 +13,7 @@ interface SubscriptionClientProps {
   initialUsage: any;
   plans: any[];
   payments: any[];
+  paygTransactions?: any[];
   userEmail: string | undefined;
   initialPhone: string;
 }
@@ -22,6 +23,7 @@ export default function SubscriptionClient({
   initialUsage, 
   plans, 
   payments,
+  paygTransactions = [],
   userEmail,
   initialPhone
 }: SubscriptionClientProps) {
@@ -456,6 +458,84 @@ export default function SubscriptionClient({
                 <tr>
                   <td colSpan={5} className="px-8 py-10 text-center text-muted-foreground">
                     No transactions found yet.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* PAYG Transaction History */}
+      <div className="mt-16 bg-card rounded-3xl border border-border shadow-elevation-1 overflow-hidden">
+        <div className="p-8 border-b border-border flex items-center gap-3">
+          <CreditCard className="text-primary w-6 h-6" />
+          <h2 className="text-2xl font-heading font-semibold">Pay-As-You-Go History</h2>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="bg-muted/50 text-muted-foreground text-sm uppercase tracking-wider">
+                <th className="px-8 py-4 font-medium">Date</th>
+                <th className="px-8 py-4 font-medium">Credit Type</th>
+                <th className="px-8 py-4 font-medium">Receipt</th>
+                <th className="px-8 py-4 font-medium">Amount</th>
+                <th className="px-8 py-4 font-medium">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {paygTransactions.length > 0 ? paygTransactions.map((tx) => {
+                const formatAction = (type: string) => {
+                  switch(type) {
+                    case 'extra_client': case 'clients_created': return 'Extra Client Credit';
+                    case 'extra_product': case 'products_created': return 'Extra Product Credit';
+                    case 'extra_invoice': case 'invoices_created': return 'Extra Invoice Credit';
+                    case 'email_send': case 'emails_sent': return 'Email Send Credit';
+                    case 'pdf_download': case 'pdf_downloads': return 'PDF Download Credit';
+                    case 'premium_template': case 'templates_used': return 'Premium Template Access';
+                    case 'report_export': case 'report_exports': return 'Report Export Credit';
+                    default: return type.replace(/_/g, ' ');
+                  }
+                };
+
+                return (
+                  <tr key={tx.id} className="hover:bg-muted/20 transition-colors">
+                    <td className="px-8 py-4 text-sm">{new Date(tx.created_at).toLocaleDateString()}</td>
+                    <td className="px-8 py-4 font-medium capitalize">{formatAction(tx.action_type)}</td>
+                    <td className="px-8 py-4 text-sm font-mono">{tx.mpesa_receipt_number || '---'}</td>
+                    <td className="px-8 py-4 font-bold">KES {tx.amount}</td>
+                    <td className="px-8 py-4 flex items-center gap-3">
+                      <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${
+                        tx.status === 'completed' ? 'bg-success/10 text-success' : 
+                        tx.status === 'pending' ? 'bg-warning/10 text-warning' : 
+                        'bg-error/10 text-error'
+                      }`}>
+                        {tx.status}
+                      </span>
+                      {tx.status === 'pending' && tx.checkout_request_id && (
+                        <button 
+                          onClick={async () => {
+                            const { status } = await checkPaymentStatus(tx.checkout_request_id);
+                            if (status === 'completed') {
+                              toast.success('Payment confirmed!');
+                              router.refresh();
+                            } else {
+                              toast.info(`Payment status is still ${status}`);
+                            }
+                          }}
+                          className="p-1 hover:bg-slate-200 rounded-lg transition-colors text-slate-400 hover:text-primary"
+                          title="Check status"
+                        >
+                           <Icon name="ArrowPathIcon" size={14} />
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              }) : (
+                <tr>
+                  <td colSpan={5} className="px-8 py-10 text-center text-muted-foreground">
+                    No Pay-As-You-Go credits purchased yet.
                   </td>
                 </tr>
               )}

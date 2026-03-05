@@ -63,6 +63,20 @@ const ReportsAnalyticsInteractive = () => {
   const [limitActionInfo, setLimitActionInfo] = useState<{ action: string; current: number; limit: number; allowPayg?: boolean } | null>(null);
   const { generateReportPDF } = useReportPDF();
 
+  // Pending actions state
+  const [pendingAction, setPendingAction] = useState<(() => Promise<void>) | null>(null);
+
+  const handleLimitSuccess = async () => {
+    setLimitModalOpen(false);
+    if (pendingAction) {
+      const action = pendingAction;
+      setPendingAction(null);
+      setTimeout(async () => {
+        await action();
+      }, 1500);
+    }
+  };
+
   const [filters, setFilters] = useState<FilterState>({
     dateRange: 'last-6-months',
     reportType: 'revenue',
@@ -97,6 +111,7 @@ const ReportsAnalyticsInteractive = () => {
     // Check limit
     const limitCheck = await checkUsageLimit('report_exports');
     if (!limitCheck.allowed) {
+      setPendingAction(() => handleExportClients);
       setLimitActionInfo({
         action: 'report_exports',
         limit: limitCheck.limit ?? 0,
@@ -132,6 +147,7 @@ const ReportsAnalyticsInteractive = () => {
     // Check limit
     const limitCheck = await checkUsageLimit('report_exports');
     if (!limitCheck.allowed) {
+      setPendingAction(() => handleExportProducts);
       setLimitActionInfo({
         action: 'report_exports',
         limit: limitCheck.limit ?? 0,
@@ -166,6 +182,7 @@ const ReportsAnalyticsInteractive = () => {
     // Check limit
     const limitCheck = await checkUsageLimit('report_exports');
     if (!limitCheck.allowed) {
+      setPendingAction(() => handleExportPerformance);
       setLimitActionInfo({
         action: 'report_exports',
         limit: limitCheck.limit ?? 0,
@@ -201,6 +218,7 @@ const ReportsAnalyticsInteractive = () => {
     // Check limit
     const limitCheck = await checkUsageLimit('report_exports');
     if (!limitCheck.allowed) {
+      setPendingAction(() => handleExportInvoices);
       setLimitActionInfo({
         action: 'report_exports',
         limit: limitCheck.limit ?? 0,
@@ -397,6 +415,7 @@ const ReportsAnalyticsInteractive = () => {
       <PlanLimitModal
         isOpen={limitModalOpen}
         onClose={() => setLimitModalOpen(false)}
+        onSuccess={handleLimitSuccess}
         action={limitActionInfo?.action || 'report_exports'}
         current={limitActionInfo?.current || 0}
         limit={limitActionInfo?.limit || 0}
