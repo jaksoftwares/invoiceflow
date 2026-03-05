@@ -39,7 +39,7 @@ export async function middleware(request: NextRequest) {
 
   // Define protected and public path rules
   const isAuthPage = pathname.startsWith('/auth')
-  const isPublicPage = pathname === '/' || pathname === '/pricing' || pathname === '/about'
+  const isPublicPage = pathname === '/' || pathname === '/pricing' || pathname === '/about' || pathname.startsWith('/invoice/view/')
   
   // Protected paths (anything not explicitly public or auth)
   const isProtectedPath = !isPublicPage && !isAuthPage && !pathname.startsWith('/api') && !pathname.includes('.')
