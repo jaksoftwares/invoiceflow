@@ -66,7 +66,7 @@ export default async function DashboardPage() {
       .select('*, clients!inner(company_name, avatar_url)')
       .eq('clients.user_id', user.id)
       .order('timestamp', { ascending: false })
-      .limit(10);
+      .limit(5);
 
     // Fetch revenue chart data
     const { data: paidInvoicesForChart } = await supabase

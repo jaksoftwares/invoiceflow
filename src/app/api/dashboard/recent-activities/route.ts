@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
       .select('*, clients!inner(company_name)')
       .eq('clients.user_id', user.id)
       .order('timestamp', { ascending: false })
-      .limit(10);
+      .limit(5);
 
     if (error) {
       console.error('Database error:', error);
