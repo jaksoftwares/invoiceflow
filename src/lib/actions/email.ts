@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { postmarkClient } from '@/lib/postmark';
 import { checkUsageLimit, incrementUsage, logActivity } from './subscription';
+import { recordClientActivity } from './activities';
 
 export async function sendInvoiceEmail(
   invoiceId: string,
@@ -32,7 +33,7 @@ export async function sendInvoiceEmail(
       currency, 
       due_date, 
       business_id,
-      client:clients(company_name, contact_person)
+      client:clients(id, company_name, contact_person)
     `)
     .eq('id', invoiceId)
     .single();
@@ -186,10 +187,12 @@ export async function sendInvoiceEmail(
     // Increment usage
     await incrementUsage('emails_sent');
     
-    // Log activity
-    await logActivity('invoice_sent', invoiceId, { 
-      to: emailData.to, 
-      invoice_number: invoice.invoice_number 
+    // Record client activity for dashboard/client history
+    await recordClientActivity({
+      clientId: (invoice as any).client?.id || '', // We need to make sure we have this or fetch it
+      activity: `Invoice #${invoice.invoice_number} sent to ${emailData.to}`,
+      type: 'communication',
+      metadata: { invoiceId, to: emailData.to }
     });
 
     return { success: true, messageId: result.MessageID };

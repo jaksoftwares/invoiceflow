@@ -34,8 +34,6 @@ export default function PublicInvoiceUI({
     paymentTerms: invoice.payment_terms,
   };
 
-  const showPublicStatus = invoice.status && !['draft', 'archived', 'deleted'].includes(invoice.status.toLowerCase());
-  const displayStatus = invoice.status === 'unpaid' ? 'Pending' : invoice.status;
 
   return (
     <div className="min-h-screen bg-slate-50/50 py-4 sm:py-8 px-4 sm:px-6 lg:px-8">
@@ -54,17 +52,6 @@ export default function PublicInvoiceUI({
                     <h2 className="text-base font-black text-slate-900 uppercase tracking-tighter leading-tight">{businessProfile.name || 'Official Invoice'}</h2>
                     <div className="flex items-center gap-2 mt-1">
                       <p className="text-[10px] text-primary font-bold uppercase tracking-[0.2em] opacity-70">Secured Portal</p>
-                      {showPublicStatus && (
-                        <>
-                          <span className="text-[10px] text-slate-300">•</span>
-                          <div className="flex items-center gap-1.5">
-                            <div className={`w-1.5 h-1.5 rounded-full ${invoice.status?.toLowerCase() === 'paid' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                              {displayStatus}
-                            </span>
-                          </div>
-                        </>
-                      )}
                     </div>
                 </div>
             </div>
@@ -104,14 +91,6 @@ export default function PublicInvoiceUI({
         
         {/* Security / Footer */}
         <div className="flex flex-col items-center gap-6 py-10 border-t border-slate-200/40">
-            {showPublicStatus && (
-              <div className="flex items-center gap-3 px-6 py-3 bg-slate-100 rounded-2xl">
-                  <div className={`w-2.5 h-2.5 rounded-full ${invoice.status?.toLowerCase() === 'paid' ? 'bg-emerald-500' : 'bg-amber-500'} animate-pulse`} />
-                  <span className="text-xs font-black uppercase tracking-widest text-slate-500">
-                    Document Status: {displayStatus}
-                  </span>
-              </div>
-            )}
             
             <div className="text-center space-y-2">
               <p className="text-[11px] text-slate-400 font-medium">

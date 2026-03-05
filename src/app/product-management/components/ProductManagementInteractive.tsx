@@ -8,6 +8,8 @@ import AddProductModal from './AddProductModal';
 import { useProducts } from '@/lib/hooks/useProducts';
 import { useSettings } from '@/lib/hooks/useSettings';
 import type { Product } from '@/types/database';
+import { checkUsageLimit } from '@/lib/actions/subscription';
+import PlanLimitModal from '@/components/modals/PlanLimitModal';
 
 interface ProductManagementInteractiveProps {
   initialProducts?: Product[];
@@ -17,6 +19,11 @@ const ProductManagementInteractive = ({ initialProducts = [] }: ProductManagemen
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+
+  // Limit Modal State
+  const [limitModalOpen, setLimitModalOpen] = useState(false);
+  const [limitActionInfo, setLimitActionInfo] = useState<{ action: string; current: number; limit: number; allowPayg?: boolean } | null>(null);
+  const [pendingProductData, setPendingProductData] = useState<any | null>(null);
 
   const { settings } = useSettings();
   const currency = settings?.default_currency || 'KES';
@@ -39,14 +46,41 @@ const ProductManagementInteractive = ({ initialProducts = [] }: ProductManagemen
     (product.category && product.category.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
+  const handleLimitSuccess = async () => {
+    setLimitModalOpen(false);
+    if (pendingProductData) {
+      const data = pendingProductData;
+      setPendingProductData(null);
+      // Wait a bit for the DB to sync then retry
+      setTimeout(async () => {
+        await handleAddProduct(data);
+      }, 1500);
+    }
+  };
+
   const handleAddProduct = async (productData: any) => {
     if (editingProduct) {
       await updateProduct(editingProduct.id, productData);
       setEditingProduct(null);
+      setIsAddModalOpen(false);
     } else {
+      // Check usage limit before attempting to create
+      const limitCheck = await checkUsageLimit('products_created');
+      if (!limitCheck.allowed) {
+        setPendingProductData(productData);
+        setLimitActionInfo({
+          action: 'products_created',
+          limit: limitCheck.limit ?? 0,
+          current: limitCheck.current ?? 0,
+          allowPayg: limitCheck.allowPayg ?? false
+        });
+        setLimitModalOpen(true);
+        return;
+      }
+
       await createProduct(productData);
+      setIsAddModalOpen(false);
     }
-    setIsAddModalOpen(false);
   };
 
   const handleEdit = (product: Product) => {
@@ -174,6 +208,16 @@ const ProductManagementInteractive = ({ initialProducts = [] }: ProductManagemen
           }}
           onSubmit={handleAddProduct}
           initialData={editingProduct || undefined}
+        />
+
+        <PlanLimitModal
+          isOpen={limitModalOpen}
+          onClose={() => setLimitModalOpen(false)}
+          onSuccess={handleLimitSuccess}
+          action={limitActionInfo?.action || 'products_created'}
+          current={limitActionInfo?.current || 0}
+          limit={limitActionInfo?.limit || 0}
+          allowPayg={limitActionInfo?.allowPayg}
         />
       </div>
     </div>

@@ -351,7 +351,23 @@ const InvoiceManagementInteractive = ({ initialInvoices }: InvoiceManagementInte
       setShareModalOpen(false);
     } catch (error) {
       console.error('Failed to send email:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to send email.', { id: toastId });
+      const errorMessage = error instanceof Error ? error.message : 'Failed to send email.';
+      
+      if (errorMessage.toLowerCase().includes('limit reached')) {
+        toast.dismiss(toastId);
+        // Check limit again to get current stats for the modal
+        const limitCheck = await checkUsageLimit('emails_sent');
+        setPendingAction({ type: 'send', id: selectedInvoiceForShare.id });
+        setLimitActionInfo({
+          action: 'emails_sent',
+          limit: limitCheck.limit ?? 0,
+          current: limitCheck.current ?? 0,
+          allowPayg: limitCheck.allowPayg ?? false
+        });
+        setLimitModalOpen(true);
+      } else {
+        toast.error(errorMessage, { id: toastId });
+      }
     }
   };
 
