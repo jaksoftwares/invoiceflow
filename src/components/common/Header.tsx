@@ -65,13 +65,8 @@ const Header = ({ isOpen: propIsOpen, onMobileMenuToggle }: HeaderProps) => {
   };
 
   const Logo = () => (
-    <Link href={user ? "/dashboard" : "/"} className="flex items-center gap-3 transition-all hover:scale-[1.02] active:scale-[0.98]">
-      <div className="relative w-10 h-10 flex items-center justify-center bg-primary rounded-xl shadow-lg shadow-primary/20 overflow-hidden">
-        <svg width="24" height="24" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 20L16 16L20 20L24 16L28 20" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-          <path d="M12 26H28" stroke="var(--color-accent)" strokeWidth="3" strokeLinecap="round" />
-        </svg>
-      </div>
+    <Link href={user ? "/dashboard" : "/"} className="flex items-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98]">
+      <img src="/assets/logo.png" alt="InvoiceFlow" className="h-8 w-auto" />
       <span className="text-xl font-black tracking-tight text-foreground hidden sm:block">
         InvoiceFlow
       </span>
@@ -120,8 +115,6 @@ const Header = ({ isOpen: propIsOpen, onMobileMenuToggle }: HeaderProps) => {
         </div>
 
         <div className="flex items-center gap-4">
-
-
           <div className="relative">
             <button
               onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}

@@ -60,11 +60,7 @@ const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
         {/* Drawer Header */}
         <div className="p-6 flex items-center justify-between border-b border-border/50">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
-              <svg width="24" height="24" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 20L16 16L20 20L24 16L28 20" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </div>
+             <img src="/assets/logo.png" alt="InvoiceFlow" className="h-8 w-auto" />
             <span className="font-black text-lg tracking-tight">InvoiceFlow</span>
           </div>
           <button onClick={onClose} className="p-2 rounded-xl bg-muted/50 hover:bg-muted transition-all">

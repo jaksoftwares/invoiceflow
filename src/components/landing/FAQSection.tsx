@@ -1,54 +1,87 @@
+'use client';
+
+import { Plus, Minus, CircleHelp } from 'lucide-react';
+import { useState } from 'react';
+
 const faqs = [
   {
     question: 'Is Invoiceflow free to use?',
-    answer: 'Yes, we offer a free plan that allows you to create up to 5 invoices per month. For unlimited usage and advanced features, check out our Pro and Enterprise plans.',
+    answer: 'Yes, we offer a generous Free tier that allows you to create up to 5 invoices per month. Scale to our Starter or Business plans for unlimited invoicing and priority features.',
   },
   {
-    question: 'Can I customize my invoices?',
-    answer: 'Absolutely! Invoiceflow offers customizable templates, your logo, branding colors, and the ability to add your own terms and conditions.',
+    question: 'Can I customize my invoices with my logo?',
+    answer: 'Absolutely! Professional branding is at the core of Invoiceflow. All plans allow for custom logos and business profiles to ensure you look professional.',
   },
   {
-    question: 'Is my data secure?',
-    answer: 'We take security seriously. All data is encrypted, and we use industry-standard security measures to protect your information.',
+    question: 'Is my financial data secure?',
+    answer: 'We use industry-standard encryption and follow high-level security practices to protect your data. Your privacy and financial security are our top priorities.',
   },
   {
-    question: 'Can I integrate Invoiceflow with other tools?',
-    answer: 'Yes, our Pro and Enterprise plans include integrations with popular accounting software like QuickBooks, Xero, and more.',
+    question: 'How does M-Pesa integration work?',
+    answer: 'M-Pesa payments for subscriptions are handled via a secure STK Push. Enter your number, and you will receive an instant payment prompt on your phone.',
   },
   {
-    question: 'What payment methods do you accept?',
-    answer: 'We accept major credit cards, PayPal, and bank transfers. For Enterprise customers, we can accommodate custom payment arrangements.',
+    question: 'Are there any hidden fees or contracts?',
+    answer: 'No hidden fees. No long-term contracts. You can choose a monthly plan or a Lifetime plan for a one-time payment. Upgrade or downgrade at any time.',
   },
   {
     question: 'Do you offer customer support?',
-    answer: 'Yes! Free plan users get email support, while Pro and Enterprise users receive priority support with faster response times.',
+    answer: 'Yes! All users get email support. Starter and Business users get Priority status with faster response times to ensure smooth operations.',
   },
 ];
 
 export default function FAQSection() {
+  const [openIndex, setOpenIndex] = useState<number | null>(0);
+
   return (
-    <section className="py-20 px-4 sm:px-6 lg:px-8 bg-muted">
+    <section id="faq" className="py-24 px-4 sm:px-6 lg:px-8 bg-gray-50/50">
       <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
+        <div className="text-center mb-16 relative">
+          <div className="flex justify-center mb-6">
+             <div className="p-3 bg-indigo-50 text-indigo-600 rounded-2xl shadow-sm">
+                <CircleHelp size={32} />
+             </div>
+          </div>
+          <h2 className="text-3xl sm:text-4xl font-black text-gray-900 mb-6 tracking-tight">
             Frequently Asked Questions
           </h2>
-          <p className="text-xl text-muted-foreground">
-            Have questions? We've got answers.
+          <p className="text-lg text-gray-500 font-medium leading-relaxed">
+            Everything you need to know about starting your invoicing journey.
           </p>
         </div>
+
         <div className="space-y-4">
-          {faqs.map((faq, index) => (
-            <details key={index} className="bg-card p-6 rounded-lg shadow-elevation-1">
-              <summary className="font-semibold text-foreground cursor-pointer list-none">
-                <span className="flex items-center justify-between">
-                  {faq.question}
-                  <span className="text-primary text-xl">+</span>
-                </span>
-              </summary>
-              <p className="text-muted-foreground mt-4">{faq.answer}</p>
-            </details>
-          ))}
+          {faqs.map((faq, index) => {
+            const isOpen = openIndex === index;
+            return (
+              <div 
+                key={index} 
+                className={`bg-white rounded-3xl border transition-all duration-300 overflow-hidden ${
+                    isOpen ? 'border-indigo-600 shadow-xl' : 'border-gray-100 shadow-sm hover:border-indigo-200'
+                }`}
+              >
+                <button 
+                  onClick={() => setOpenIndex(isOpen ? null : index)}
+                  className="w-full flex items-center justify-between p-8 text-left group"
+                >
+                  <span className={`text-lg font-bold transition-colors ${isOpen ? 'text-indigo-600' : 'text-gray-900 group-hover:text-indigo-600'}`}>
+                    {faq.question}
+                  </span>
+                  <div className={`flex-shrink-0 w-8 h-8 rounded-xl flex items-center justify-center transition-all ${
+                      isOpen ? 'bg-indigo-600 text-white rotate-180' : 'bg-gray-50 text-gray-400 group-hover:bg-indigo-50 group-hover:text-indigo-600'
+                  }`}>
+                    {isOpen ? <Minus size={18} /> : <Plus size={18} />}
+                  </div>
+                </button>
+                
+                <div className={`transition-all duration-300 ease-in-out ${isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
+                   <p className="px-8 pb-8 text-gray-500 font-medium leading-relaxed">
+                     {faq.answer}
+                   </p>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     </section>

@@ -1,5 +1,7 @@
+'use client';
+
 import Link from 'next/link';
-import Icon from '@/components/ui/AppIcon';
+import { Twitter, Linkedin, Facebook, Instagram } from 'lucide-react';
 
 const footerLinks = {
   product: [
@@ -9,70 +11,68 @@ const footerLinks = {
     { name: 'Screenshots', href: '#screenshots' },
   ],
   company: [
-    { name: 'About', href: '/about' },
-    { name: 'Blog', href: '/blog' },
-    { name: 'Careers', href: '/careers' },
-    { name: 'Contact', href: '/contact' },
+    { name: 'About', href: '#' },
+    { name: 'Blog', href: '#' },
+    { name: 'Careers', href: '#' },
+    { name: 'Contact', href: '#' },
   ],
   support: [
-    { name: 'Help Center', href: '/help' },
-    { name: 'API Docs', href: '/docs' },
-    { name: 'Status', href: '/status' },
-    { name: 'Community', href: '/community' },
+    { name: 'Help Center', href: '#' },
+    { name: 'API Docs', href: '#' },
+    { name: 'Status', href: '#' },
+    { name: 'Community', href: '#' },
   ],
   legal: [
-    { name: 'Privacy Policy', href: '/privacy' },
-    { name: 'Terms of Service', href: '/terms' },
-    { name: 'Cookie Policy', href: '/cookies' },
-    { name: 'GDPR', href: '/gdpr' },
+    { name: 'Privacy Policy', href: '#' },
+    { name: 'Terms of Service', href: '#' },
+    { name: 'Cookie Policy', href: '#' },
+    { name: 'GDPR', href: '#' },
   ],
 };
 
 const socialLinks = [
-  { name: 'Twitter', icon: 'TwitterIcon', href: 'https://twitter.com/invoiceflow' },
-  { name: 'LinkedIn', icon: 'LinkedInIcon', href: 'https://linkedin.com/company/invoiceflow' },
-  { name: 'Facebook', icon: 'FacebookIcon', href: 'https://facebook.com/invoiceflow' },
-  { name: 'Instagram', icon: 'InstagramIcon', href: 'https://instagram.com/invoiceflow' },
+  { name: 'Twitter', icon: <Twitter size={20} />, href: '#' },
+  { name: 'LinkedIn', icon: <Linkedin size={20} />, href: '#' },
+  { name: 'Facebook', icon: <Facebook size={20} />, href: '#' },
+  { name: 'Instagram', icon: <Instagram size={20} />, href: '#' },
 ];
 
 export default function FooterSection() {
   return (
-    <footer className="bg-card border-t border-border py-12 px-4 sm:px-6 lg:px-8">
+    <footer className="bg-white border-t border-gray-100 py-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-12 lg:gap-8">
           {/* Company Info */}
           <div className="lg:col-span-2">
-            <div className="flex items-center mb-4">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center mr-3">
-                <span className="text-primary-foreground font-bold text-sm">IF</span>
-              </div>
-              <span className="text-xl font-bold text-foreground">Invoiceflow</span>
-            </div>
-            <p className="text-muted-foreground mb-4">
-              Streamline your invoicing process with our modern, easy-to-use platform designed for businesses and freelancers.
+            <Link href="/" className="flex items-center gap-2 mb-6">
+              <img src="/assets/logo.png" alt="InvoiceFlow" className="h-8 w-auto" />
+              <span className="text-xl font-black tracking-tight text-gray-900">InvoiceFlow</span>
+            </Link>
+            <p className="text-gray-500 font-medium mb-8 max-w-sm leading-relaxed">
+              Streamline your invoicing process with our modern, easy-to-use platform designed for businesses and freelancers worldwide.
             </p>
-            <div className="flex space-x-4">
+            <div className="flex space-x-3">
               {socialLinks.map((social) => (
                 <a
                   key={social.name}
                   href={social.href}
-                  className="text-muted-foreground hover:text-primary transition-colors"
+                  className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-indigo-600 hover:text-white transition-all duration-300"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  <Icon name={social.icon} className="w-5 h-5" />
+                  {social.icon}
                 </a>
               ))}
             </div>
           </div>
 
-          {/* Links */}
+          {/* Links Groups */}
           <div>
-            <h3 className="font-semibold text-foreground mb-4">Product</h3>
-            <ul className="space-y-2">
+            <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest mb-6">Product</h3>
+            <ul className="space-y-4">
               {footerLinks.product.map((link) => (
                 <li key={link.name}>
-                  <Link href={link.href} className="text-muted-foreground hover:text-primary transition-colors">
+                  <Link href={link.href} className="text-gray-500 font-medium hover:text-indigo-600 transition-colors">
                     {link.name}
                   </Link>
                 </li>
@@ -81,11 +81,11 @@ export default function FooterSection() {
           </div>
 
           <div>
-            <h3 className="font-semibold text-foreground mb-4">Company</h3>
-            <ul className="space-y-2">
+            <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest mb-6">Company</h3>
+            <ul className="space-y-4">
               {footerLinks.company.map((link) => (
                 <li key={link.name}>
-                  <Link href={link.href} className="text-muted-foreground hover:text-primary transition-colors">
+                  <Link href={link.href} className="text-gray-500 font-medium hover:text-indigo-600 transition-colors">
                     {link.name}
                   </Link>
                 </li>
@@ -94,11 +94,11 @@ export default function FooterSection() {
           </div>
 
           <div>
-            <h3 className="font-semibold text-foreground mb-4">Support</h3>
-            <ul className="space-y-2">
+            <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest mb-6">Support</h3>
+            <ul className="space-y-4">
               {footerLinks.support.map((link) => (
                 <li key={link.name}>
-                  <Link href={link.href} className="text-muted-foreground hover:text-primary transition-colors">
+                  <Link href={link.href} className="text-gray-500 font-medium hover:text-indigo-600 transition-colors">
                     {link.name}
                   </Link>
                 </li>
@@ -107,11 +107,11 @@ export default function FooterSection() {
           </div>
 
           <div>
-            <h3 className="font-semibold text-foreground mb-4">Legal</h3>
-            <ul className="space-y-2">
+            <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest mb-6">Legal</h3>
+            <ul className="space-y-4">
               {footerLinks.legal.map((link) => (
                 <li key={link.name}>
-                  <Link href={link.href} className="text-muted-foreground hover:text-primary transition-colors">
+                  <Link href={link.href} className="text-gray-500 font-medium hover:text-indigo-600 transition-colors">
                     {link.name}
                   </Link>
                 </li>
@@ -120,13 +120,13 @@ export default function FooterSection() {
           </div>
         </div>
 
-        <div className="border-t border-border mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
-          <p className="text-muted-foreground text-sm">
-            © 2024 Invoiceflow. All rights reserved.
+        <div className="border-t border-gray-50 mt-16 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+          <p className="text-gray-400 text-sm font-medium">
+            © 2024 InvoiceFlow. All rights reserved.
           </p>
-          <p className="text-muted-foreground text-sm mt-2 md:mt-0">
-            Made with ❤️ for businesses worldwide.
-          </p>
+          <div className="flex items-center gap-4 text-sm font-medium text-gray-400">
+             <span>Proudly made for businesses worldwide.</span>
+          </div>
         </div>
       </div>
     </footer>

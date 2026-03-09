@@ -1,126 +1,131 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import Icon from '@/components/ui/AppIcon';
+import { Check, Loader2 } from 'lucide-react';
+import { supabase } from '@/lib/supabase/client';
 import { useAuth } from '@/components/providers/SupabaseAuthProvider';
 
-const plans = [
-  {
-    name: 'Free',
-    price: 'KES 0',
-    period: 'forever',
-    description: 'Perfect for getting started',
-    features: [
-      '5 Invoices per month',
-      '2 Clients limit',
-      'Basic templates',
-      'Client management',
-    ],
-    cta: 'Get Started',
-    popular: false,
-  },
-  {
-    name: 'Starter',
-    price: 'KES 1,500',
-    period: 'per month',
-    description: 'For power freelancers',
-    features: [
-      '20 Invoices per month',
-      '10 Clients limit',
-      'Premium templates',
-      'No watermark',
-      'Priority support',
-    ],
-    cta: 'Choose Starter',
-    popular: true,
-  },
-  {
-    name: 'Business',
-    price: 'KES 3,500',
-    period: 'per month',
-    description: 'For growing agencies',
-    features: [
-      'Unlimited Invoices',
-      'Unlimited Clients',
-      'Custom branding',
-      'Team collaboration',
-      'Advanced analytics',
-    ],
-    cta: 'Go Business',
-    popular: false,
-  },
-  {
-    name: 'Lifetime',
-    price: 'KES 25,000',
-    period: 'one-time',
-    description: 'The ultimate investment',
-    features: [
-      'Everything in Business',
-      'Pay once, use forever',
-      'Early access to features',
-      'Dedicated support',
-      'Exclusive templates',
-    ],
-    cta: 'Get Lifetime',
-    popular: false,
-  },
-];
+interface DBPlan {
+  id: string;
+  name: string;
+  description: string;
+  price_monthly: number;
+  price_yearly: number;
+  price_lifetime: number;
+}
+
+const getPlanFeatures = (name: string) => {
+  const n = name.toLowerCase();
+  if (n.includes('free')) return ['5 Invoices /mo', 'Standard PDF', 'Basic Support', '3 Clients'];
+  if (n.includes('starter')) return ['50 Invoices /mo', '20 Clients', 'Priority Support', 'No Watermark'];
+  if (n.includes('business')) return ['Unlimited Invoices', 'Unlimited Clients', 'Full Branding', 'Excel Export'];
+  if (n.includes('lifetime')) return ['One-time Payment', 'All Business Features', 'Forever Access', 'VIP Support'];
+  return [];
+};
 
 export default function PricingSection() {
   const { user } = useAuth();
+  const [plans, setPlans] = useState<DBPlan[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPlans = async () => {
+      const { data, error } = await supabase
+        .from('plans')
+        .select('*');
+      
+      if (data) {
+        const order = ['free', 'starter', 'business', 'lifetime'];
+        const sortedPlans = [...data].sort((a, b) => {
+          return order.indexOf(a.name.toLowerCase()) - order.indexOf(b.name.toLowerCase());
+        });
+        setPlans(sortedPlans);
+      }
+      setLoading(false);
+    };
+
+    fetchPlans();
+  }, []);
+
+  if (loading) {
+    return (
+      <section className="py-20 px-4 bg-gray-50/50 flex items-center justify-center">
+        <Loader2 className="animate-spin text-indigo-600" size={32} />
+      </section>
+    );
+  }
 
   return (
-    <section className="py-20 px-4 sm:px-6 lg:px-8 bg-muted">
+    <section id="pricing" className="py-24 px-4 sm:px-6 lg:px-8 bg-white border-y border-gray-100">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16">
-          <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-            Simple, Transparent Pricing
+          <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4 tracking-tight">
+            Transparent, Simple Pricing
           </h2>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Choose the plan that fits your business needs. Start free and upgrade as you grow.
+          <p className="text-lg text-gray-500 max-w-2xl mx-auto font-medium">
+            Choose the plan that fits your business needs. No hidden fees, just professional invoicing.
           </p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {plans.map((plan, index) => (
-            <div
-              key={index}
-              className={`bg-card p-8 rounded-lg shadow-elevation-1 relative flex flex-col ${
-                plan.popular ? 'ring-2 ring-primary' : ''
-              }`}
-            >
-              {plan.popular && (
-                <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                  <span className="bg-primary text-primary-foreground px-4 py-1 rounded-full text-sm font-semibold">
-                    Most Popular
-                  </span>
-                </div>
-              )}
-              <div className="text-center mb-6">
-                <h3 className="text-2xl font-bold text-foreground mb-2">{plan.name}</h3>
-                <div className="text-4xl font-bold text-primary mb-1">{plan.price}</div>
-                <div className="text-muted-foreground">{plan.period}</div>
-                <p className="text-muted-foreground mt-2 text-sm">{plan.description}</p>
-              </div>
-              <ul className="space-y-3 mb-8 flex-grow">
-                {plan.features.map((feature, idx) => (
-                  <li key={idx} className="flex items-center text-sm">
-                    <Icon name="CheckIcon" className="w-5 h-5 text-success mr-3 flex-shrink-0" />
-                    <span className="text-muted-foreground">{feature}</span>
-                  </li>
-                ))}
-              </ul>
-              <Link
-                href={user ? "/dashboard/subscription" : "/auth/signup"}
-                className={`w-full inline-flex items-center justify-center px-6 py-3 font-semibold rounded-lg transition-smooth ${
-                  plan.popular
-                    ? 'bg-primary text-primary-foreground hover:bg-primary/90'
-                    : 'bg-secondary text-secondary-foreground hover:bg-secondary/90'
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {plans.map((plan) => {
+            const isLifetime = plan.name.toLowerCase().includes('lifetime');
+            const isFree = plan.price_monthly === 0 && plan.price_lifetime === 0;
+            const price = isLifetime ? plan.price_lifetime : plan.price_monthly;
+            const features = getPlanFeatures(plan.name);
+            const isBusiness = plan.name.toLowerCase() === 'business';
+
+            return (
+              <div
+                key={plan.id}
+                className={`flex flex-col p-8 rounded-2xl transition-all duration-300 border shadow-sm relative ${
+                  isBusiness ? 'border-indigo-600 ring-4 ring-indigo-50/50' : 'border-gray-100'
                 }`}
               >
-                {user ? "View Plans" : plan.cta}
-              </Link>
-            </div>
-          ))}
+                {isBusiness && (
+                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                    <span className="bg-indigo-600 text-white px-4 py-1 rounded-full text-xs font-bold uppercase tracking-widest">
+                      Best Value
+                    </span>
+                  </div>
+                )}
+                <div className="mb-6">
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">{plan.name}</h3>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-sm font-bold text-gray-400 uppercase">KES</span>
+                    <span className="text-4xl font-bold text-gray-900">{price}</span>
+                    <span className="text-gray-400 text-xs font-medium uppercase ml-1">
+                      /{isFree ? 'forever' : isLifetime ? 'once' : 'mo'}
+                    </span>
+                  </div>
+                  <p className="text-gray-500 mt-4 text-sm font-medium leading-relaxed">
+                    {plan.description}
+                  </p>
+                </div>
+
+                <ul className="space-y-4 mb-10 flex-grow">
+                  {features.map((feature, idx) => (
+                    <li key={idx} className="flex items-start text-sm">
+                      <Check className="w-5 h-5 text-indigo-500 mr-3 flex-shrink-0" />
+                      <span className="text-gray-600 font-medium">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <Link
+                  href={user ? "/dashboard/subscription" : "/auth/signup"}
+                  className={`w-full text-center px-6 py-4 font-bold rounded-xl transition-all active:scale-[0.98] ${
+                    isBusiness
+                      ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-100'
+                      : 'bg-white border-2 border-gray-100 text-gray-700 hover:bg-gray-50 hover:border-gray-200'
+                  }`}
+                >
+                  {user ? "Go to Dashboard" : (isFree ? "Get Started" : `Join ${plan.name}`)}
+                </Link>
+              </div>
+            );
+          })}
         </div>
       </div>
     </section>
