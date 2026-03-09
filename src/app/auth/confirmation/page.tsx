@@ -29,8 +29,8 @@ function ConfirmationContent() {
           return
         }
 
-        setMessage('Email verified successfully! Redirecting to dashboard...')
-        setTimeout(() => router.push('/dashboard'), 2000)
+        setMessage('Email verified successfully! Redirecting to setup...')
+        setTimeout(() => router.push('/onboarding?confirmed=true'), 2000)
       } else {
         // Check if already logged in
         const { data: { session } } = await supabase.auth.getSession()

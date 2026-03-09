@@ -39,33 +39,63 @@ export async function middleware(request: NextRequest) {
 
   // Define protected and public path rules
   const isAuthPage = pathname.startsWith('/auth')
+  const isOnboardingPage = pathname === '/onboarding'
   const isPublicPage = pathname === '/' || pathname === '/pricing' || pathname === '/about' || pathname.startsWith('/invoice/view/')
   
-  // Protected paths (anything not explicitly public or auth)
-  const isProtectedPath = !isPublicPage && !isAuthPage && !pathname.startsWith('/api') && !pathname.includes('.')
+  // Protected paths (anything not explicitly public, auth, or onboarding)
+  const isProtectedPath = !isPublicPage && !isAuthPage && !isOnboardingPage && !pathname.startsWith('/api') && !pathname.includes('.')
 
   // Redirection logic
-  if (isProtectedPath && !user) {
+  if ((isProtectedPath || isOnboardingPage) && !user) {
     const redirectUrl = request.nextUrl.clone()
     redirectUrl.pathname = '/auth/login'
     redirectUrl.searchParams.set('redirectedFrom', pathname)
     
     const redirectResponse = NextResponse.redirect(redirectUrl)
-    // Propagate cookie changes from the supabase client
     response.cookies.getAll().forEach(cookie => {
       redirectResponse.cookies.set(cookie.name, cookie.value)
     })
     return redirectResponse
   }
 
-  if (isAuthPage && user) {
-    const dashboardResponse = NextResponse.redirect(new URL('/dashboard', request.url))
-    // Propagate cookie changes
-    response.cookies.getAll().forEach(cookie => {
-      dashboardResponse.cookies.set(cookie.name, cookie.value)
-    })
-    return dashboardResponse
+  if ((isAuthPage || isOnboardingPage) && user) {
+    // Check onboarding status
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('onboarding_status')
+      .eq('id', user.id)
+      .single()
+
+    const isFullyOnboarded = profile?.onboarding_status === 'active'
+
+    if (isOnboardingPage && isFullyOnboarded) {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+
+    if (isAuthPage) {
+        const target = isFullyOnboarded ? '/dashboard' : '/onboarding'
+        const authRedirect = NextResponse.redirect(new URL(target, request.url))
+        response.cookies.getAll().forEach(cookie => {
+          authRedirect.cookies.set(cookie.name, cookie.value)
+        })
+        return authRedirect
+    }
   }
+
+  // If user is on protected path but not fully onboarded
+  if (isProtectedPath && user) {
+     const { data: profile } = await supabase
+      .from('profiles')
+      .select('onboarding_status')
+      .eq('id', user.id)
+      .single()
+
+    if (profile?.onboarding_status !== 'active') {
+       return NextResponse.redirect(new URL('/onboarding', request.url))
+    }
+  }
+
+  return response
 
   return response
 }
