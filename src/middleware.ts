@@ -40,10 +40,19 @@ export async function middleware(request: NextRequest) {
   // Define protected and public path rules
   const isAuthPage = pathname.startsWith('/auth')
   const isOnboardingPage = pathname === '/onboarding'
+  const isAdminPath = pathname.startsWith('/admin')
   const isPublicPage = pathname === '/' || pathname === '/pricing' || pathname === '/about' || pathname.startsWith('/invoice/view/')
   
   // Protected paths (anything not explicitly public, auth, or onboarding)
-  const isProtectedPath = !isPublicPage && !isAuthPage && !isOnboardingPage && !pathname.startsWith('/api') && !pathname.includes('.')
+  const isProtectedPath = !isPublicPage && !isAuthPage && !isOnboardingPage && !isAdminPath && !pathname.startsWith('/api') && !pathname.includes('.')
+
+  // Admin path: just require a logged-in user — layout.tsx handles admin-role check
+  if (isAdminPath && !user) {
+    const redirectUrl = request.nextUrl.clone()
+    redirectUrl.pathname = '/auth/login'
+    redirectUrl.searchParams.set('redirectedFrom', pathname)
+    return NextResponse.redirect(redirectUrl)
+  }
 
   // Redirection logic
   if ((isProtectedPath || isOnboardingPage) && !user) {
