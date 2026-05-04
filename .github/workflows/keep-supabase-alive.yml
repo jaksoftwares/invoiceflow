@@ -1,0 +1,38 @@
+name: Keep Supabase Active
+
+on:
+  schedule:
+    # Run at 00:00 (midnight) every 3 days
+    - cron: "0 0 */3 * *"
+  workflow_dispatch: # Allows manual triggering from the GitHub Actions tab
+
+jobs:
+  ping-supabase:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase REST API
+        env:
+          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "Error: Next.js Supabase URL or Anon Key is missing!"
+            echo "Please add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY as GitHub Repository Secrets."
+            exit 1
+          fi
+          
+          echo "Pinging Supabase to prevent project from pausing..."
+          
+          # Making a lightweight query to the profiles table to simulate activity
+          # Even if the table is empty or RLS blocks rows, the API request itself keeps the project awake.
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X GET "${SUPABASE_URL}/rest/v1/profiles?select=id&limit=1" \
+            -H "apikey: ${SUPABASE_ANON_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_ANON_KEY}")
+          
+          HTTP_STATUS=$(echo "$RESPONSE" | tail -n1)
+          
+          if [ "$HTTP_STATUS" -eq 200 ] || [ "$HTTP_STATUS" -eq 204 ]; then
+            echo "✅ Ping successful (Status: $HTTP_STATUS)"
+          else
+            echo "⚠️ Ping completed but returned status $HTTP_STATUS. The project is still considered active."
+          fi
