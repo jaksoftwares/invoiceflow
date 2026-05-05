@@ -6,11 +6,23 @@ import { useState } from 'react';
 const faqs = [
   {
     question: 'Is Invoiceflow free to use?',
-    answer: 'Yes, we offer a generous Free tier that allows you to create up to 5 invoices per month. Scale to our Starter or Business plans for unlimited invoicing and priority features.',
+    answer: 'Yes, we offer a generous Free tier that allows you to create up to 5 items (Invoices, Quotations, or Receipts) per month. Scale to our Starter or Business plans for unlimited invoicing and priority features.',
   },
   {
-    question: 'Can I customize my invoices with my logo?',
-    answer: 'Absolutely! Professional branding is at the core of Invoiceflow. All plans allow for custom logos and business profiles to ensure you look professional.',
+    question: 'Can I generate Quotations and Receipts?',
+    answer: 'Yes! Invoiceflow is a versatile tool for your business. You can easily switch between Invoice, Quotation, and Receipt modes to generate the exact file you need for your clients.',
+  },
+  {
+    question: 'How do I share with clients?',
+    answer: 'You can download your invoices, quotes, and receipts as professional PDFs, print them directly, or share them via a unique link. You can also send them directly via email from within the application.',
+  },
+  {
+    question: 'Can I customize with my logo?',
+    answer: 'Absolutely! Professional branding is at the core of Invoiceflow. All plans allow for custom logos and business profiles to ensure all your invoices, quotes, and receipts look professional.',
+  },
+  {
+    question: 'Can I track whether a quote has been converted to an invoice?',
+    answer: 'Yes, our tracking system allows you to manage the status of every item. You can easily track the lifecycle of a quotation from draft to sent to invoiced.',
   },
   {
     question: 'Is my financial data secure?',

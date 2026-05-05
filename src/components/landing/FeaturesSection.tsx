@@ -14,12 +14,12 @@ const features = [
   {
     icon: <FileText size={24} />,
     title: 'Invoice Creation',
-    description: 'Create professional invoices in minutes with customizable templates and automated calculations.',
+    description: 'Generate professional invoices, quotations, and receipts in minutes with customizable templates.',
   },
   {
     icon: <Eye size={24} />,
     title: 'Invoice Tracking',
-    description: 'Monitor the status of all your invoices with real-time updates and payment notifications.',
+    description: 'Monitor the status of all your invoices and business documents with real-time updates.',
   },
   {
     icon: <CreditCard size={24} />,

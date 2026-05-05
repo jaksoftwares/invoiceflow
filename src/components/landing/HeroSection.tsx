@@ -14,11 +14,11 @@ export default function HeroSection() {
         
 
         <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black text-gray-900 mb-8 leading-[1.05] tracking-tight max-w-5xl mx-auto">
-          Streamline Your Invoicing with <span className="text-indigo-600 bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-blue-600">Invoiceflow</span>
+          Manage Invoices, <span className="text-indigo-600 bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-blue-600">Quotations</span> & Receipts
         </h1>
         
         <p className="text-xl sm:text-2xl mb-12 max-w-3xl mx-auto text-gray-400 font-medium leading-relaxed">
-          Create, track, and manage invoices effortlessly. Professional invoicing for businesses and freelancers who value efficiency.
+          Create, track, and manage professional invoices effortlessly. The all-in-one solution for your business, including support for quotes and receipts.
         </p>
 
         <div className="flex flex-col sm:flex-row gap-5 justify-center">

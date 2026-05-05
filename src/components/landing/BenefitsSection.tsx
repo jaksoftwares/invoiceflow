@@ -3,8 +3,8 @@
 import { Building2, User, CheckCircle } from 'lucide-react';
 
 const businessBenefits = [
-  'Streamline invoicing processes for your team',
-  'Maintain professional branding across all invoices',
+  'Streamline invoicing workflows for your team',
+  'Professional branding for invoices, quotes, and receipts',
   'Improve cash flow with faster payment tracking',
   'Generate detailed financial reports',
   'Integrate with accounting software',
@@ -12,7 +12,7 @@ const businessBenefits = [
 ];
 
 const freelancerBenefits = [
-  'Create invoices in under 5 minutes',
+  'Create quotes and invoices in under 5 minutes',
   'Look professional to clients and agencies',
   'Track payments and follow up automatically',
   'Manage multiple clients effortlessly',

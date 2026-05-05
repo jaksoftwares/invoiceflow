@@ -13,7 +13,7 @@ const steps = [
     number: '02',
     icon: <FileText size={32} />,
     title: 'Create Invoices',
-    description: 'Use our intuitive interface to create professional invoices with automated calculations.',
+    description: 'Use our intuitive interface to create professional invoices, quotes, and receipts instantly.',
   },
   {
     number: '03',

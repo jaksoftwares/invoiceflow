@@ -10,7 +10,7 @@ const screenshots = [
   },
   {
     title: 'Invoice Creation',
-    description: 'Intuitive interface for creating professional invoices in minutes.',
+    description: 'Intuitive interface for creating professional invoices, quotes, and receipts in minutes.',
     image: '/assets/images/screenshot2.png',
   },
   {
