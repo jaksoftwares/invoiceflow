@@ -361,12 +361,13 @@ const CreateInvoiceInteractive = ({ initialClients, initialProducts, editId, dup
         })),
       };
 
+      const docTypeLabel = documentType.charAt(0).toUpperCase() + documentType.slice(1);
       if (editId) {
         await updateInvoiceAction(editId, invoiceData);
-        toast.success(`Invoice ${status === 'draft' ? 'updated' : 'sent'} successfully!`);
+        toast.success(`${docTypeLabel} ${status === 'draft' ? 'updated' : 'sent'} successfully!`);
       } else {
         await createInvoiceAction(invoiceData);
-        toast.success(`Invoice ${status === 'draft' ? 'saved' : 'sent'} successfully!`);
+        toast.success(`${docTypeLabel} ${status === 'draft' ? 'saved' : 'sent'} successfully!`);
       }
 
       router.push('/invoice-management');
@@ -425,7 +426,13 @@ const CreateInvoiceInteractive = ({ initialClients, initialProducts, editId, dup
     const clientName = selectedClient?.company_name 
       ? selectedClient.company_name.toLowerCase().replace(/[^a-z0-9]/g, '-')
       : 'no-client';
-    const fileName = `Invoice-${invoiceNum}-${clientName}.pdf`.toLowerCase();
+    
+    // Infer effective type for filename
+    let effectiveType = documentType;
+    if (effectiveType === 'invoice' && invoiceNum.toUpperCase().startsWith('QTN-')) effectiveType = 'quotation';
+    else if (effectiveType === 'invoice' && invoiceNum.toUpperCase().startsWith('RCT-')) effectiveType = 'receipt';
+    
+    const fileName = `${effectiveType}-${invoiceNum}-${clientName}.pdf`.toLowerCase();
     
     await generatePDF({ 
       fileName,

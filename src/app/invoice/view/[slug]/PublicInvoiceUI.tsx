@@ -19,10 +19,24 @@ export default function PublicInvoiceUI({
   items 
 }: PublicInvoiceUIProps) {
   const { generatePDF } = useInvoicePDF();
+  let documentType = (invoice.type || 'invoice') as 'invoice' | 'quotation' | 'receipt';
+  
+  // Safety fallback: Infer document type from prefix if it's currently 'invoice' 
+  // but the number indicates otherwise (QTN- or RCT-)
+  if (documentType === 'invoice' && invoice.invoice_number) {
+    if (invoice.invoice_number.toUpperCase().startsWith('QTN-')) documentType = 'quotation';
+    else if (invoice.invoice_number.toUpperCase().startsWith('RCT-')) documentType = 'receipt';
+  }
+
+  const displayType = documentType.charAt(0).toUpperCase() + documentType.slice(1);
 
   const handleDownload = () => {
     generatePDF({
-      fileName: `Invoice-${invoice.invoice_number || 'download'}.pdf`,
+      invoice,
+      items,
+      client,
+      businessProfile,
+      fileName: `${displayType}-${invoice.invoice_number || 'download'}.pdf`,
       watermarkEnabled: true
     });
   };
@@ -49,7 +63,7 @@ export default function PublicInvoiceUI({
                     )}
                 </div>
                 <div>
-                    <h2 className="text-base font-black text-slate-900 uppercase tracking-tighter leading-tight">{businessProfile.name || 'Official Invoice'}</h2>
+                    <h2 className="text-base font-black text-slate-900 uppercase tracking-tighter leading-tight">{businessProfile.name || `Official ${displayType}`}</h2>
                     <div className="flex items-center gap-2 mt-1">
                       <p className="text-[10px] text-primary font-bold uppercase tracking-[0.2em] opacity-70">Secured Portal</p>
                     </div>
@@ -84,6 +98,7 @@ export default function PublicInvoiceUI({
               notes={invoice.notes}
               terms={invoice.terms}
               selectedTemplate={invoice.template}
+              documentType={documentType}
               fullSize={true}
              />
            </div>

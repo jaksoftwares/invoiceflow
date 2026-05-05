@@ -212,14 +212,14 @@ const DashboardInteractive = ({ initialData }: DashboardInteractiveProps) => {
           />
 
           <MetricCard
-            title="Pending Invoices"
+            title="Pending Documents"
             value={metrics ? metrics.pendingInvoices.toString() : '0'}
             icon="ClockIcon" 
             trend="down"
           />
 
           <MetricCard
-            title="Total Invoices"
+            title="Total Documents"
             value={metrics ? metrics.totalInvoices.toString() : '0'}
             icon="DocumentCheckIcon" 
           />
@@ -271,10 +271,10 @@ const DashboardInteractive = ({ initialData }: DashboardInteractiveProps) => {
         <div className="bg-white rounded-[3.5rem] border border-slate-100 shadow-xl overflow-hidden mb-10">
           <div className="p-10 border-b border-slate-50 flex items-center justify-between bg-slate-50/50">
             <div>
-              <h2 className="text-3xl font-black text-slate-900 tracking-tighter">Recent Invoices</h2>
+              <h2 className="text-3xl font-black text-slate-900 tracking-tighter">Recent Documents</h2>
               <div className="flex items-center gap-3 mt-2">
                 <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em]">Latest Invoices</p>
+                <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em]">Latest Documents</p>
               </div>
             </div>
             <button 

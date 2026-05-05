@@ -71,6 +71,7 @@ export const useInvoicePDF = () => {
               selectedTemplate: templateToUse,
               fullSize: true,
               watermarkEnabled: watermarkEnabled,
+              documentType: invoice.type,
             })
           )
         );
@@ -109,7 +110,13 @@ export const useInvoicePDF = () => {
       
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
       
-      const finalFileName = fileName || `Invoice-${invoice?.invoice_number || 'draft'}-${Date.now()}.pdf`;
+      let docType = (invoice?.type || 'invoice') as string;
+      if (docType === 'invoice' && invoice?.invoice_number) {
+        if (invoice.invoice_number.toUpperCase().startsWith('QTN-')) docType = 'quotation';
+        else if (invoice.invoice_number.toUpperCase().startsWith('RCT-')) docType = 'receipt';
+      }
+      const docTypeLabel = docType.charAt(0).toUpperCase() + docType.slice(1);
+      const finalFileName = fileName || `${docTypeLabel}-${invoice?.invoice_number || 'draft'}-${Date.now()}.pdf`;
       pdf.save(finalFileName);
       
       if (invoice?.id) {
@@ -203,6 +210,7 @@ export const useInvoicePDF = () => {
             selectedTemplate: invoice.template || 'default',
             fullSize: true,
             watermarkEnabled: true,
+            documentType: invoice.type,
           })
         )
       );

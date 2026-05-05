@@ -29,7 +29,7 @@ const RecentInvoicesTable = ({ invoices, onViewInvoice }: RecentInvoicesTablePro
   return (
     <div className="bg-card rounded-lg shadow-elevation-2 overflow-hidden">
       <div className="p-6 border-b border-border">
-        <h2 className="text-xl font-heading font-semibold text-foreground">Recent Invoices</h2>
+        <h2 className="text-xl font-heading font-semibold text-foreground">Recent Documents</h2>
       </div>
       
       <div className="hidden md:block overflow-x-auto">

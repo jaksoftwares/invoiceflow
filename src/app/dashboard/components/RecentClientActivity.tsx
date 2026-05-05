@@ -82,7 +82,7 @@ const RecentClientActivity = ({ activities }: RecentClientActivityProps) => {
                <Icon name="BellIcon" size={28} />
             </div>
             <p className="text-sm font-bold text-foreground">No recent activity</p>
-            <p className="text-xs text-muted-foreground mt-1 max-w-[180px]">When your clients interact with your invoices, they will appear here.</p>
+            <p className="text-xs text-muted-foreground mt-1 max-w-[180px]">When your clients interact with your documents, they will appear here.</p>
           </div>
         )}
       </div>

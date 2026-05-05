@@ -44,7 +44,16 @@ const InvoicePreview = ({
   const [isHydrated, setIsHydrated] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   
-  const displayType = documentType || 'invoice';
+  // Safety fallback: Infer document type from the number prefix if it's currently 'invoice'
+  // but the number indicates it's a quotation or receipt
+  let effectiveDocumentType = documentType;
+  if (effectiveDocumentType === 'invoice' && details.invoiceNumber) {
+    if (details.invoiceNumber.toUpperCase().startsWith('QTN-')) effectiveDocumentType = 'quotation';
+    else if (details.invoiceNumber.toUpperCase().startsWith('RCT-')) effectiveDocumentType = 'receipt';
+  }
+
+  const displayType = effectiveDocumentType || 'invoice';
+  const documentType_ = effectiveDocumentType; // Internal use to avoid confusion
 
   const toggleExpand = useCallback(() => {
     setIsExpanded(prev => !prev);
@@ -227,7 +236,7 @@ const InvoicePreview = ({
             <p className="text-sm font-medium mt-1">{formatDate(details.issueDate)}</p>
           </div>
           <div>
-            <p className="text-xs font-semibold text-slate-500 uppercase">{documentType === 'quotation' ? 'Valid Until' : documentType === 'receipt' ? 'Date Paid' : 'Due Date'}</p>
+            <p className="text-xs font-semibold text-slate-500 uppercase">{effectiveDocumentType === 'quotation' ? 'Valid Until' : effectiveDocumentType === 'receipt' ? 'Date Paid' : 'Due Date'}</p>
             <p className="text-sm font-medium mt-1">{formatDate(details.dueDate)}</p>
           </div>
           <div>
@@ -353,7 +362,7 @@ const InvoicePreview = ({
           <div className="flex flex-col justify-between items-end">
             <div className="space-y-4 text-right">
               <div>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{documentType === 'quotation' ? 'Valid Until' : documentType === 'receipt' ? 'Date Paid' : 'Due Date'}</p>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{effectiveDocumentType === 'quotation' ? 'Valid Until' : effectiveDocumentType === 'receipt' ? 'Date Paid' : 'Due Date'}</p>
                 <p className="text-lg font-black text-slate-900">{formatDate(details.dueDate)}</p>
               </div>
               <div className="bg-primary/5 px-4 py-2 rounded-lg border-l-4 border-primary">
@@ -405,7 +414,7 @@ const InvoicePreview = ({
             )}
             <div className="h-px bg-slate-200 my-4" />
             <div className="flex justify-between items-baseline pt-2">
-              <span className="text-sm font-black text-slate-900 uppercase tracking-widest">{documentType === 'quotation' ? 'Estimated Balance' : documentType === 'receipt' ? 'Remaining Balance' : 'Balance Due'}</span>
+              <span className="text-sm font-black text-slate-900 uppercase tracking-widest">{effectiveDocumentType === 'quotation' ? 'Estimated Balance' : effectiveDocumentType === 'receipt' ? 'Remaining Balance' : 'Balance Due'}</span>
               <span className="text-3xl font-black text-primary tracking-tighter">{formatCurrency(total)}</span>
             </div>
           </div>
@@ -607,7 +616,7 @@ const InvoicePreview = ({
               <h4 className="text-4xl font-black tracking-tighter text-primary mb-4">{formatCurrency(total)}</h4>
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{documentType === 'quotation' ? 'Valid Until ' : documentType === 'receipt' ? 'Paid On ' : 'Due '}{formatDate(details.dueDate)}</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{effectiveDocumentType === 'quotation' ? 'Valid Until ' : effectiveDocumentType === 'receipt' ? 'Paid On ' : 'Due '}{formatDate(details.dueDate)}</p>
               </div>
             </div>
           </div>
@@ -693,7 +702,7 @@ const InvoicePreview = ({
                    <p className="text-xs">{formatDate(details.issueDate)}</p>
                 </div>
                 <div>
-                   <p className="text-[10px] text-slate-300 mb-1">{documentType === 'quotation' ? 'Valid Until' : documentType === 'receipt' ? 'Date Paid' : 'Due Date'}</p>
+                   <p className="text-[10px] text-slate-300 mb-1">{effectiveDocumentType === 'quotation' ? 'Valid Until' : effectiveDocumentType === 'receipt' ? 'Date Paid' : 'Due Date'}</p>
                    <p className="text-xs text-rose-600">{formatDate(details.dueDate)}</p>
                 </div>
              </div>
@@ -1074,7 +1083,7 @@ const InvoicePreview = ({
             </div>
           </div>
           <div className="text-right">
-            <h2 className="text-xs font-bold uppercase tracking-[0.2em] opacity-80 mb-2">Invoice Number</h2>
+            <h2 className="text-xs font-bold uppercase tracking-[0.2em] opacity-80 mb-2">{documentType} Number</h2>
             <p className="text-3xl font-black tracking-tighter">#{details.invoiceNumber}</p>
           </div>
         </div>
@@ -1232,7 +1241,7 @@ const InvoicePreview = ({
                 <p className="text-sm font-bold text-slate-900">{formatDate(details.issueDate)}</p>
               </div>
               <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{documentType === 'quotation' ? 'Valid Until' : documentType === 'receipt' ? 'Date Paid' : 'Due Date'}</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{effectiveDocumentType === 'quotation' ? 'Valid Until' : effectiveDocumentType === 'receipt' ? 'Date Paid' : 'Due Date'}</p>
                 <p className="text-sm font-bold text-slate-900 underline decoration-primary decoration-2 underline-offset-4">{formatDate(details.dueDate)}</p>
               </div>
             </div>
@@ -1554,7 +1563,7 @@ const InvoicePreview = ({
             {renderLogo('md')}
             <div>
               <h1 className="text-xl font-bold">{businessProfile?.name || 'Your Business'}</h1>
-              <p className="text-slate-400 text-xs mt-1">#{details.invoiceNumber || 'INV-000'}</p>
+              <p className="text-slate-400 text-xs mt-1">#{details.invoiceNumber || (documentType === 'quotation' ? 'QTN-000' : documentType === 'receipt' ? 'RCT-000' : 'INV-000')}</p>
             </div>
           </div>
           <div className="text-right">
@@ -1709,7 +1718,7 @@ const InvoicePreview = ({
           <div className="flex justify-between items-start mb-8 pb-6 border-b border-slate-200">
             <div>
               <h1 className="text-3xl font-bold text-slate-900">{displayType.toUpperCase()}</h1>
-              <p className="text-slate-500 text-sm mt-1">#{details.invoiceNumber || 'INV-000'}</p>
+              <p className="text-slate-500 text-sm mt-1">#{details.invoiceNumber || (documentType === 'quotation' ? 'QTN-000' : documentType === 'receipt' ? 'RCT-000' : 'INV-000')}</p>
             </div>
           </div>
 
@@ -1720,7 +1729,7 @@ const InvoicePreview = ({
               <p className="font-medium mt-1">{formatDate(details.issueDate)}</p>
             </div>
             <div>
-              <p className="text-xs font-semibold text-slate-500 uppercase">{documentType === 'quotation' ? 'Valid Until' : documentType === 'receipt' ? 'Date Paid' : 'Due Date'}</p>
+              <p className="text-xs font-semibold text-slate-500 uppercase">{effectiveDocumentType === 'quotation' ? 'Valid Until' : effectiveDocumentType === 'receipt' ? 'Date Paid' : 'Due Date'}</p>
               <p className="font-medium mt-1">{formatDate(details.dueDate)}</p>
             </div>
             <div className="text-right">
@@ -1915,7 +1924,7 @@ const InvoicePreview = ({
           {renderLogo('sm')}
           <div>
             <h1 className="text-xl font-bold text-slate-900">{displayType.toUpperCase()}</h1>
-            <p className="text-slate-500 text-sm mt-1">#{details.invoiceNumber || 'INV-000'}</p>
+            <p className="text-slate-500 text-sm mt-1">#{details.invoiceNumber || (documentType === 'quotation' ? 'QTN-000' : documentType === 'receipt' ? 'RCT-000' : 'INV-000')}</p>
           </div>
         </div>
         <div className="text-right">
@@ -2044,7 +2053,7 @@ const InvoicePreview = ({
           </div>
           <div className="text-right">
             <p className="text-amber-500 text-xs font-semibold uppercase tracking-widest capitalize">{displayType}</p>
-            <p className="text-2xl font-bold text-white mt-1">#{details.invoiceNumber?.replace('INV-', '') || '000'}</p>
+            <p className="text-2xl font-bold text-white mt-1">#{details.invoiceNumber?.replace(/^(INV|QTN|RCT)-/, '') || '000'}</p>
             <p className="text-slate-400 text-xs mt-1">{formatDate(details.issueDate)}</p>
           </div>
         </div>
@@ -2276,7 +2285,7 @@ const InvoicePreview = ({
       <div className="flex justify-between items-start mb-8 pb-6 border-b-4 border-slate-800">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 tracking-tight">{displayType.toUpperCase()}</h1>
-          <p className="text-slate-600 text-lg mt-1">#{details.invoiceNumber || 'INV-000'}</p>
+          <p className="text-slate-600 text-lg mt-1">#{details.invoiceNumber || (documentType === 'quotation' ? 'QTN-000' : documentType === 'receipt' ? 'RCT-000' : 'INV-000')}</p>
         </div>
         <div className="text-right">
           <p className="font-bold text-xl text-slate-900">{businessProfile?.name || 'Your Company'}</p>
@@ -2414,7 +2423,7 @@ const InvoicePreview = ({
         <div className="flex justify-between items-start">
           <div>
             <h1 className="text-3xl font-black tracking-tight">{displayType.toUpperCase()}</h1>
-            <p className="text-white/80 mt-1 font-mono">#{details.invoiceNumber || 'INV-000'}</p>
+            <p className="text-white/80 mt-1 font-mono">#{details.invoiceNumber || (documentType === 'quotation' ? 'QTN-000' : documentType === 'receipt' ? 'RCT-000' : 'INV-000')}</p>
           </div>
           <div className="text-right">
             <p className="font-bold text-lg">{businessProfile?.name || 'Your Business'}</p>

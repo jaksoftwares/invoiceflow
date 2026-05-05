@@ -303,11 +303,17 @@ const InvoiceManagementInteractive = ({ initialInvoices }: InvoiceManagementInte
       setPreviewModalOpen(true);
       
       setTimeout(() => {
+        let docType = (invoiceData.type || 'invoice') as string;
+        if (docType === 'invoice' && invoiceData.invoice_number) {
+          if (invoiceData.invoice_number.toUpperCase().startsWith('QTN-')) docType = 'quotation';
+          else if (invoiceData.invoice_number.toUpperCase().startsWith('RCT-')) docType = 'receipt';
+        }
         const invoiceNum = (invoiceData.invoice_number || 'draft').toLowerCase().replace(/[^a-z0-9]/g, '-');
         const clientName = invoiceData.client?.company_name 
           ? invoiceData.client.company_name.toLowerCase().replace(/[^a-z0-9]/g, '-')
           : 'no-client';
-        const fileName = `Invoice-${invoiceNum}-${clientName}.pdf`;
+        const docTypeLabel = docType.charAt(0).toUpperCase() + docType.slice(1);
+        const fileName = `${docTypeLabel}-${invoiceNum}-${clientName}.pdf`;
         downloadFromDOM(fileName, {
           invoice: invoiceData,
           items: itemsData,
@@ -411,7 +417,7 @@ const InvoiceManagementInteractive = ({ initialInvoices }: InvoiceManagementInte
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
           <div className="flex-1">
             <h1 className="text-4xl font-heading font-black text-foreground tracking-tight sm:text-5xl">
-              Invoice Management
+              Document Management
             </h1>
             <p className="text-muted-foreground mt-3 text-lg max-w-2xl font-medium">
               View and manage all your invoices in one place.
@@ -423,7 +429,7 @@ const InvoiceManagementInteractive = ({ initialInvoices }: InvoiceManagementInte
                className="w-full sm:w-auto bg-accent text-accent-foreground px-8 py-4 rounded-2xl font-black text-sm shadow-elevation-2 hover:shadow-elevation-4 transition-all hover:-translate-y-1 active:scale-[0.98] flex items-center justify-center gap-2 group"
              >
                <Icon name="PlusCircleIcon" size={20} className="group-hover:rotate-90 transition-transform duration-500" />
-               <span>New Invoice</span>
+               <span>New Document</span>
              </button>
           </div>
         </div>
@@ -585,11 +591,17 @@ const InvoiceManagementInteractive = ({ initialInvoices }: InvoiceManagementInte
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() => {
+                      let docType = (previewInvoice.type || 'invoice') as string;
+                      if (docType === 'invoice' && previewInvoice.invoice_number) {
+                        if (previewInvoice.invoice_number.toUpperCase().startsWith('QTN-')) docType = 'quotation';
+                        else if (previewInvoice.invoice_number.toUpperCase().startsWith('RCT-')) docType = 'receipt';
+                      }
                       const invoiceNum = (previewInvoice.invoice_number || 'draft').toLowerCase().replace(/[^a-z0-9]/g, '-');
                       const clientName = (previewInvoice as any).client?.company_name 
                         ? (previewInvoice as any).client.company_name.toLowerCase().replace(/[^a-z0-9]/g, '-')
                         : 'no-client';
-                      const fileName = `Invoice-${invoiceNum}-${clientName}.pdf`;
+                      const docTypeLabel = docType.charAt(0).toUpperCase() + docType.slice(1);
+                      const fileName = `${docTypeLabel}-${invoiceNum}-${clientName}.pdf`;
                       downloadFromDOM(fileName);
                     }}
                     className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-black uppercase tracking-widest hover:bg-primary/90 transition-all"
