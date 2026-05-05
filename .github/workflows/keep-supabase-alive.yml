@@ -32,7 +32,7 @@ jobs:
           HTTP_STATUS=$(echo "$RESPONSE" | tail -n1)
           
           if [ "$HTTP_STATUS" -eq 200 ] || [ "$HTTP_STATUS" -eq 204 ]; then
-            echo "✅ Ping successful (Status: $HTTP_STATUS)"
+            echo " Ping successful (Status: $HTTP_STATUS)"
           else
-            echo "⚠️ Ping completed but returned status $HTTP_STATUS. The project is still considered active."
+            echo " Ping completed but returned status $HTTP_STATUS. The project is still considered active."
           fi

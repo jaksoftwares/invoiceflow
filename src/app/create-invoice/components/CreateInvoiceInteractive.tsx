@@ -9,7 +9,7 @@ import LineItemsTable from './LineItemsTable';
 import InvoiceCalculations from './InvoiceCalculations';
 import InvoicePreview from './InvoicePreview';
 import TemplateSelector from './TemplateSelector';
-import AdditionalDetailsForm from './AdditionalDetailsForm';
+import AdditionalDetailsForm, { standardTemplates } from './AdditionalDetailsForm';
 import AddClientModal from './AddClientModal';
 import { useClients } from '@/lib/hooks/useClients';
 import { createInvoiceAction, updateInvoiceAction } from '@/lib/actions/invoices';
@@ -49,6 +49,8 @@ const CreateInvoiceInteractive = ({ initialClients, initialProducts, editId, dup
   const [taxRate, setTaxRate] = useState(0);
   const [discount, setDiscount] = useState(0);
   const [currency, setCurrency] = useState('KES');
+  const [documentType, setDocumentType] = useState<'invoice' | 'quotation' | 'receipt'>('invoice');
+  const [allowCustomDocuments, setAllowCustomDocuments] = useState(false);
 
   // Business Profile State
   const [businessProfiles, setBusinessProfiles] = useState<BusinessProfile[]>([]);
@@ -73,9 +75,9 @@ const CreateInvoiceInteractive = ({ initialClients, initialProducts, editId, dup
     }
   }, [settings, editId, duplicateId]);
   
-  const [notes, setNotes] = useState('');
-  const [terms, setTerms] = useState('');
-  const [paymentInstructions, setPaymentInstructions] = useState('');
+  const [notes, setNotes] = useState(standardTemplates.invoice.notes);
+  const [terms, setTerms] = useState(standardTemplates.invoice.terms);
+  const [paymentInstructions, setPaymentInstructions] = useState(standardTemplates.invoice.payment);
   const [selectedTemplate, setSelectedTemplate] = useState('professional');
   const [showPreview, setShowPreview] = useState(false);
   const [isAddClientModalOpen, setIsAddClientModalOpen] = useState(false);
@@ -111,11 +113,13 @@ const CreateInvoiceInteractive = ({ initialClients, initialProducts, editId, dup
   // Fetch Features (Watermark)
   useEffect(() => {
     const fetchFeatures = async () => {
-      const [isWatermarkEnabled, plan] = await Promise.all([
+      const [isWatermarkEnabled, isCustomDocs, plan] = await Promise.all([
         checkFeatureAccess('watermark_enabled'),
+        checkFeatureAccess('allow_custom_documents'),
         getUserPlan()
       ]);
       setWatermarkEnabled(isWatermarkEnabled);
+      setAllowCustomDocuments(isCustomDocs);
       setUserPlan(plan);
     };
     fetchFeatures();
@@ -218,6 +222,7 @@ const CreateInvoiceInteractive = ({ initialClients, initialProducts, editId, dup
         setTerms(invoice.terms || '');
         setPaymentInstructions(invoice.payment_instructions || '');
         setSelectedTemplate(invoice.template || 'professional');
+        if (invoice.type) setDocumentType(invoice.type as 'invoice' | 'quotation' | 'receipt');
 
         if (invoice.business_id) {
             const { data: business } = await supabase
@@ -347,6 +352,7 @@ const CreateInvoiceInteractive = ({ initialClients, initialProducts, editId, dup
         payment_instructions: paymentInstructions,
         template: selectedTemplate,
         business_id: selectedBusiness?.id,
+        type: documentType,
         items: lineItems.map(item => ({
           description: item.description,
           quantity: item.quantity,
@@ -451,11 +457,11 @@ const CreateInvoiceInteractive = ({ initialClients, initialProducts, editId, dup
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-10">
           <div className="flex items-center justify-between gap-6 mb-10">
             <div>
-              <h1 className="text-4xl font-heading font-black text-foreground tracking-tight sm:text-5xl">
-                {editId ? 'Edit Invoice' : duplicateId ? 'Duplicate Invoice' : 'Create Invoice'}
+              <h1 className="text-4xl font-heading font-black text-foreground tracking-tight sm:text-5xl capitalize">
+                {editId ? `Edit ${documentType}` : duplicateId ? `Duplicate ${documentType}` : `Create ${documentType}`}
               </h1>
               <p className="text-muted-foreground mt-3 text-lg font-medium">
-                {editId ? 'Update existing invoice details.' : duplicateId ? 'Create a new invoice from existing details.' : 'Draft and send professional invoices.'}
+                {editId ? `Update existing ${documentType} details.` : duplicateId ? `Create a new ${documentType} from existing details.` : `Draft and send professional ${documentType}s.`}
               </p>
             </div>
             <button
@@ -478,6 +484,54 @@ const CreateInvoiceInteractive = ({ initialClients, initialProducts, editId, dup
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
+              <div className="bg-card border border-border rounded-md p-6 shadow-elevation-1">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                  <h2 className="text-xl font-heading font-semibold text-foreground">Document Type</h2>
+                  {!allowCustomDocuments && (
+                    <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-1 rounded-full">Premium Feature</span>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  {(['invoice', 'quotation', 'receipt'] as const).map((type) => (
+                    <button
+                      key={type}
+                      onClick={() => {
+                        if (!allowCustomDocuments && type !== 'invoice') {
+                          setLimitModalOpen(true);
+                          return;
+                        }
+                        
+                        
+                        // Smartly auto-update standard templates if user hasn't heavily customized them
+                        if (notes === '' || notes === standardTemplates[documentType].notes) setNotes(standardTemplates[type].notes);
+                        if (terms === '' || terms === standardTemplates[documentType].terms) setTerms(standardTemplates[type].terms);
+                        if (paymentInstructions === '' || paymentInstructions === standardTemplates[documentType].payment) setPaymentInstructions(standardTemplates[type].payment);
+
+                        setDocumentType(type);
+                        
+                        // Smartly update the prefix if it matches standard patterns
+                        setInvoiceDetails(prev => {
+                          if (prev.invoiceNumber) {
+                            const numPart = prev.invoiceNumber.replace(/^(INV|QTN|RCT)-/, '');
+                            const newPrefix = type === 'quotation' ? 'QTN-' : type === 'receipt' ? 'RCT-' : 'INV-';
+                            return { ...prev, invoiceNumber: newPrefix + numPart };
+                          }
+                          return prev;
+                        });
+                      }}
+                      disabled={!allowCustomDocuments && type !== 'invoice'}
+                      className={`px-5 py-2.5 rounded-lg text-sm font-semibold capitalize transition-all border ${
+                        documentType === type 
+                          ? 'bg-primary text-primary-foreground border-primary shadow-sm' 
+                          : 'bg-muted/50 text-muted-foreground border-transparent hover:bg-muted'
+                      } ${!allowCustomDocuments && type !== 'invoice' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      {type}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div className="bg-card border border-border rounded-md p-6 shadow-elevation-1">
                 <h2 className="text-xl font-heading font-semibold text-foreground mb-4">Business Profile</h2>
                 {loadingBusiness ? (
@@ -508,7 +562,7 @@ const CreateInvoiceInteractive = ({ initialClients, initialProducts, editId, dup
               </div>
 
               <div className="bg-card border border-border rounded-md p-6 shadow-elevation-1">
-                <h2 className="text-xl font-heading font-semibold text-foreground mb-4">Invoice Details</h2>
+                <h2 className="text-xl font-heading font-semibold text-foreground mb-4 capitalize">{documentType} Details</h2>
                 <div className="space-y-6">
                   <ClientSelector
                     clients={clients.length > 0 ? clients : initialClients}
@@ -518,7 +572,7 @@ const CreateInvoiceInteractive = ({ initialClients, initialProducts, editId, dup
                     loading={clientsLoading}
                     error={clientsError}
                   />
-                  <InvoiceDetailsForm details={invoiceDetails} onDetailsChange={setInvoiceDetails} />
+                  <InvoiceDetailsForm details={invoiceDetails} onDetailsChange={setInvoiceDetails} documentType={documentType} />
                 </div>
               </div>
 
@@ -550,6 +604,7 @@ const CreateInvoiceInteractive = ({ initialClients, initialProducts, editId, dup
               <div className="bg-card border border-border rounded-md p-6 shadow-elevation-1">
                 <h2 className="text-xl font-heading font-semibold text-foreground mb-4">Additional Information</h2>
                 <AdditionalDetailsForm
+                  documentType={documentType}
                   notes={notes}
                   terms={terms}
                   paymentInstructions={paymentInstructions}
@@ -614,6 +669,7 @@ const CreateInvoiceInteractive = ({ initialClients, initialProducts, editId, dup
                   terms={terms}
                   selectedTemplate={selectedTemplate}
                   watermarkEnabled={watermarkEnabled}
+                  documentType={documentType}
                 />
               </div>
             </div>
@@ -636,6 +692,7 @@ const CreateInvoiceInteractive = ({ initialClients, initialProducts, editId, dup
             selectedTemplate={selectedTemplate}
             fullSize={true}
             watermarkEnabled={watermarkEnabled}
+            documentType={documentType}
           />
         </div>
       </div>

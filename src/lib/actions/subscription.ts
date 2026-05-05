@@ -48,14 +48,15 @@ export async function incrementUsage(action: ActionType) {
   revalidatePath('/user-profile-settings');
 }
 
-export async function checkFeatureAccess(feature: 'watermark_enabled' | 'allow_csv_export' | 'allow_branding' | 'allow_priority_email') {
+export async function checkFeatureAccess(feature: 'watermark_enabled' | 'allow_csv_export' | 'allow_branding' | 'allow_priority_email' | 'allow_custom_documents') {
   const subscription = await getActiveSubscription();
   if (!subscription) {
     return {
       watermark_enabled: true,
       allow_csv_export: false,
       allow_branding: false,
-      allow_priority_email: false
+      allow_priority_email: false,
+      allow_custom_documents: false
     }[feature];
   }
   return subscription.plans[feature];

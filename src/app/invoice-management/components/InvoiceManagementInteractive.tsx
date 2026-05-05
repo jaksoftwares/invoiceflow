@@ -567,6 +567,7 @@ const InvoiceManagementInteractive = ({ initialInvoices }: InvoiceManagementInte
             invoiceNumber={selectedInvoiceForShare.invoice_number}
             businessName={selectedInvoiceForShare.business?.name || ''}
             slug={selectedInvoiceForShare.slug}
+            documentType={selectedInvoiceForShare.type || 'invoice'}
             onSendEmail={handleSendEmail}
             onCopyLink={handleCopyLink}
             onWhatsAppShare={handleWhatsAppShare}

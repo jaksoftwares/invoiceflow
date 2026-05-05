@@ -246,7 +246,9 @@ const InvoiceCard = ({
             </p>
           </div>
           <div className="text-right">
-            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Due Date</p>
+            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">
+              {invoice.type === 'quotation' ? 'Valid Until' : invoice.type === 'receipt' ? 'Payment Date' : 'Due Date'}
+            </p>
             <p className="text-sm font-bold text-foreground">
               {new Date(invoice.due_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
             </p>
@@ -277,8 +279,10 @@ const InvoiceCard = ({
               <span className="text-xs font-bold text-foreground">{new Date(invoice.issue_date).toLocaleDateString()}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Terms</span>
-              <span className="text-xs font-bold text-foreground">Net {invoice.payment_terms || 0}</span>
+              <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                {invoice.type === 'quotation' ? 'Terms' : invoice.type === 'receipt' ? 'Method' : 'Terms'}
+              </span>
+              <span className="text-xs font-bold text-foreground">{invoice.payment_terms || 'N/A'}</span>
             </div>
           </div>
         )}

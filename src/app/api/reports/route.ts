@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
     // Payment status distribution
     const { data: paymentStatusData } = await supabase
       .from('invoices')
-      .select('status, total_amount')
+      .select('status, total_amount, type')
       .eq('user_id', user.id);
 
     const paymentStatus: { [key: string]: number } = {};
@@ -88,6 +88,19 @@ export async function GET(request: NextRequest) {
       { name: 'Paid', value: paymentStatus.paid || 0, color: '#10b981' }, // success
       { name: 'Pending', value: paymentStatus.pending || 0, color: '#f59e0b' }, // warning
       { name: 'Overdue', value: paymentStatus.overdue || 0, color: '#ef4444' } // error
+    ].filter(item => item.value > 0);
+
+    // Document Types distribution
+    const documentTypes: { [key: string]: number } = {};
+    paymentStatusData?.forEach(invoice => {
+      const type = invoice.type || 'invoice';
+      documentTypes[type] = (documentTypes[type] || 0) + 1;
+    });
+
+    const documentTypesChart = [
+      { name: 'Invoices', value: documentTypes.invoice || 0, color: '#3b82f6' },
+      { name: 'Quotations', value: documentTypes.quotation || 0, color: '#8b5cf6' },
+      { name: 'Receipts', value: documentTypes.receipt || 0, color: '#14b8a6' }
     ].filter(item => item.value > 0);
 
     // Client performance data
@@ -229,6 +242,7 @@ export async function GET(request: NextRequest) {
       clientPerformanceChart,
       kpis,
       reportsTable,
+      documentTypesChart,
       currency,
       businessProfile,
       allClients,

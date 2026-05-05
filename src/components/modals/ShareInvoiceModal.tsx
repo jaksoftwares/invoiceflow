@@ -12,6 +12,7 @@ interface ShareInvoiceModalProps {
   invoiceNumber: string;
   businessName: string;
   slug?: string;
+  documentType?: 'invoice' | 'quotation' | 'receipt';
   onSendEmail: (data: { to: string; subject: string; message: string; copyMe: boolean }) => Promise<void>;
   onCopyLink: () => Promise<void>;
   onWhatsAppShare: () => void;
@@ -25,23 +26,25 @@ const ShareInvoiceModal = ({
   invoiceNumber,
   businessName,
   slug,
+  documentType = 'invoice',
   onSendEmail,
   onCopyLink,
   onWhatsAppShare,
 }: ShareInvoiceModalProps) => {
+  const displayType = documentType.charAt(0).toUpperCase() + documentType.slice(1);
   const [activeTab, setActiveTab] = useState<'email' | 'link' | 'whatsapp'>('email');
   const [emailTo, setEmailTo] = useState(clientEmail || '');
-  const [emailSubject, setEmailSubject] = useState(`Invoice ${invoiceNumber} from ${businessName || 'InvoiceFlow'}`);
-  const [emailMessage, setEmailMessage] = useState(`I hope this email finds you well.\n\nPlease find the attached invoice ${invoiceNumber} for your recent purchase or service at ${businessName || 'our business'}. You can also view and pay the invoice online by clicking the link in this email.\n\nThank you for choosing ${businessName || 'us'}!\n\nBest regards!`);
+  const [emailSubject, setEmailSubject] = useState(`${displayType} ${invoiceNumber} from ${businessName || 'InvoiceFlow'}`);
+  const [emailMessage, setEmailMessage] = useState(`I hope this email finds you well.\n\nPlease find the attached ${documentType} ${invoiceNumber} for your recent transaction at ${businessName || 'our business'}. You can also view and ${documentType === 'invoice' ? 'pay' : 'access'} the ${documentType} online by clicking the link in this email.\n\nThank you for choosing ${businessName || 'us'}!\n\nBest regards!`);
 
   // Ensure fields are reset when modal opens for a new invoice
   useEffect(() => {
     if (isOpen) {
       setEmailTo(clientEmail || '');
-      setEmailSubject(`Invoice ${invoiceNumber} from ${businessName || 'InvoiceFlow'}`);
-      setEmailMessage(`I hope this email finds you well.\n\nPlease find the attached invoice ${invoiceNumber} for your recent purchase or service at ${businessName || 'our business'}. You can also view and pay the invoice online by clicking the link in this email.\n\nThank you for choosing ${businessName || 'us'}!\n\nBest regards!`);
+      setEmailSubject(`${displayType} ${invoiceNumber} from ${businessName || 'InvoiceFlow'}`);
+      setEmailMessage(`I hope this email finds you well.\n\nPlease find the attached ${documentType} ${invoiceNumber} for your recent transaction at ${businessName || 'our business'}. You can also view and ${documentType === 'invoice' ? 'pay' : 'access'} the ${documentType} online by clicking the link in this email.\n\nThank you for choosing ${businessName || 'us'}!\n\nBest regards!`);
     }
-  }, [isOpen, clientEmail, invoiceNumber, businessName]);
+  }, [isOpen, clientEmail, invoiceNumber, businessName, displayType, documentType]);
 
   const [copyMe, setCopyMe] = useState(true);
 
@@ -75,7 +78,7 @@ const ShareInvoiceModal = ({
 
   const handleCopyLink = async () => {
       await onCopyLink();
-      toast.success('Invoice link copied to clipboard!');
+      toast.success(`${displayType} link copied to clipboard!`);
   };
 
   return (
@@ -84,7 +87,7 @@ const ShareInvoiceModal = ({
         
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-muted/30 flex-shrink-0">
-          <h2 className="text-lg font-heading font-semibold text-foreground">Share Invoice {invoiceNumber}</h2>
+          <h2 className="text-lg font-heading font-semibold text-foreground">Share {displayType} {invoiceNumber}</h2>
           <button 
             onClick={onClose}
             className="p-2 text-muted-foreground hover:bg-muted rounded-full transition-colors"
@@ -190,7 +193,7 @@ const ShareInvoiceModal = ({
                   ) : (
                     <>
                       <Icon name="PaperAirplaneIcon" size={18} />
-                      <span>Send Invoice</span>
+                      <span>Send {displayType}</span>
                     </>
                   )}
                 </button>
@@ -206,7 +209,7 @@ const ShareInvoiceModal = ({
                <div className="space-y-2">
                   <h3 className="text-lg font-medium text-foreground">Copy Public Link</h3>
                   <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-                    Anyone with this link can view and download the invoice PDF.
+                    Anyone with this link can view and download the {documentType} PDF.
                   </p>
                </div>
                
@@ -233,7 +236,7 @@ const ShareInvoiceModal = ({
                <div className="space-y-2">
                   <h3 className="text-lg font-medium text-foreground">Share via WhatsApp</h3>
                   <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-                    Send the invoice link directly to your client on WhatsApp.
+                    Send the {documentType} link directly to your client on WhatsApp.
                   </p>
                </div>
                

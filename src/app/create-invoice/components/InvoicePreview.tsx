@@ -23,6 +23,7 @@ interface InvoicePreviewProps {
   selectedTemplate: string;
   fullSize?: boolean;
   watermarkEnabled?: boolean;
+  documentType?: 'invoice' | 'quotation' | 'receipt';
 }
 
 const InvoicePreview = ({
@@ -38,9 +39,12 @@ const InvoicePreview = ({
   selectedTemplate,
   fullSize = false,
   watermarkEnabled = false,
+  documentType = 'invoice',
 }: InvoicePreviewProps) => {
   const [isHydrated, setIsHydrated] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  
+  const displayType = documentType || 'invoice';
 
   const toggleExpand = useCallback(() => {
     setIsExpanded(prev => !prev);
@@ -62,6 +66,27 @@ const InvoicePreview = ({
       currency: currency,
       minimumFractionDigits: 2,
     }).format(amount);
+  };
+
+  const getTermsLabel = (val?: string) => {
+    if (!val) return 'N/A';
+    const map: Record<string, string> = {
+      cash: 'Cash',
+      bank_transfer: 'Bank Transfer',
+      credit_card: 'Credit Card',
+      mobile_money: 'Mobile Money',
+      cheque: 'Cheque',
+      valid_15: 'Valid for 15 Days',
+      valid_30: 'Valid for 30 Days',
+      valid_60: 'Valid for 60 Days',
+      upon_acceptance: 'Upon Acceptance',
+      net15: 'Net 15 Days',
+      net30: 'Net 30 Days',
+      net45: 'Net 45 Days',
+      net60: 'Net 60 Days',
+      due_on_receipt: 'Due on Receipt'
+    };
+    return map[val] || val.replace('_', ' ');
   };
    
   const formatNumber = (amount: number) => {
@@ -150,7 +175,7 @@ const InvoicePreview = ({
               </svg>
             </div>
             <div>
-              <h1 className="text-lg font-semibold">INVOICE</h1>
+              <h1 className="text-lg font-semibold">{displayType.toUpperCase()}</h1>
               <p className="text-white/70 text-xs">#{details.invoiceNumber || 'INV-000000'}</p>
             </div>
           </div>
@@ -202,12 +227,12 @@ const InvoicePreview = ({
             <p className="text-sm font-medium mt-1">{formatDate(details.issueDate)}</p>
           </div>
           <div>
-            <p className="text-xs font-semibold text-slate-500 uppercase">Due Date</p>
+            <p className="text-xs font-semibold text-slate-500 uppercase">{documentType === 'quotation' ? 'Valid Until' : documentType === 'receipt' ? 'Date Paid' : 'Due Date'}</p>
             <p className="text-sm font-medium mt-1">{formatDate(details.dueDate)}</p>
           </div>
           <div>
             <p className="text-xs font-semibold text-slate-500 uppercase">Terms</p>
-            <p className="text-sm font-medium mt-1">{details.paymentTerms?.replace('_', ' ').toUpperCase()}</p>
+            <p className="text-sm font-medium mt-1">{getTermsLabel(details.paymentTerms).toUpperCase()}</p>
           </div>
         </div>
 
@@ -304,7 +329,7 @@ const InvoicePreview = ({
             </div>
           </div>
           <div className="text-right">
-            <p className="text-4xl font-black opacity-20 tracking-tighter mb-2">INVOICE</p>
+            <p className="text-4xl font-black opacity-20 tracking-tighter mb-2">{displayType.toUpperCase()}</p>
             <p className="text-sm font-bold">{formatDate(details.issueDate)}</p>
           </div>
         </div>
@@ -328,7 +353,7 @@ const InvoicePreview = ({
           <div className="flex flex-col justify-between items-end">
             <div className="space-y-4 text-right">
               <div>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Due Date</p>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{documentType === 'quotation' ? 'Valid Until' : documentType === 'receipt' ? 'Date Paid' : 'Due Date'}</p>
                 <p className="text-lg font-black text-slate-900">{formatDate(details.dueDate)}</p>
               </div>
               <div className="bg-primary/5 px-4 py-2 rounded-lg border-l-4 border-primary">
@@ -380,7 +405,7 @@ const InvoicePreview = ({
             )}
             <div className="h-px bg-slate-200 my-4" />
             <div className="flex justify-between items-baseline pt-2">
-              <span className="text-sm font-black text-slate-900 uppercase tracking-widest">Balance Due</span>
+              <span className="text-sm font-black text-slate-900 uppercase tracking-widest">{documentType === 'quotation' ? 'Estimated Balance' : documentType === 'receipt' ? 'Remaining Balance' : 'Balance Due'}</span>
               <span className="text-3xl font-black text-primary tracking-tighter">{formatCurrency(total)}</span>
             </div>
           </div>
@@ -456,7 +481,7 @@ const InvoicePreview = ({
           <div className="text-right">
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Total Obligation</p>
             <p className="text-3xl font-black text-primary tracking-tighter mb-2">{formatCurrency(total)}</p>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{currency} • {details.paymentTerms?.toUpperCase()}</p>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{currency} • {getTermsLabel(details.paymentTerms).toUpperCase()}</p>
           </div>
         </div>
 
@@ -541,7 +566,7 @@ const InvoicePreview = ({
             </div>
             <div className="text-right">
               <p className="text-[10px] font-black uppercase tracking-[0.4em] opacity-60 mb-2">Statement</p>
-              <h1 className="text-5xl font-black tracking-tighter">INVOICE.</h1>
+              <h1 className="text-5xl font-black tracking-tighter">{displayType.toUpperCase()}.</h1>
             </div>
           </div>
           <div className="flex justify-between items-end">
@@ -552,7 +577,7 @@ const InvoicePreview = ({
             </div>
             <div className="text-right">
               <div className="bg-white/10 px-6 py-3 rounded-2xl backdrop-blur-md">
-                <p className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-1">Invoice Reference</p>
+                <p className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-1 capitalize">{displayType} Reference</p>
                 <p className="text-xl font-black tracking-tight">#{details.invoiceNumber}</p>
               </div>
             </div>
@@ -572,7 +597,7 @@ const InvoicePreview = ({
                 </div>
                 <div>
                   <p className="text-[9px] font-black text-slate-300 uppercase mb-1">Terms</p>
-                  <p className="text-xs font-black text-slate-800 uppercase tracking-tighter">{details.paymentTerms}</p>
+                  <p className="text-xs font-black text-slate-800 uppercase tracking-tighter">{getTermsLabel(details.paymentTerms)}</p>
                 </div>
               </div>
             </div>
@@ -582,7 +607,7 @@ const InvoicePreview = ({
               <h4 className="text-4xl font-black tracking-tighter text-primary mb-4">{formatCurrency(total)}</h4>
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Due {formatDate(details.dueDate)}</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{documentType === 'quotation' ? 'Valid Until ' : documentType === 'receipt' ? 'Paid On ' : 'Due '}{formatDate(details.dueDate)}</p>
               </div>
             </div>
           </div>
@@ -628,7 +653,7 @@ const InvoicePreview = ({
                 </div>
               )}
               <div className="pt-6 border-t-[3px] border-slate-900 flex justify-between items-center">
-                <span className="text-sm font-black text-slate-900 uppercase tracking-widest">Final Dues</span>
+                <span className="text-sm font-black text-slate-900 uppercase tracking-widest">{documentType === 'quotation' ? 'Final Estimate' : documentType === 'receipt' ? 'Amount Settled' : 'Final Dues'}</span>
                 <span className="text-3xl font-black text-primary tracking-tighter">{formatCurrency(total)}</span>
               </div>
             </div>
@@ -668,7 +693,7 @@ const InvoicePreview = ({
                    <p className="text-xs">{formatDate(details.issueDate)}</p>
                 </div>
                 <div>
-                   <p className="text-[10px] text-slate-300 mb-1">Due Date</p>
+                   <p className="text-[10px] text-slate-300 mb-1">{documentType === 'quotation' ? 'Valid Until' : documentType === 'receipt' ? 'Date Paid' : 'Due Date'}</p>
                    <p className="text-xs text-rose-600">{formatDate(details.dueDate)}</p>
                 </div>
              </div>
@@ -696,10 +721,10 @@ const InvoicePreview = ({
               </div>
               <div className="flex justify-between items-baseline">
                 <span className="text-[10px] font-black text-slate-300 uppercase">Payment Lifecycle</span>
-                <span className="text-sm font-black uppercase">{details.paymentTerms}</span>
+                <span className="text-sm font-black uppercase">{getTermsLabel(details.paymentTerms)}</span>
               </div>
               <div className="flex justify-between items-center p-4 bg-slate-50 rounded-lg">
-                <span className="text-[10px] font-black text-slate-400 uppercase">Principal Balance Due</span>
+                <span className="text-[10px] font-black text-slate-400 uppercase">{documentType === 'quotation' ? 'Principal Estimate' : documentType === 'receipt' ? 'Principal Paid' : 'Principal Balance Due'}</span>
                 <span className="text-xl font-black text-slate-900">{formatCurrency(total)}</span>
               </div>
             </div>
@@ -750,7 +775,7 @@ const InvoicePreview = ({
              )}
              <div className="h-2 bg-slate-900 my-8" />
              <div className="flex justify-between items-center">
-               <span className="text-xs font-black text-slate-900 uppercase tracking-[0.4em]">Final Dues Payable</span>
+               <span className="text-xs font-black text-slate-900 uppercase tracking-[0.4em]">{documentType === 'quotation' ? 'Final Estimate' : documentType === 'receipt' ? 'Amount Settled' : 'Final Dues Payable'}</span>
                <span className="text-4xl font-black text-primary tracking-tighter">{formatCurrency(total)}</span>
              </div>
           </div>
@@ -781,7 +806,7 @@ const InvoicePreview = ({
       <div className="relative">
         <div className="flex justify-between items-baseline mb-32">
           <div className="space-y-2">
-            <p className="text-xs font-black text-primary uppercase tracking-[0.8em]">Invoice</p>
+            <p className="text-xs font-black text-primary uppercase tracking-[0.8em] capitalize">{displayType}</p>
             <h1 className="text-7xl font-black tracking-tighter text-slate-900">FLOW.</h1>
           </div>
           <div className="text-right">
@@ -812,7 +837,7 @@ const InvoicePreview = ({
                     <p className="text-lg font-black">{formatDate(details.issueDate)}</p>
                  </div>
                  <div>
-                    <p className="text-[10px] font-black text-primary uppercase mb-2">Due Date</p>
+                    <p className="text-[10px] font-black text-primary uppercase mb-2">{documentType === 'quotation' ? 'Valid Until' : documentType === 'receipt' ? 'Date Paid' : 'Due Date'}</p>
                     <p className="text-lg font-black">{formatDate(details.dueDate)}</p>
                  </div>
               </div>
@@ -823,7 +848,7 @@ const InvoicePreview = ({
                  </div>
                  <div className="text-right">
                     <p className="text-[9px] font-black text-slate-500 uppercase">Valuation Index</p>
-                    <p className="text-xs font-black">{currency} ({details.paymentTerms?.toUpperCase()})</p>
+                    <p className="text-xs font-black">{currency} ({getTermsLabel(details.paymentTerms).toUpperCase()})</p>
                  </div>
               </div>
             </div>
@@ -909,7 +934,7 @@ const InvoicePreview = ({
           </div>
         </div>
         <div className="text-right">
-          <h2 className="text-4xl font-black text-primary/20 tracking-tighter uppercase mb-2">Invoice</h2>
+          <h2 className="text-4xl font-black text-primary/20 tracking-tighter uppercase mb-2 capitalize">{displayType}</h2>
           <div className="text-sm font-medium text-slate-900 bg-slate-100 px-3 py-1 rounded inline-block">
             #{details.invoiceNumber}
           </div>
@@ -937,13 +962,13 @@ const InvoicePreview = ({
               <p className="text-sm font-bold text-slate-900">{formatDate(details.issueDate)}</p>
             </div>
             <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Due Date</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{documentType === 'quotation' ? 'Valid Until' : documentType === 'receipt' ? 'Date Paid' : 'Due Date'}</p>
               <p className="text-sm font-bold text-rose-600">{formatDate(details.dueDate)}</p>
             </div>
           </div>
           <div className="mt-4 pt-4 border-t border-slate-200">
              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Payment Terms</p>
-             <p className="text-sm font-bold text-slate-900 uppercase">{details.paymentTerms?.replace('_', ' ') || 'NET 30'}</p>
+             <p className="text-sm font-bold text-slate-900 uppercase">{getTermsLabel(details.paymentTerms)}</p>
           </div>
         </div>
       </div>
@@ -988,7 +1013,7 @@ const InvoicePreview = ({
             </div>
           )}
           <div className="flex justify-between py-4 bg-primary text-white px-6 rounded-lg shadow-lg transform translate-y-2">
-            <span className="font-bold uppercase tracking-wider">Total Due</span>
+            <span className="font-bold uppercase tracking-wider">{documentType === 'quotation' ? 'Total Estimate' : documentType === 'receipt' ? 'Total Paid' : 'Total Due'}</span>
             <span className="font-black text-xl">{formatCurrency(total)}</span>
           </div>
         </div>
@@ -1076,7 +1101,7 @@ const InvoicePreview = ({
                   <p className="text-sm font-bold text-slate-900">{formatDate(details.issueDate)}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase">Due Date</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase">{documentType === 'quotation' ? 'Valid Until' : documentType === 'receipt' ? 'Date Paid' : 'Due Date'}</p>
                   <p className="text-sm font-bold text-slate-900">{formatDate(details.dueDate)}</p>
                 </div>
               </div>
@@ -1084,7 +1109,7 @@ const InvoicePreview = ({
             <div className="col-span-1 bg-slate-50 rounded-2xl p-6 border border-slate-100">
                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2">Total Balance</p>
                <p className="text-xl font-black text-primary tracking-tight">{formatCurrency(total)}</p>
-               <p className="text-[10px] text-slate-500 mt-2 font-medium">Currency: {currency} • {details.paymentTerms?.toUpperCase()}</p>
+               <p className="text-[10px] text-slate-500 mt-2 font-medium">Currency: {currency} • {getTermsLabel(details.paymentTerms).toUpperCase()}</p>
             </div>
           </div>
 
@@ -1165,7 +1190,7 @@ const InvoicePreview = ({
       <div className="relative">
         <div className="flex justify-between items-end mb-16 pb-8 border-b-2 border-slate-900">
           <div>
-            <h1 className="text-4xl font-black tracking-wider text-slate-900 uppercase mb-4">Invoice</h1>
+            <h1 className="text-4xl font-black tracking-wider text-slate-900 uppercase mb-4 capitalize">{displayType}</h1>
             <div className="space-y-1">
               <p className="text-sm font-bold text-slate-400 uppercase font-sans tracking-[0.2em]">Reference No.</p>
               <p className="text-lg font-black text-primary font-sans tracking-widest">{details.invoiceNumber}</p>
@@ -1207,7 +1232,7 @@ const InvoicePreview = ({
                 <p className="text-sm font-bold text-slate-900">{formatDate(details.issueDate)}</p>
               </div>
               <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Due Date</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{documentType === 'quotation' ? 'Valid Until' : documentType === 'receipt' ? 'Date Paid' : 'Due Date'}</p>
                 <p className="text-sm font-bold text-slate-900 underline decoration-primary decoration-2 underline-offset-4">{formatDate(details.dueDate)}</p>
               </div>
             </div>
@@ -1260,7 +1285,7 @@ const InvoicePreview = ({
               </div>
             )}
             <div className="pt-6 border-t-4 border-slate-900 flex justify-between items-baseline">
-              <span className="text-sm font-black uppercase tracking-[0.2em] text-slate-900">Amount Due</span>
+              <span className="text-sm font-black uppercase tracking-[0.2em] text-slate-900">{documentType === 'quotation' ? 'Estimated Amount' : documentType === 'receipt' ? 'Paid Amount' : 'Amount Due'}</span>
               <span className="text-xl font-black text-primary tracking-tighter">{formatCurrency(total)}</span>
             </div>
           </div>
@@ -1281,7 +1306,7 @@ const InvoicePreview = ({
     <div className="bg-white text-slate-900 font-sans p-16">
       <div className="flex justify-between items-start mb-24">
         <div>
-          <h1 className="text-6xl font-black tracking-tighter text-slate-900 mb-2">Invoice.</h1>
+          <h1 className="text-6xl font-black tracking-tighter text-slate-900 mb-2 capitalize">{displayType}.</h1>
           <p className="text-lg font-medium text-slate-400 tracking-wide">#{details.invoiceNumber}</p>
         </div>
         <div className="text-right">
@@ -1370,7 +1395,7 @@ const InvoicePreview = ({
             </div>
           )}
           <div className="pt-8 flex justify-between items-center border-t border-slate-900">
-             <span className="text-sm font-black uppercase tracking-[0.2em] text-slate-900 font-sans">Final Balance Due.</span>
+             <span className="text-sm font-black uppercase tracking-[0.2em] text-slate-900 font-sans">{documentType === 'quotation' ? 'Final Estimate.' : documentType === 'receipt' ? 'Amount Settled.' : 'Final Balance Due.'}</span>
              <span className="text-xl font-black text-primary tracking-tighter">{formatCurrency(total)}</span>
           </div>
         </div>
@@ -1404,7 +1429,7 @@ const InvoicePreview = ({
               </div>
             </div>
             <div className="text-right">
-              <h2 className="text-6xl font-black text-slate-100 absolute right-12 top-10 pointer-events-none uppercase transform scale-y-125 origin-right">Invoice</h2>
+              <h2 className="text-6xl font-black text-slate-100 absolute right-12 top-10 pointer-events-none uppercase transform scale-y-125 origin-right capitalize">{displayType}</h2>
               <div className="relative z-10 space-y-1">
                 <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Document Registry</p>
                 <p className="text-2xl font-black text-slate-900 tracking-tighter">#{details.invoiceNumber}</p>
@@ -1434,7 +1459,7 @@ const InvoicePreview = ({
                 <p className="text-sm font-black">{formatDate(details.issueDate)}</p>
               </div>
               <div className="bg-primary p-6 rounded-2xl text-white transform -rotate-1 shadow-lg">
-                <p className="text-[10px] font-black text-white/50 uppercase tracking-widest mb-1">Due Date</p>
+                <p className="text-[10px] font-black text-white/50 uppercase tracking-widest mb-1">{documentType === 'quotation' ? 'Valid Until' : documentType === 'receipt' ? 'Date Paid' : 'Due Date'}</p>
                 <p className="text-sm font-black">{formatDate(details.dueDate)}</p>
               </div>
             </div>
@@ -1533,7 +1558,7 @@ const InvoicePreview = ({
             </div>
           </div>
           <div className="text-right">
-            <h2 className="text-2xl font-bold uppercase">Invoice</h2>
+            <h2 className="text-2xl font-bold uppercase capitalize">{displayType}</h2>
             <p className="text-slate-400 text-sm mt-1">{formatDate(details.issueDate)}</p>
           </div>
         </div>
@@ -1562,12 +1587,12 @@ const InvoicePreview = ({
               <span className="text-sm font-medium">{formatDate(details.issueDate)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-sm text-slate-500">Due Date</span>
+              <span className="text-sm text-slate-500">{documentType === 'quotation' ? 'Valid Until' : documentType === 'receipt' ? 'Date Paid' : 'Due Date'}</span>
               <span className="text-sm font-medium">{formatDate(details.dueDate)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-slate-500">Terms</span>
-              <span className="text-sm font-medium uppercase">{details.paymentTerms?.replace('_', ' ') || 'Net 30'}</span>
+              <span className="text-sm font-medium uppercase">{getTermsLabel(details.paymentTerms)}</span>
             </div>
           </div>
         </div>
@@ -1683,7 +1708,7 @@ const InvoicePreview = ({
           {/* Invoice Title */}
           <div className="flex justify-between items-start mb-8 pb-6 border-b border-slate-200">
             <div>
-              <h1 className="text-3xl font-bold text-slate-900">INVOICE</h1>
+              <h1 className="text-3xl font-bold text-slate-900">{displayType.toUpperCase()}</h1>
               <p className="text-slate-500 text-sm mt-1">#{details.invoiceNumber || 'INV-000'}</p>
             </div>
           </div>
@@ -1695,11 +1720,11 @@ const InvoicePreview = ({
               <p className="font-medium mt-1">{formatDate(details.issueDate)}</p>
             </div>
             <div>
-              <p className="text-xs font-semibold text-slate-500 uppercase">Due Date</p>
+              <p className="text-xs font-semibold text-slate-500 uppercase">{documentType === 'quotation' ? 'Valid Until' : documentType === 'receipt' ? 'Date Paid' : 'Due Date'}</p>
               <p className="font-medium mt-1">{formatDate(details.dueDate)}</p>
             </div>
             <div className="text-right">
-              <p className="text-xs font-semibold text-slate-500 uppercase">Amount Due</p>
+              <p className="text-xs font-semibold text-slate-500 uppercase">{documentType === 'quotation' ? 'Estimated Amount' : documentType === 'receipt' ? 'Paid Amount' : 'Amount Due'}</p>
               <p className="font-bold text-xl mt-1 text-blue-600">{formatCurrency(total)}</p>
             </div>
           </div>
@@ -1784,7 +1809,7 @@ const InvoicePreview = ({
             </div>
           </div>
           <div className="text-right">
-            <h2 className="text-3xl font-bold uppercase">Invoice</h2>
+            <h2 className="text-3xl font-bold uppercase capitalize">{displayType}</h2>
             <p className="text-lg mt-2 font-mono">#{details.invoiceNumber}</p>
           </div>
         </div>
@@ -1810,7 +1835,7 @@ const InvoicePreview = ({
           <div className="text-right font-sans">
             <p className="text-xs font-semibold text-slate-500 uppercase">Issue Date</p>
             <p className="text-base font-medium">{formatDate(details.issueDate)}</p>
-            <p className="text-xs font-semibold text-slate-500 uppercase mt-3">Due Date</p>
+            <p className="text-xs font-semibold text-slate-500 uppercase mt-3">{documentType === 'quotation' ? 'Valid Until' : documentType === 'receipt' ? 'Date Paid' : 'Due Date'}</p>
             <p className="text-base font-medium">{formatDate(details.dueDate)}</p>
           </div>
         </div>
@@ -1857,7 +1882,7 @@ const InvoicePreview = ({
               </div>
             )}
             <div className="flex justify-between py-3 border-t-2 border-slate-800 mt-2">
-              <span className="font-bold text-lg">Total Due</span>
+              <span className="font-bold text-lg">{documentType === 'quotation' ? 'Total Estimate' : documentType === 'receipt' ? 'Total Paid' : 'Total Due'}</span>
               <span className="font-bold text-xl">{formatCurrency(total)}</span>
             </div>
           </div>
@@ -1889,7 +1914,7 @@ const InvoicePreview = ({
         <div className="flex items-center gap-4">
           {renderLogo('sm')}
           <div>
-            <h1 className="text-xl font-bold text-slate-900">INVOICE</h1>
+            <h1 className="text-xl font-bold text-slate-900">{displayType.toUpperCase()}</h1>
             <p className="text-slate-500 text-sm mt-1">#{details.invoiceNumber || 'INV-000'}</p>
           </div>
         </div>
@@ -2018,7 +2043,7 @@ const InvoicePreview = ({
             </div>
           </div>
           <div className="text-right">
-            <p className="text-amber-500 text-xs font-semibold uppercase tracking-widest">Invoice</p>
+            <p className="text-amber-500 text-xs font-semibold uppercase tracking-widest capitalize">{displayType}</p>
             <p className="text-2xl font-bold text-white mt-1">#{details.invoiceNumber?.replace('INV-', '') || '000'}</p>
             <p className="text-slate-400 text-xs mt-1">{formatDate(details.issueDate)}</p>
           </div>
@@ -2043,15 +2068,15 @@ const InvoicePreview = ({
             )}
           </div>
           <div className="text-right">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 border-r-2 border-amber-500 pr-3">Payment Details</p>
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 border-r-2 border-amber-500 pr-3">{documentType === 'receipt' ? 'Payment Summary' : 'Payment Details'}</p>
             <div className="pr-3 space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-slate-500">Due Date</span>
+                <span className="text-slate-500">{documentType === 'quotation' ? 'Valid Until' : documentType === 'receipt' ? 'Date Paid' : 'Due Date'}</span>
                 <span className="font-medium text-slate-900">{formatDate(details.dueDate)}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-slate-500">Terms</span>
-                <span className="font-medium text-slate-900 uppercase">{details.paymentTerms?.replace('_', ' ') || 'Net 30'}</span>
+                <span className="font-medium text-slate-900 uppercase">{getTermsLabel(details.paymentTerms)}</span>
               </div>
             </div>
           </div>
@@ -2099,7 +2124,7 @@ const InvoicePreview = ({
               </div>
             )}
             <div className="flex justify-between py-4 mt-2 bg-amber-500 -mx-4 px-4 rounded-lg">
-              <span className="font-bold text-slate-900">Total Due</span>
+              <span className="font-bold text-slate-900">{documentType === 'quotation' ? 'Total Estimate' : documentType === 'receipt' ? 'Total Paid' : 'Total Due'}</span>
               <span className="font-bold text-xl text-slate-900">{formatCurrency(total)}</span>
             </div>
           </div>
@@ -2139,7 +2164,7 @@ const InvoicePreview = ({
             </div>
           </div>
           <div className="text-right">
-            <p className="text-xs font-sans font-semibold text-slate-400 uppercase tracking-widest">Invoice No.</p>
+            <p className="text-xs font-sans font-semibold text-slate-400 uppercase tracking-widest capitalize">{displayType} No.</p>
             <p className="text-lg font-light mt-1">{details.invoiceNumber}</p>
           </div>
         </div>
@@ -2168,7 +2193,7 @@ const InvoicePreview = ({
                 <p className="text-sm font-medium mt-1">{formatDate(details.issueDate)}</p>
               </div>
               <div>
-                <p className="text-xs font-semibold text-slate-400 uppercase">Due Date</p>
+                <p className="text-xs font-semibold text-slate-400 uppercase">{documentType === 'quotation' ? 'Valid Until' : documentType === 'receipt' ? 'Date Paid' : 'Due Date'}</p>
                 <p className="text-sm font-medium mt-1">{formatDate(details.dueDate)}</p>
               </div>
             </div>
@@ -2250,7 +2275,7 @@ const InvoicePreview = ({
       {/* Header - Plain Text Based */}
       <div className="flex justify-between items-start mb-8 pb-6 border-b-4 border-slate-800">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">INVOICE</h1>
+          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">{displayType.toUpperCase()}</h1>
           <p className="text-slate-600 text-lg mt-1">#{details.invoiceNumber || 'INV-000'}</p>
         </div>
         <div className="text-right">
@@ -2301,11 +2326,11 @@ const InvoicePreview = ({
           <p className="font-bold mt-1">{formatDate(details.issueDate)}</p>
         </div>
         <div>
-          <p className="text-xs font-bold text-slate-500 uppercase">Due Date</p>
+          <p className="text-xs font-bold text-slate-500 uppercase">{documentType === 'quotation' ? 'Valid Until' : documentType === 'receipt' ? 'Date Paid' : 'Due Date'}</p>
           <p className="font-bold mt-1">{formatDate(details.dueDate)}</p>
         </div>
         <div>
-          <p className="text-xs font-bold text-slate-500 uppercase">Total Due</p>
+          <p className="text-xs font-bold text-slate-500 uppercase">{documentType === 'quotation' ? 'Total Estimate' : documentType === 'receipt' ? 'Total Paid' : 'Total Due'}</p>
           <p className="font-bold text-xl mt-1 text-slate-900">{formatCurrency(total)}</p>
         </div>
       </div>
@@ -2388,7 +2413,7 @@ const InvoicePreview = ({
       <div className="bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 text-white px-8 py-8">
         <div className="flex justify-between items-start">
           <div>
-            <h1 className="text-3xl font-black tracking-tight">INVOICE</h1>
+            <h1 className="text-3xl font-black tracking-tight">{displayType.toUpperCase()}</h1>
             <p className="text-white/80 mt-1 font-mono">#{details.invoiceNumber || 'INV-000'}</p>
           </div>
           <div className="text-right">

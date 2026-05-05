@@ -73,6 +73,7 @@ export interface Invoice {
   business_id?: string;
   client_id: string;
   invoice_number: string;
+  type: 'invoice' | 'quotation' | 'receipt';
   issue_date: string;
   due_date: string;
   payment_terms: string;

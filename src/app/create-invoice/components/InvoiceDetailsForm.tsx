@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Icon from '@/components/ui/AppIcon';
 
 interface InvoiceDetails {
@@ -13,9 +13,10 @@ interface InvoiceDetails {
 interface InvoiceDetailsFormProps {
   details: InvoiceDetails;
   onDetailsChange: (details: InvoiceDetails) => void;
+  documentType?: 'invoice' | 'quotation' | 'receipt';
 }
 
-const InvoiceDetailsForm = ({ details, onDetailsChange }: InvoiceDetailsFormProps) => {
+const InvoiceDetailsForm = ({ details, onDetailsChange, documentType = 'invoice' }: InvoiceDetailsFormProps) => {
   const [isHydrated, setIsHydrated] = useState(false);
   const [localDetails, setLocalDetails] = useState<InvoiceDetails>(details);
 
@@ -23,13 +24,43 @@ const InvoiceDetailsForm = ({ details, onDetailsChange }: InvoiceDetailsFormProp
     setIsHydrated(true);
   }, []);
 
-  const paymentTermsOptions = [
-    { value: 'net15', label: 'Net 15 days' },
-    { value: 'net30', label: 'Net 30 days' },
-    { value: 'net45', label: 'Net 45 days' },
-    { value: 'net60', label: 'Net 60 days' },
-    { value: 'due_on_receipt', label: 'Due on receipt' },
-  ];
+  // Sync with parent when parent updates (e.g., prefix updates on mode change)
+  useEffect(() => {
+    setLocalDetails(details);
+  }, [details]);
+
+  const paymentTermsOptions = useMemo(() => {
+    return documentType === 'receipt' ? [
+      { value: 'cash', label: 'Cash' },
+      { value: 'bank_transfer', label: 'Bank Transfer' },
+      { value: 'credit_card', label: 'Credit Card' },
+      { value: 'mobile_money', label: 'Mobile Money' },
+      { value: 'cheque', label: 'Cheque' },
+    ] : documentType === 'quotation' ? [
+      { value: 'valid_15', label: 'Valid for 15 days' },
+      { value: 'valid_30', label: 'Valid for 30 days' },
+      { value: 'valid_60', label: 'Valid for 60 days' },
+      { value: 'upon_acceptance', label: 'Upon Acceptance' },
+    ] : [
+      { value: 'net15', label: 'Net 15 days' },
+      { value: 'net30', label: 'Net 30 days' },
+      { value: 'net45', label: 'Net 45 days' },
+      { value: 'net60', label: 'Net 60 days' },
+      { value: 'due_on_receipt', label: 'Due on receipt' },
+    ];
+  }, [documentType]);
+
+  // Ensure paymentTerms is valid for the current documentType
+  useEffect(() => {
+    if (localDetails.paymentTerms) {
+      const isValid = paymentTermsOptions.some(opt => opt.value === localDetails.paymentTerms);
+      if (!isValid && isHydrated) {
+        handleChange('paymentTerms', '');
+      }
+    }
+  }, [documentType, paymentTermsOptions, isHydrated]);
+
+
 
   const handleChange = (field: keyof InvoiceDetails, value: string) => {
     const updatedDetails = { ...localDetails, [field]: value };
@@ -41,7 +72,8 @@ const InvoiceDetailsForm = ({ details, onDetailsChange }: InvoiceDetailsFormProp
     if (!isHydrated) return;
     const timestamp = Date.now();
     const randomNum = Math.floor(Math.random() * 1000);
-    const invoiceNum = `INV-${timestamp.toString().slice(-6)}${randomNum.toString().padStart(3, '0')}`;
+    const prefix = documentType === 'quotation' ? 'QTN-' : documentType === 'receipt' ? 'RCT-' : 'INV-';
+    const invoiceNum = `${prefix}${timestamp.toString().slice(-6)}${randomNum.toString().padStart(3, '0')}`;
     handleChange('invoiceNumber', invoiceNum);
   };
 
@@ -49,11 +81,13 @@ const InvoiceDetailsForm = ({ details, onDetailsChange }: InvoiceDetailsFormProp
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-foreground">Invoice Number</label>
+          <label className="block text-sm font-medium text-foreground capitalize">{documentType} Number</label>
           <div className="h-11 bg-muted rounded-md animate-pulse" />
         </div>
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-foreground">Payment Terms</label>
+          <label className="block text-sm font-medium text-foreground">
+            {documentType === 'quotation' ? 'Terms' : documentType === 'receipt' ? 'Payment Method' : 'Payment Terms'}
+          </label>
           <div className="h-11 bg-muted rounded-md animate-pulse" />
         </div>
         <div className="space-y-2">
@@ -61,7 +95,9 @@ const InvoiceDetailsForm = ({ details, onDetailsChange }: InvoiceDetailsFormProp
           <div className="h-11 bg-muted rounded-md animate-pulse" />
         </div>
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-foreground">Due Date</label>
+          <label className="block text-sm font-medium text-foreground">
+            {documentType === 'quotation' ? 'Valid Until' : documentType === 'receipt' ? 'Payment Date' : 'Due Date'}
+          </label>
           <div className="h-11 bg-muted rounded-md animate-pulse" />
         </div>
       </div>
@@ -71,8 +107,8 @@ const InvoiceDetailsForm = ({ details, onDetailsChange }: InvoiceDetailsFormProp
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div className="space-y-2">
-        <label htmlFor="invoiceNumber" className="block text-sm font-medium text-foreground">
-          Invoice Number <span className="text-error">*</span>
+        <label htmlFor="invoiceNumber" className="block text-sm font-medium text-foreground capitalize">
+          {documentType} Number <span className="text-error">*</span>
         </label>
         <div className="flex gap-2">
           <input
@@ -80,7 +116,7 @@ const InvoiceDetailsForm = ({ details, onDetailsChange }: InvoiceDetailsFormProp
             type="text"
             value={localDetails.invoiceNumber}
             onChange={(e) => handleChange('invoiceNumber', e.target.value)}
-            placeholder="INV-001"
+            placeholder={`${documentType === 'quotation' ? 'QTN' : documentType === 'receipt' ? 'RCT' : 'INV'}-001`}
             className="flex-1 px-4 py-2.5 bg-card border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-smooth"
             required
           />
@@ -88,7 +124,7 @@ const InvoiceDetailsForm = ({ details, onDetailsChange }: InvoiceDetailsFormProp
             type="button"
             onClick={generateInvoiceNumber}
             className="px-4 py-2.5 bg-secondary text-secondary-foreground rounded-md hover:opacity-90 transition-smooth"
-            title="Generate invoice number"
+            title={`Generate ${documentType} number`}
           >
             <Icon name="ArrowPathIcon" size={18} />
           </button>
@@ -97,7 +133,7 @@ const InvoiceDetailsForm = ({ details, onDetailsChange }: InvoiceDetailsFormProp
 
       <div className="space-y-2">
         <label htmlFor="paymentTerms" className="block text-sm font-medium text-foreground">
-          Payment Terms <span className="text-error">*</span>
+          {documentType === 'quotation' ? 'Terms' : documentType === 'receipt' ? 'Payment Method' : 'Payment Terms'} <span className="text-error">*</span>
         </label>
         <select
           id="paymentTerms"
@@ -106,7 +142,9 @@ const InvoiceDetailsForm = ({ details, onDetailsChange }: InvoiceDetailsFormProp
           className="w-full px-4 py-2.5 bg-card border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-smooth"
           required
         >
-          <option value="">Select payment terms</option>
+          <option value="">
+            {documentType === 'quotation' ? 'Select terms' : documentType === 'receipt' ? 'Select method' : 'Select payment terms'}
+          </option>
           {paymentTermsOptions.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
@@ -131,7 +169,7 @@ const InvoiceDetailsForm = ({ details, onDetailsChange }: InvoiceDetailsFormProp
 
       <div className="space-y-2">
         <label htmlFor="dueDate" className="block text-sm font-medium text-foreground">
-          Due Date <span className="text-error">*</span>
+          {documentType === 'quotation' ? 'Valid Until' : documentType === 'receipt' ? 'Payment Date' : 'Due Date'} <span className="text-error">*</span>
         </label>
         <input
           id="dueDate"

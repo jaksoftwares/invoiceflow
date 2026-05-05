@@ -32,6 +32,7 @@ export async function sendInvoiceEmail(
       total_amount, 
       currency, 
       due_date, 
+      type,
       business_id,
       client:clients(id, company_name, contact_person)
     `)
@@ -95,12 +96,12 @@ export async function sendInvoiceEmail(
                   
                   <p style="margin: 0 0 24px; font-size: 16px; line-height: 24px; white-space: pre-wrap;">${emailData.message}</p>
 
-                  <p style="margin: 0 0 24px; font-size: 16px; line-height: 24px;">This invoice is for your recent purchase or service at <strong>${business.name}</strong>.</p>
+                  <p style="margin: 0 0 24px; font-size: 16px; line-height: 24px;">This ${documentType} is for your recent transaction at <strong>${business.name}</strong>.</p>
                   
                   <div style="background-color: #f8fafc; border-radius: 12px; padding: 24px; margin-bottom: 32px; border: 1px solid #f1f5f9;">
                     <table width="100%" border="0" cellspacing="0" cellpadding="0">
                       <tr>
-                        <td style="padding-bottom: 8px; font-size: 14px; color: #64748b;">Invoice Number</td>
+                        <td style="padding-bottom: 8px; font-size: 14px; color: #64748b;">${displayType} Number</td>
                         <td align="right" style="padding-bottom: 8px; font-size: 14px; font-weight: 700; color: #0f172a;">#${invoice.invoice_number}</td>
                       </tr>
                       <tr>
@@ -108,14 +109,14 @@ export async function sendInvoiceEmail(
                         <td align="right" style="padding-bottom: 8px; font-size: 14px; font-weight: 700; color: #0f172a;">${formatCurrency(invoice.total_amount, invoice.currency)}</td>
                       </tr>
                       <tr>
-                        <td style="font-size: 14px; color: #64748b;">Due Date</td>
+                        <td style="font-size: 14px; color: #64748b;">${dueDateLabel}</td>
                         <td align="right" style="font-size: 14px; font-weight: 700; color: #f43f5e;">${formatDate(invoice.due_date)}</td>
                       </tr>
                     </table>
                   </div>
 
                   <div align="center">
-                    <a href="${invoiceLink}" class="button" style="display: inline-block; padding: 16px 32px; background-color: #3b82f6; color: #ffffff; font-weight: 700; text-decoration: none; border-radius: 12px; font-size: 16px; transition: background-color 0.2s;">View & Pay Invoice</a>
+                    <a href="${invoiceLink}" class="button" style="display: inline-block; padding: 16px 32px; background-color: #3b82f6; color: #ffffff; font-weight: 700; text-decoration: none; border-radius: 12px; font-size: 16px; transition: background-color 0.2s;">${actionText}</a>
                   </div>
                   
                   <p style="margin: 32px 0 0; font-size: 16px; line-height: 24px; text-align: center; color: #0f172a; font-weight: 600;">
@@ -153,13 +154,13 @@ export async function sendInvoiceEmail(
       ReplyTo: replyToEmail,
       Subject: emailData.subject,
       HtmlBody: htmlBody,
-      TextBody: `${emailData.message}\n\nThis invoice is for your recent purchase or service at ${business.name}.\n\nInvoice Details:\nNumber: #${invoice.invoice_number}\nAmount: ${formatCurrency(invoice.total_amount, invoice.currency)}\nDue Date: ${formatDate(invoice.due_date)}\n\nThank you for choosing ${business.name}!\n\nView Invoice: ${invoiceLink}`,
+      TextBody: `${emailData.message}\n\nThis ${documentType} is for your recent transaction at ${business.name}.\n\n${displayType} Details:\nNumber: #${invoice.invoice_number}\nAmount: ${formatCurrency(invoice.total_amount, invoice.currency)}\n${dueDateLabel}: ${formatDate(invoice.due_date)}\n\nThank you for choosing ${business.name}!\n\nView ${displayType}: ${invoiceLink}`,
       Attachments: [
         {
-          Name: `Invoice_${invoice.invoice_number}.pdf`,
+          Name: `${displayType}_${invoice.invoice_number}.pdf`,
           Content: pdfContent,
           ContentType: 'application/pdf',
-          ContentID: `cid:Invoice_${invoice.invoice_number}.pdf`,
+          ContentID: `cid:${displayType}_${invoice.invoice_number}.pdf`,
         },
       ],
     });
@@ -171,14 +172,14 @@ export async function sendInvoiceEmail(
         To: user.email,
         ReplyTo: replyToEmail,
         Subject: `[COPY] ${emailData.subject}`,
-        HtmlBody: `<p style="padding: 20px; background-color: #f0fdf4; color: #166534; font-size: 14px; margin: 0; border-bottom: 1px solid #dcfce7;">This is a copy of the invoice you sent to ${emailData.to}.</p>` + htmlBody,
-        TextBody: `This is a copy of the invoice you sent to ${emailData.to}.\n\n` + `${emailData.message}\n\nView Invoice: ${invoiceLink}`,
+        HtmlBody: `<p style="padding: 20px; background-color: #f0fdf4; color: #166534; font-size: 14px; margin: 0; border-bottom: 1px solid #dcfce7;">This is a copy of the ${documentType} you sent to ${emailData.to}.</p>` + htmlBody,
+        TextBody: `This is a copy of the ${documentType} you sent to ${emailData.to}.\n\n` + `${emailData.message}\n\nView ${displayType}: ${invoiceLink}`,
         Attachments: [
           {
-            Name: `Invoice_${invoice.invoice_number}.pdf`,
+            Name: `${displayType}_${invoice.invoice_number}.pdf`,
             Content: pdfContent,
             ContentType: 'application/pdf',
-            ContentID: `cid:Invoice_${invoice.invoice_number}.pdf`,
+            ContentID: `cid:${displayType}_${invoice.invoice_number}.pdf`,
           },
         ],
       });
@@ -190,7 +191,7 @@ export async function sendInvoiceEmail(
     // Record client activity for dashboard/client history
     await recordClientActivity({
       clientId: (invoice as any).client?.id || '', // We need to make sure we have this or fetch it
-      activity: `Invoice #${invoice.invoice_number} sent to ${emailData.to}`,
+      activity: `${displayType} #${invoice.invoice_number} sent to ${emailData.to}`,
       type: 'communication',
       metadata: { invoiceId, to: emailData.to }
     });

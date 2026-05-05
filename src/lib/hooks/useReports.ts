@@ -41,6 +41,7 @@ interface ReportsData {
   paymentStatusChart: PaymentStatusData[];
   clientPerformanceChart: ClientPerformanceData[];
   kpis: KPIData[];
+  documentTypesChart: { name: string; value: number; color: string }[];
   reportsTable: ReportRow[];
   currency?: string;
   businessProfile?: any;

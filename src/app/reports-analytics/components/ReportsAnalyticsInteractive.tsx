@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useReports } from '@/lib/hooks';
 import RevenueChart from './RevenueChart';
 import PaymentStatusChart from './PaymentStatusChart';
+import DocumentTypesChart from './DocumentTypesChart';
 import ClientPerformanceChart from './ClientPerformanceChart';
 import KPICard from './KPICard';
 import ReportFilters from './ReportFilters';
@@ -94,6 +95,7 @@ const ReportsAnalyticsInteractive = () => {
   // Use real data or fallback to empty arrays
   const revenueData = data?.revenueChart || [];
   const paymentStatusData = data?.paymentStatusChart || [];
+  const documentTypesData = data?.documentTypesChart || [];
   const clientPerformanceData = data?.clientPerformanceChart || [];
   const kpiData = data?.kpis || [];
   const reportsTableData = data?.reportsTable || [];
@@ -394,7 +396,7 @@ const ReportsAnalyticsInteractive = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-1 gap-8 mb-10">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
           <div className="bg-card rounded-2xl p-8 border border-border/50 shadow-sm transition-all hover:shadow-md">
             <div className="flex items-center justify-between mb-8">
               <h3 className="text-xl font-heading font-black text-foreground tracking-tight">
@@ -405,6 +407,18 @@ const ReportsAnalyticsInteractive = () => {
               </div>
             </div>
             <ClientPerformanceChart data={clientPerformanceData} />
+          </div>
+
+          <div className="bg-card rounded-2xl p-8 border border-border/50 shadow-sm transition-all hover:shadow-md">
+            <div className="flex items-center justify-between mb-8">
+              <h3 className="text-xl font-heading font-black text-foreground tracking-tight">
+                Document Types Generated
+              </h3>
+              <div className="w-10 h-10 rounded-lg bg-secondary/10 flex items-center justify-center text-secondary">
+                <Icon name="DocumentDuplicateIcon" size={20} />
+              </div>
+            </div>
+            <DocumentTypesChart data={documentTypesData} />
           </div>
         </div>
 
