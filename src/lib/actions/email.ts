@@ -66,6 +66,17 @@ export async function sendInvoiceEmail(
 
   // Remove data URI prefix for Postmark
   const pdfContent = pdfBase64.split(',')[1];
+
+  // Infer effective document type
+  let documentType = (invoice.type || 'invoice') as string;
+  if (documentType === 'invoice' && invoice.invoice_number) {
+    if (invoice.invoice_number.toUpperCase().startsWith('QTN-')) documentType = 'quotation';
+    else if (invoice.invoice_number.toUpperCase().startsWith('RCT-')) documentType = 'receipt';
+  }
+
+  const displayType = documentType.charAt(0).toUpperCase() + documentType.slice(1);
+  const dueDateLabel = documentType === 'quotation' ? 'Valid Until' : documentType === 'receipt' ? 'Payment Date' : 'Due Date';
+  const actionText = documentType === 'quotation' ? 'View Quotation' : documentType === 'receipt' ? 'View Receipt' : 'View & Pay Invoice';
   
   const htmlBody = `
     <!DOCTYPE html>
@@ -190,7 +201,7 @@ export async function sendInvoiceEmail(
     
     // Record client activity for dashboard/client history
     await recordClientActivity({
-      clientId: (invoice as any).client?.id || '', // We need to make sure we have this or fetch it
+      clientId: (invoice as any).client?.id || '', 
       activity: `${displayType} #${invoice.invoice_number} sent to ${emailData.to}`,
       type: 'communication',
       metadata: { invoiceId, to: emailData.to }
@@ -202,5 +213,3 @@ export async function sendInvoiceEmail(
     throw new Error(`Failed to send email: ${(error as Error).message}`);
   }
 }
-
-

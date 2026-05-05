@@ -387,8 +387,14 @@ const InvoiceManagementInteractive = ({ initialInvoices }: InvoiceManagementInte
 
   const handleWhatsAppShare = () => {
     if (selectedInvoiceForShare) {
+      let docType = (selectedInvoiceForShare.type || 'invoice') as string;
+      if (docType === 'invoice' && selectedInvoiceForShare.invoice_number) {
+        if (selectedInvoiceForShare.invoice_number.toUpperCase().startsWith('QTN-')) docType = 'quotation';
+        else if (selectedInvoiceForShare.invoice_number.toUpperCase().startsWith('RCT-')) docType = 'receipt';
+      }
+      
       const link = `${window.location.origin}/invoice/view/${selectedInvoiceForShare.slug || selectedInvoiceForShare.id}`;
-      const text = `Hi, please find your invoice here: ${link}`;
+      const text = `Hi, please find your ${docType} here: ${link}`;
       window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
       setShareModalOpen(false);
     }
@@ -417,7 +423,7 @@ const InvoiceManagementInteractive = ({ initialInvoices }: InvoiceManagementInte
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
           <div className="flex-1">
             <h1 className="text-4xl font-heading font-black text-foreground tracking-tight sm:text-5xl">
-              Document Management
+              Invoice Management
             </h1>
             <p className="text-muted-foreground mt-3 text-lg max-w-2xl font-medium">
               View and manage all your invoices in one place.
@@ -429,7 +435,7 @@ const InvoiceManagementInteractive = ({ initialInvoices }: InvoiceManagementInte
                className="w-full sm:w-auto bg-accent text-accent-foreground px-8 py-4 rounded-2xl font-black text-sm shadow-elevation-2 hover:shadow-elevation-4 transition-all hover:-translate-y-1 active:scale-[0.98] flex items-center justify-center gap-2 group"
              >
                <Icon name="PlusCircleIcon" size={20} className="group-hover:rotate-90 transition-transform duration-500" />
-               <span>New Document</span>
+               <span>New Invoice</span>
              </button>
           </div>
         </div>

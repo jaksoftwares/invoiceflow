@@ -31,20 +31,27 @@ const ShareInvoiceModal = ({
   onCopyLink,
   onWhatsAppShare,
 }: ShareInvoiceModalProps) => {
-  const displayType = documentType.charAt(0).toUpperCase() + documentType.slice(1);
+  // Infer effective document type from prefix if it's currently 'invoice'
+  let effectiveDocumentType = documentType;
+  if (effectiveDocumentType === 'invoice' && invoiceNumber) {
+    if (invoiceNumber.toUpperCase().startsWith('QTN-')) effectiveDocumentType = 'quotation';
+    else if (invoiceNumber.toUpperCase().startsWith('RCT-')) effectiveDocumentType = 'receipt';
+  }
+
+  const displayType = effectiveDocumentType.charAt(0).toUpperCase() + effectiveDocumentType.slice(1);
   const [activeTab, setActiveTab] = useState<'email' | 'link' | 'whatsapp'>('email');
   const [emailTo, setEmailTo] = useState(clientEmail || '');
   const [emailSubject, setEmailSubject] = useState(`${displayType} ${invoiceNumber} from ${businessName || 'InvoiceFlow'}`);
-  const [emailMessage, setEmailMessage] = useState(`I hope this email finds you well.\n\nPlease find the attached ${documentType} ${invoiceNumber} for your recent transaction at ${businessName || 'our business'}. You can also view and ${documentType === 'invoice' ? 'pay' : 'access'} the ${documentType} online by clicking the link in this email.\n\nThank you for choosing ${businessName || 'us'}!\n\nBest regards!`);
+  const [emailMessage, setEmailMessage] = useState(`I hope this email finds you well.\n\nPlease find the attached ${effectiveDocumentType} ${invoiceNumber} for your recent transaction at ${businessName || 'our business'}. You can also view and ${effectiveDocumentType === 'invoice' ? 'pay' : 'access'} the ${effectiveDocumentType} online by clicking the link in this email.\n\nThank you for choosing ${businessName || 'us'}!\n\nBest regards!`);
 
   // Ensure fields are reset when modal opens for a new invoice
   useEffect(() => {
     if (isOpen) {
       setEmailTo(clientEmail || '');
       setEmailSubject(`${displayType} ${invoiceNumber} from ${businessName || 'InvoiceFlow'}`);
-      setEmailMessage(`I hope this email finds you well.\n\nPlease find the attached ${documentType} ${invoiceNumber} for your recent transaction at ${businessName || 'our business'}. You can also view and ${documentType === 'invoice' ? 'pay' : 'access'} the ${documentType} online by clicking the link in this email.\n\nThank you for choosing ${businessName || 'us'}!\n\nBest regards!`);
+      setEmailMessage(`I hope this email finds you well.\n\nPlease find the attached ${effectiveDocumentType} ${invoiceNumber} for your recent transaction at ${businessName || 'our business'}. You can also view and ${effectiveDocumentType === 'invoice' ? 'pay' : 'access'} the ${effectiveDocumentType} online by clicking the link in this email.\n\nThank you for choosing ${businessName || 'us'}!\n\nBest regards!`);
     }
-  }, [isOpen, clientEmail, invoiceNumber, businessName, displayType, documentType]);
+  }, [isOpen, clientEmail, invoiceNumber, businessName, displayType, effectiveDocumentType]);
 
   const [copyMe, setCopyMe] = useState(true);
 
@@ -209,7 +216,7 @@ const ShareInvoiceModal = ({
                <div className="space-y-2">
                   <h3 className="text-lg font-medium text-foreground">Copy Public Link</h3>
                   <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-                    Anyone with this link can view and download the {documentType} PDF.
+                    Anyone with this link can view and download the {effectiveDocumentType} PDF.
                   </p>
                </div>
                
@@ -236,7 +243,7 @@ const ShareInvoiceModal = ({
                <div className="space-y-2">
                   <h3 className="text-lg font-medium text-foreground">Share via WhatsApp</h3>
                   <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-                    Send the {documentType} link directly to your client on WhatsApp.
+                    Send the {effectiveDocumentType} link directly to your client on WhatsApp.
                   </p>
                </div>
                
