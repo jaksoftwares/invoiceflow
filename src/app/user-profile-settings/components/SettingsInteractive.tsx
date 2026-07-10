@@ -130,25 +130,25 @@ const SettingsInteractive = () => {
  <p className="text-muted-foreground mt-3 text-lg font-medium">Manage your account and app preferences.</p>
  </div>
 
- {/* Horizontal Tab Navigation */}
- <div className="mb-8">
- <nav className="flex flex-wrap gap-2 pb-4 border-b border-border">
- {tabs.map((tab) => (
- <button
- key={tab.id}
- onClick={() => setActiveTab(tab.id)}
- className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-smooth ${
- activeTab === tab.id
- ? 'bg-primary text-primary-foreground'
- : 'text-muted-foreground hover:bg-muted hover:text-foreground'
- }`}
- >
- <Icon name={tab.icon as any} size={18} />
- <span>{tab.label}</span>
- </button>
- ))}
- </nav>
- </div>
+        {/* Horizontal Tab Navigation */}
+        <div className="mb-8 overflow-hidden">
+          <nav className="flex overflow-x-auto no-scrollbar gap-2 pb-4 border-b border-border mask-edges-right">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap transition-smooth ${
+                  activeTab === tab.id
+                    ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/20 scale-[1.02]'
+                    : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'
+                }`}
+              >
+                <Icon name={tab.icon as any} size={18} />
+                <span>{tab.label}</span>
+              </button>
+            ))}
+          </nav>
+        </div>
 
  {/* Content Area */}
  <div>

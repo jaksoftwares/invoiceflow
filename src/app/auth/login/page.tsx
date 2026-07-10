@@ -73,11 +73,14 @@ export default function LoginPage() {
  
  const params = new URLSearchParams(window.location.search);
  const returnUrl = params.get('redirectedFrom') || '/dashboard';
- window.location.href = returnUrl;
+ router.push(returnUrl);
+ 
+ // Deliberately NOT setting loading to false here so the spinner stays active
+ // during the Next.js route transition.
+ return;
  } catch (error) {
  console.error('Login error:', error);
  toast.error('An unexpected error occurred. Please try again.')
- } finally {
  setLoading(false)
  }
  }
