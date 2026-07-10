@@ -4,25 +4,22 @@ import { Star, Quote } from 'lucide-react';
 
 const testimonials = [
   {
-    quote: "Invoiceflow has transformed how we handle our invoicing. It's professional, efficient, and our clients love the clean, branded invoices we send.",
+    quote: "I used to spend my entire Sunday afternoon manually creating PDFs for my design clients. With InvoiceFlow, I just duplicate a past invoice, tweak the hours, and send. It literally takes me 5 minutes now.",
     name: "Sarah Johnson",
-    role: "Freelance Designer",
-    avatar: "SJ",
-    color: "indigo"
+    role: "Freelance UX Designer",
+    image: "https://randomuser.me/api/portraits/women/44.jpg"
   },
   {
-    quote: "As a small business owner, I needed something simple yet powerful. Invoiceflow delivers on both fronts. Implementation was seamless and smooth.",
+    quote: "We were managing 50+ retainer clients using a messy spreadsheet and Word templates. Switching to InvoiceFlow reduced our outstanding invoices by 40% because of the clear dashboard and easy tracking.",
     name: "Michael Chen",
-    role: "Agency Founder",
-    avatar: "MC",
-    color: "blue"
+    role: "Founder, Peak Digital",
+    image: "https://randomuser.me/api/portraits/men/32.jpg"
   },
   {
-    quote: "The automation features save us hours every week. Our accounting team can focus on strategy instead of tedious data entry and tracking.",
+    quote: "The best part isn't just creating the invoices—it's how organized it keeps us. My accountant used to chase me down for records every tax season. Now I just give them access and they have everything.",
     name: "Emily Rodriguez",
-    role: "Operations Manager",
-    avatar: "ER",
-    color: "purple"
+    role: "Independent Contractor",
+    image: "https://randomuser.me/api/portraits/women/68.jpg"
   },
 ];
 
@@ -56,13 +53,11 @@ export default function TestimonialsSection() {
               </blockquote>
               
               <div className="flex items-center gap-5 pt-8 border-t border-gray-50">
-                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center font-black text-xl shadow-lg transition-transform group-hover:scale-110 ${
-                    testimonial.color === 'indigo' ? 'bg-indigo-50 text-indigo-600' :
-                    testimonial.color === 'blue' ? 'bg-blue-50 text-blue-600' :
-                    'bg-purple-50 text-purple-600'
-                }`}>
-                  {testimonial.avatar}
-                </div>
+                <img 
+                  src={testimonial.image} 
+                  alt={testimonial.name}
+                  className="w-14 h-14 rounded-2xl object-cover shadow-lg transition-transform group-hover:scale-110"
+                />
                 <div>
                   <div className="font-black text-gray-900 leading-none mb-1">{testimonial.name}</div>
                   <div className="text-xs font-bold uppercase tracking-widest text-indigo-600">{testimonial.role}</div>

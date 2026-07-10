@@ -5,7 +5,7 @@ import { ArrowRight, ChevronRight } from 'lucide-react';
 
 export default function HeroSection() {
   return (
-    <section className="relative overflow-hidden bg-white pt-32 pb-24 px-4 sm:px-6 lg:px-8">
+    <section id="home" className="relative overflow-hidden bg-white pt-32 pb-24 px-4 sm:px-6 lg:px-8">
       {/* Decorative Background Elements */}
       <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-[600px] h-[600px] bg-indigo-50/50 rounded-full blur-3xl opacity-50" />
       <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/2 w-[400px] h-[400px] bg-blue-50/50 rounded-full blur-3xl opacity-50" />
@@ -39,7 +39,7 @@ export default function HeroSection() {
 
         <div className="mt-20 pt-10 border-t border-gray-50 flex flex-wrap justify-center gap-10 grayscale opacity-40">
             <div className="flex items-center gap-2">
-                <span className="text-xs font-bold uppercase tracking-widest text-gray-900 underline decoration-indigo-200 decoration-2">Secure Payments</span>
+                <span className="text-xs font-bold uppercase tracking-widest text-gray-900 underline decoration-indigo-200 decoration-2">Professional Templates</span>
             </div>
             <div className="flex items-center gap-2">
                 <span className="text-xs font-bold uppercase tracking-widest text-gray-900 underline decoration-indigo-200 decoration-2">Real-time Tracking</span>

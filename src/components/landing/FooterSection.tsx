@@ -120,13 +120,10 @@ export default function FooterSection() {
           </div>
         </div>
 
-        <div className="border-t border-gray-50 mt-16 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div className="border-t border-gray-50 mt-16 pt-8 flex flex-col md:flex-row justify-center items-center gap-4">
           <p className="text-gray-400 text-sm font-medium">
             © 2024 InvoiceFlow. All rights reserved.
           </p>
-          <div className="flex items-center gap-4 text-sm font-medium text-gray-400">
-             <span>Proudly made for businesses worldwide.</span>
-          </div>
         </div>
       </div>
     </footer>

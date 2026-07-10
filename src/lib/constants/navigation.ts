@@ -58,3 +58,11 @@ export const MOBILE_QUICK_ACTIONS: NavigationItem[] = [
     description: 'Quickly draft a new invoice'
   }
 ];
+
+export const LANDING_NAVIGATION: NavigationItem[] = [
+  { label: 'Home', path: '#home', icon: 'HomeIcon' },
+  { label: 'Features', path: '#features', icon: 'StarIcon' },
+  { label: 'How It Works', path: '#how-it-works', icon: 'LightBulbIcon' },
+  { label: 'Pricing', path: '#pricing', icon: 'CurrencyDollarIcon' },
+  { label: 'FAQ', path: '#faq', icon: 'QuestionMarkCircleIcon' }
+];

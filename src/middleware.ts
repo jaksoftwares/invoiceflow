@@ -46,21 +46,14 @@ export async function middleware(request: NextRequest) {
   // Protected paths (anything not explicitly public, auth, or onboarding)
   const isProtectedPath = !isPublicPage && !isAuthPage && !isOnboardingPage && !isAdminPath && !pathname.startsWith('/api') && !pathname.includes('.')
 
-  // Admin path: just require a logged-in user — layout.tsx handles admin-role check
-  if (isAdminPath && !user) {
-    const redirectUrl = request.nextUrl.clone()
-    redirectUrl.pathname = '/auth/login'
-    redirectUrl.searchParams.set('redirectedFrom', pathname)
-    return NextResponse.redirect(redirectUrl)
-  }
-
-  // Redirection logic
-  if ((isProtectedPath || isOnboardingPage) && !user) {
+  // Redirection logic for unauthenticated users on protected paths
+  if ((isProtectedPath || isOnboardingPage || isAdminPath) && !user) {
     const redirectUrl = request.nextUrl.clone()
     redirectUrl.pathname = '/auth/login'
     redirectUrl.searchParams.set('redirectedFrom', pathname)
     
     const redirectResponse = NextResponse.redirect(redirectUrl)
+    // Forward cookies, which includes any cleared cookies from failed getUser() validation
     response.cookies.getAll().forEach(cookie => {
       redirectResponse.cookies.set(cookie.name, cookie.value)
     })
@@ -103,8 +96,6 @@ export async function middleware(request: NextRequest) {
        return NextResponse.redirect(new URL('/onboarding', request.url))
     }
   }
-
-  return response
 
   return response
 }

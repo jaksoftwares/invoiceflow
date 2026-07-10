@@ -23,8 +23,8 @@ const features = [
   },
   {
     icon: <CreditCard size={24} />,
-    title: 'Payment Management',
-    description: 'Accept payments online and track payment history for better cash flow management.',
+    title: 'Payment Tracking',
+    description: 'Keep track of payment status and maintain an accurate ledger for better cash flow management.',
   },
   {
     icon: <BarChart size={24} />,
@@ -49,7 +49,7 @@ export default function FeaturesSection() {
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-20">
           <h2 className="text-3xl sm:text-4xl font-black text-gray-900 mb-6 tracking-tight">
-            Powerful Features for Modern Businesses
+            Features
           </h2>
           <p className="text-lg text-gray-500 max-w-2xl mx-auto font-medium leading-relaxed">
             Everything you need to manage your invoicing process efficiently and professionally.

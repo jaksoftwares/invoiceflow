@@ -9,7 +9,7 @@ import { useAuth } from '@/components/providers/SupabaseAuthProvider';
 import { useSettings } from '@/lib/hooks/useSettings';
 import { supabase } from '@/lib/supabase/client';
 import { toast } from 'sonner';
-import { MAIN_NAVIGATION } from '@/lib/constants/navigation';
+import { MAIN_NAVIGATION, LANDING_NAVIGATION } from '@/lib/constants/navigation';
 
 interface HeaderProps {
   isOpen?: boolean;
@@ -44,12 +44,12 @@ const Header = ({ isOpen: propIsOpen, onMobileMenuToggle }: HeaderProps) => {
 
   const handleLogout = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        toast.error('Failed to log out: ' + error.message);
-      } else {
+      const response = await fetch('/auth/logout', { method: 'POST' });
+      if (response.ok) {
         toast.success('Logged out successfully');
-        router.push('/auth/login');
+        window.location.href = '/auth/login';
+      } else {
+        toast.error('Failed to log out');
       }
     } catch (err) {
       toast.error('An unexpected error occurred during logout');
@@ -76,15 +76,33 @@ const Header = ({ isOpen: propIsOpen, onMobileMenuToggle }: HeaderProps) => {
   if (!user) {
     return (
       <header className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 ${isScrolled ? 'bg-card/80 backdrop-blur-md border-b border-border shadow-sm py-2' : 'bg-transparent py-4'}`}>
-        <div className="max-w-[1600px] mx-auto flex items-center justify-between px-4 sm:px-6 lg:px-8">
+        <div className="max-w-[1600px] mx-auto flex items-center justify-between px-4 sm:px-6 lg:px-8 relative">
           <Logo />
+          
+          <nav className="hidden lg:flex items-center gap-1 absolute left-1/2 -translate-x-1/2">
+            {LANDING_NAVIGATION.map((item) => (
+              <Link
+                key={item.path}
+                href={`/${item.path}`}
+                className="flex items-center gap-2.5 px-4 py-2 rounded-xl text-sm font-bold text-muted-foreground hover:bg-muted hover:text-foreground transition-smooth"
+              >
+                <span>{item.label}</span>
+              </Link>
+            ))}
+          </nav>
           <div className="flex items-center gap-4">
-            <Link href="/auth/login" className="px-4 py-2 text-sm font-bold text-foreground hover:text-primary transition-smooth">
+            <Link href="/auth/login" className="hidden sm:block px-4 py-2 text-sm font-bold text-foreground hover:text-primary transition-smooth">
               Login
             </Link>
-            <Link href="/auth/signup" className="px-6 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-bold shadow-lg shadow-primary/20 hover:shadow-xl hover:translate-y-[-1px] transition-smooth">
+            <Link href="/auth/signup" className="hidden sm:block px-6 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-bold shadow-lg shadow-primary/20 hover:shadow-xl hover:translate-y-[-1px] transition-smooth">
               Get Started
             </Link>
+            <button
+              onClick={handleMobileMenuToggle}
+              className={`lg:hidden w-10 h-10 flex items-center justify-center rounded-xl border border-divider transition-all ${isMobileMenuOpen ? 'bg-primary text-white' : 'bg-muted/50 text-foreground hover:bg-muted'}`}
+            >
+              <Icon name={isMobileMenuOpen ? 'XMarkIcon' : 'Bars3Icon'} size={24} />
+            </button>
           </div>
         </div>
       </header>

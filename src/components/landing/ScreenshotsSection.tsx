@@ -30,8 +30,8 @@ export default function ScreenshotsSection() {
     <section id="screenshots" className="py-24 px-4 sm:px-6 lg:px-8 bg-white border-y border-gray-100">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-20">
-          <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4 tracking-tight">
-            See Invoiceflow in Action
+          <h2 className="text-3xl sm:text-4xl font-black text-gray-900 mb-6 tracking-tight">
+            In Action
           </h2>
           <p className="text-lg text-gray-500 max-w-2xl mx-auto font-medium">
             Explore the clean, intuitive interface designed to make invoicing effortless.

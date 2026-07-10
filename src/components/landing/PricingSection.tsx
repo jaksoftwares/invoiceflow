@@ -60,8 +60,8 @@ export default function PricingSection() {
     <section id="pricing" className="py-24 px-4 sm:px-6 lg:px-8 bg-white border-y border-gray-100">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16">
-          <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4 tracking-tight">
-            Transparent, Simple Pricing
+          <h2 className="text-3xl sm:text-4xl font-black text-gray-900 mb-6 tracking-tight">
+            Pricing
           </h2>
           <p className="text-lg text-gray-500 max-w-2xl mx-auto font-medium">
             Choose the plan that fits your business needs. No hidden fees, just professional invoicing.

@@ -33,12 +33,16 @@ export default async function RootLayout({
   );
 
   const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  // Only pass the session down if it is cryptographically verified by the server
+  const safeSession = user ? session : null;
 
   return (
     <html lang="en">
       <body>
         <ToastProvider>
-          <SupabaseAuthProvider initialSession={session}>
+          <SupabaseAuthProvider initialSession={safeSession}>
             <SettingsProvider>
               {children}
             </SettingsProvider>

@@ -26,7 +26,7 @@ export default function BenefitsSection() {
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-20">
           <h2 className="text-3xl sm:text-4xl font-black text-gray-900 mb-6 tracking-tight">
-            Tailored Benefits for Every Business
+            Benefits
           </h2>
           <p className="text-lg text-gray-500 max-w-2xl mx-auto font-medium leading-relaxed">
             Whether you're a growing business or a solo freelancer, Invoiceflow adapts to your needs.

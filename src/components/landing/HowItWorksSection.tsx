@@ -24,8 +24,8 @@ const steps = [
   {
     number: '04',
     icon: <DollarSign size={32} />,
-    title: 'Get Paid',
-    description: 'Receive payments online and manage your cash flow effortlessly.',
+    title: 'Track Payments',
+    description: 'Record payments manually and manage your cash flow effortlessly.',
   },
 ];
 
