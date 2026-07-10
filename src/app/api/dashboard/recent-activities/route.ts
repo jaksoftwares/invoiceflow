@@ -4,29 +4,29 @@ import { createClient } from '@/lib/supabase/api';
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
-  try {
-    const { supabase } = createClient(request);
+ try {
+ const { supabase } = createClient(request);
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+ const { data: { user }, error: authError } = await supabase.auth.getUser();
+ if (authError || !user) {
+ return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+ }
 
-    const { data: activities, error } = await supabase
-      .from('client_activities')
-      .select('*, clients!inner(company_name)')
-      .eq('clients.user_id', user.id)
-      .order('timestamp', { ascending: false })
-      .limit(5);
+ const { data: activities, error } = await supabase
+ .from('client_activities')
+ .select('*, clients!inner(company_name)')
+ .eq('clients.user_id', user.id)
+ .order('timestamp', { ascending: false })
+ .limit(5);
 
-    if (error) {
-      console.error('Database error:', error);
-      return NextResponse.json({ error: 'Failed to fetch recent activities' }, { status: 500 });
-    }
+ if (error) {
+ console.error('Database error:', error);
+ return NextResponse.json({ error: 'Failed to fetch recent activities' }, { status: 500 });
+ }
 
-    return NextResponse.json({ activities: activities || [] });
-  } catch (error) {
-    console.error('Unexpected error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-  }
+ return NextResponse.json({ activities: activities || [] });
+ } catch (error) {
+ console.error('Unexpected error:', error);
+ return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+ }
 }

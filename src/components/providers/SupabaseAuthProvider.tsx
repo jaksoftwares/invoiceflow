@@ -10,22 +10,22 @@ const AuthContext = createContext<{ user: User | null; session: Session | null }
 export const useAuth = () => useContext(AuthContext)
 
 export function SupabaseAuthProvider({ children, initialSession }: { children: React.ReactNode, initialSession: Session | null }) {
-  const [session, setSession] = useState<Session | null>(initialSession)
-  const [user, setUser] = useState<User | null>(initialSession?.user ?? null)
-  const router = useRouter()
+ const [session, setSession] = useState<Session | null>(initialSession)
+ const [user, setUser] = useState<User | null>(initialSession?.user ?? null)
+ const router = useRouter()
 
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setSession(session)
-      setUser(session?.user ?? null)
+ useEffect(() => {
+ const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+ setSession(session)
+ setUser(session?.user ?? null)
 
-      if (event === 'SIGNED_OUT' || event === 'SIGNED_IN') {
-        router.refresh()
-      }
-    })
+ if (event === 'SIGNED_OUT' || event === 'SIGNED_IN') {
+ router.refresh()
+ }
+ })
 
-    return () => subscription.unsubscribe()
-  }, [router])
+ return () => subscription.unsubscribe()
+ }, [router])
 
-  return <AuthContext.Provider value={{ user, session }}>{children}</AuthContext.Provider>
+ return <AuthContext.Provider value={{ user, session }}>{children}</AuthContext.Provider>
 }

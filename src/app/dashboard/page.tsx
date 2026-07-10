@@ -7,118 +7,118 @@ import { getActiveSubscription, getUsageStats, initializeFreeSubscription } from
 import { redirect } from 'next/navigation';
 
 export default async function DashboardPage() {
-  const supabase = createClient();
+ const supabase = createClient();
 
-  // Fetch initial dashboard data on server
-  const { data: { user } } = await supabase.auth.getUser();
+ // Fetch initial dashboard data on server
+ const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) {
-    redirect('/auth/login');
-  }
+ if (!user) {
+ redirect('/auth/login');
+ }
 
-  let initialData = null;
-  if (user) {
-    // Initialize free subscription if needed
-    await initializeFreeSubscription();
+ let initialData = null;
+ if (user) {
+ // Initialize free subscription if needed
+ await initializeFreeSubscription();
 
-    // Fetch metrics
-    const [sub, usage] = await Promise.all([
-      getActiveSubscription(),
-      getUsageStats(),
-    ]);
+ // Fetch metrics
+ const [sub, usage] = await Promise.all([
+ getActiveSubscription(),
+ getUsageStats(),
+ ]);
 
-    const { count: totalInvoices } = await supabase
-      .from('invoices')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', user.id);
+ const { count: totalInvoices } = await supabase
+ .from('invoices')
+ .select('*', { count: 'exact', head: true })
+ .eq('user_id', user.id);
 
-    const { count: paidInvoices } = await supabase
-      .from('invoices')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-      .eq('status', 'paid');
+ const { count: paidInvoices } = await supabase
+ .from('invoices')
+ .select('*', { count: 'exact', head: true })
+ .eq('user_id', user.id)
+ .eq('status', 'paid');
 
-    const { count: pendingInvoices } = await supabase
-      .from('invoices')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-      .in('status', ['sent', 'overdue']);
+ const { count: pendingInvoices } = await supabase
+ .from('invoices')
+ .select('*', { count: 'exact', head: true })
+ .eq('user_id', user.id)
+ .in('status', ['sent', 'overdue']);
 
-    const { data: paidAmounts } = await supabase
-      .from('invoices')
-      .select('total_amount')
-      .eq('user_id', user.id)
-      .eq('status', 'paid');
+ const { data: paidAmounts } = await supabase
+ .from('invoices')
+ .select('total_amount')
+ .eq('user_id', user.id)
+ .eq('status', 'paid');
 
-    const totalRevenue = paidAmounts?.reduce((sum, inv) => sum + inv.total_amount, 0) || 0;
+ const totalRevenue = paidAmounts?.reduce((sum, inv) => sum + inv.total_amount, 0) || 0;
 
-    // Fetch recent invoices
-    const { data: recentInvoices } = await supabase
-      .from('invoices')
-      .select('*, clients(company_name)')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(10);
+ // Fetch recent invoices
+ const { data: recentInvoices } = await supabase
+ .from('invoices')
+ .select('*, clients(company_name)')
+ .eq('user_id', user.id)
+ .order('created_at', { ascending: false })
+ .limit(10);
 
-    // Fetch recent activities
-    const { data: recentActivities } = await supabase
-      .from('client_activities')
-      .select('*, clients!inner(company_name, avatar_url)')
-      .eq('clients.user_id', user.id)
-      .order('timestamp', { ascending: false })
-      .limit(5);
+ // Fetch recent activities
+ const { data: recentActivities } = await supabase
+ .from('client_activities')
+ .select('*, clients!inner(company_name, avatar_url)')
+ .eq('clients.user_id', user.id)
+ .order('timestamp', { ascending: false })
+ .limit(5);
 
-    // Fetch revenue chart data
-    const { data: paidInvoicesForChart } = await supabase
-      .from('invoices')
-      .select('issue_date, total_amount')
-      .eq('user_id', user.id)
-      .eq('status', 'paid');
+ // Fetch revenue chart data
+ const { data: paidInvoicesForChart } = await supabase
+ .from('invoices')
+ .select('issue_date, total_amount')
+ .eq('user_id', user.id)
+ .eq('status', 'paid');
 
-    const grouped = (paidInvoicesForChart || []).reduce((acc, inv) => {
-      const date = new Date(inv.issue_date);
-      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      acc[key] = (acc[key] || 0) + inv.total_amount;
-      return acc;
-    }, {} as Record<string, number>);
+ const grouped = (paidInvoicesForChart || []).reduce((acc, inv) => {
+ const date = new Date(inv.issue_date);
+ const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+ acc[key] = (acc[key] || 0) + inv.total_amount;
+ return acc;
+ }, {} as Record<string, number>);
 
-    const revenueChart = Object.entries(grouped)
-      .map(([period, revenue]) => ({ period, revenue }))
-      .sort((a, b) => a.period.localeCompare(b.period));
+ const revenueChart = Object.entries(grouped)
+ .map(([period, revenue]) => ({ period, revenue }))
+ .sort((a, b) => a.period.localeCompare(b.period));
 
 
-    // Determine primary currency from recent invoices or default to KES
-    const currency = recentInvoices?.[0]?.currency || 'KES';
+ // Determine primary currency from recent invoices or default to KES
+ const currency = recentInvoices?.[0]?.currency || 'KES';
 
-    // Fetch user profile
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('first_name, last_name')
-      .eq('id', user.id)
-      .single();
+ // Fetch user profile
+ const { data: profile } = await supabase
+ .from('profiles')
+ .select('first_name, last_name')
+ .eq('id', user.id)
+ .single();
 
-    initialData = {
-      profile,
-      metrics: {
-        totalInvoices: totalInvoices || 0,
-        paidInvoices: paidInvoices || 0,
-        pendingInvoices: pendingInvoices || 0,
-        totalRevenue,
-      },
-      recentInvoices: recentInvoices || [],
-      recentActivities: recentActivities || [],
-      revenueChart,
-      currency,
-      subscription: sub,
-      usage: usage,
-    };
-  }
+ initialData = {
+ profile,
+ metrics: {
+ totalInvoices: totalInvoices || 0,
+ paidInvoices: paidInvoices || 0,
+ pendingInvoices: pendingInvoices || 0,
+ totalRevenue,
+ },
+ recentInvoices: recentInvoices || [],
+ recentActivities: recentActivities || [],
+ revenueChart,
+ currency,
+ subscription: sub,
+ usage: usage,
+ };
+ }
 
-  return (
-    <NavigationWrapper>
-      <div className="min-h-screen bg-background">
-        <DashboardInteractive initialData={initialData} />
-      </div>
-    </NavigationWrapper>
-  );
+ return (
+ <NavigationWrapper>
+ <div className="min-h-screen bg-background">
+ <DashboardInteractive initialData={initialData} />
+ </div>
+ </NavigationWrapper>
+ );
 }

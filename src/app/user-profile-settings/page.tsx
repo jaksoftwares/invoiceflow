@@ -3,14 +3,14 @@ import NavigationWrapper from '@/components/common/NavigationWrapper';
 import SettingsInteractive from './components/SettingsInteractive';
 
 export const metadata: Metadata = {
-  title: 'User Profile Settings - InvoiceFlow',
-  description: 'Manage your account preferences, business configuration, notification settings, and security options for your InvoiceFlow account.',
+ title: 'User Profile Settings - InvoiceFlow',
+ description: 'Manage your account preferences, business configuration, notification settings, and security options for your InvoiceFlow account.',
 };
 
 export default function UserProfileSettingsPage() {
-  return (
-    <NavigationWrapper>
-      <SettingsInteractive />
-    </NavigationWrapper>
-  );
+ return (
+ <NavigationWrapper>
+ <SettingsInteractive />
+ </NavigationWrapper>
+ );
 }

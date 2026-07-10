@@ -6,242 +6,242 @@ import * as subService from '@/lib/services/subscription-service';
 
 // Zod schema for invoice items
 const invoiceItemSchema = z.object({
-  description: z.string().min(1, 'Description is required'),
-  quantity: z.number().min(0.01, 'Quantity must be positive'),
-  rate: z.number().min(0, 'Rate must be positive'),
-  amount: z.number().min(0, 'Amount must be positive'),
+ description: z.string().min(1, 'Description is required'),
+ quantity: z.number().min(0.01, 'Quantity must be positive'),
+ rate: z.number().min(0, 'Rate must be positive'),
+ amount: z.number().min(0, 'Amount must be positive'),
 });
 
 // Zod schema for creating an invoice
 const createInvoiceSchema = z.object({
-  business_id: z.string().uuid().optional(), // Make optional for backward compatibility, but UI should provide it
-  client_id: z.string().uuid(),
-  invoice_number: z.string().min(1, 'Invoice number is required'),
-  issue_date: z.string().refine((val) => !isNaN(Date.parse(val)), 'Invalid date'),
-  due_date: z.string().refine((val) => !isNaN(Date.parse(val)), 'Invalid date'),
-  payment_terms: z.string().min(1, 'Payment terms are required'),
-  status: z.enum(['draft', 'sent', 'paid', 'overdue', 'cancelled']).default('draft'),
-  subtotal: z.number().min(0),
-  tax_rate: z.number().min(0),
-  tax_amount: z.number().min(0),
-  discount: z.number().min(0),
-  total_amount: z.number().min(0),
-  currency: z.string().min(1, 'Currency is required'),
-  notes: z.string().optional(),
-  terms: z.string().optional(),
-  payment_instructions: z.string().optional(),
-  template: z.string().min(1, 'Template is required'),
-  items: z.array(invoiceItemSchema).min(1, 'At least one item is required'),
+ business_id: z.string().uuid().optional(), // Make optional for backward compatibility, but UI should provide it
+ client_id: z.string().uuid(),
+ invoice_number: z.string().min(1, 'Invoice number is required'),
+ issue_date: z.string().refine((val) => !isNaN(Date.parse(val)), 'Invalid date'),
+ due_date: z.string().refine((val) => !isNaN(Date.parse(val)), 'Invalid date'),
+ payment_terms: z.string().min(1, 'Payment terms are required'),
+ status: z.enum(['draft', 'sent', 'paid', 'overdue', 'cancelled']).default('draft'),
+ subtotal: z.number().min(0),
+ tax_rate: z.number().min(0),
+ tax_amount: z.number().min(0),
+ discount: z.number().min(0),
+ total_amount: z.number().min(0),
+ currency: z.string().min(1, 'Currency is required'),
+ notes: z.string().optional(),
+ terms: z.string().optional(),
+ payment_instructions: z.string().optional(),
+ template: z.string().min(1, 'Template is required'),
+ items: z.array(invoiceItemSchema).min(1, 'At least one item is required'),
 });
 
 // Zod schema for query parameters
 const listInvoicesQuerySchema = z.object({
-  page: z.string().optional().default('1').transform(val => {
-    const num = Number(val);
-    if (isNaN(num) || num <= 0) return 1;
-    return num;
-  }),
-  limit: z.string().optional().default('10').transform(val => {
-    const num = Number(val);
-    if (isNaN(num) || num <= 0 || num > 100) return 10;
-    return num;
-  }),
-  status: z.enum(['draft', 'sent', 'paid', 'overdue', 'cancelled']).optional(),
-  client_id: z.string().uuid().optional(),
-  issue_date_from: z.string().optional().refine((val) => !val || !isNaN(Date.parse(val)), 'Invalid date'),
-  issue_date_to: z.string().optional().refine((val) => !val || !isNaN(Date.parse(val)), 'Invalid date'),
-  due_date_from: z.string().optional().refine((val) => !val || !isNaN(Date.parse(val)), 'Invalid date'),
-  due_date_to: z.string().optional().refine((val) => !val || !isNaN(Date.parse(val)), 'Invalid date'),
-  search: z.string().optional(),
-  business_id: z.string().uuid().optional(),
+ page: z.string().optional().default('1').transform(val => {
+ const num = Number(val);
+ if (isNaN(num) || num <= 0) return 1;
+ return num;
+ }),
+ limit: z.string().optional().default('10').transform(val => {
+ const num = Number(val);
+ if (isNaN(num) || num <= 0 || num > 100) return 10;
+ return num;
+ }),
+ status: z.enum(['draft', 'sent', 'paid', 'overdue', 'cancelled']).optional(),
+ client_id: z.string().uuid().optional(),
+ issue_date_from: z.string().optional().refine((val) => !val || !isNaN(Date.parse(val)), 'Invalid date'),
+ issue_date_to: z.string().optional().refine((val) => !val || !isNaN(Date.parse(val)), 'Invalid date'),
+ due_date_from: z.string().optional().refine((val) => !val || !isNaN(Date.parse(val)), 'Invalid date'),
+ due_date_to: z.string().optional().refine((val) => !val || !isNaN(Date.parse(val)), 'Invalid date'),
+ search: z.string().optional(),
+ business_id: z.string().uuid().optional(),
 });
 
 export async function GET(request: NextRequest) {
-  try {
-    const { supabase } = createClient(request);
+ try {
+ const { supabase } = createClient(request);
 
-    // Get authenticated user
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+ // Get authenticated user
+ const { data: { user }, error: authError } = await supabase.auth.getUser();
+ if (authError || !user) {
+ return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+ }
 
-    // Parse query parameters
-    const queryValidation = listInvoicesQuerySchema.safeParse(
-      Object.fromEntries(request.nextUrl.searchParams)
-    );
+ // Parse query parameters
+ const queryValidation = listInvoicesQuerySchema.safeParse(
+ Object.fromEntries(request.nextUrl.searchParams)
+ );
 
-    if (!queryValidation.success) {
-      return NextResponse.json({ error: 'Invalid query parameters', details: queryValidation.error.issues }, { status: 400 });
-    }
+ if (!queryValidation.success) {
+ return NextResponse.json({ error: 'Invalid query parameters', details: queryValidation.error.issues }, { status: 400 });
+ }
 
-    const { page, limit, status, client_id, business_id, issue_date_from, issue_date_to, due_date_from, due_date_to, search } = queryValidation.data;
-    const offset = (page - 1) * limit;
+ const { page, limit, status, client_id, business_id, issue_date_from, issue_date_to, due_date_from, due_date_to, search } = queryValidation.data;
+ const offset = (page - 1) * limit;
 
-    // Build query
-    let query = supabase
-      .from('invoices')
-      .select('*, clients(company_name, email), business:business_profiles(name)', { count: 'exact' })
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
+ // Build query
+ let query = supabase
+ .from('invoices')
+ .select('*, clients(company_name, email), business:business_profiles(name)', { count: 'exact' })
+ .eq('user_id', user.id)
+ .order('created_at', { ascending: false })
+ .range(offset, offset + limit - 1);
 
-    if (status) {
-      query = query.eq('status', status);
-    }
+ if (status) {
+ query = query.eq('status', status);
+ }
 
-    if (client_id) {
-      query = query.eq('client_id', client_id);
-    }
+ if (client_id) {
+ query = query.eq('client_id', client_id);
+ }
 
-    if (business_id) {
-      query = query.eq('business_id', business_id);
-    }
+ if (business_id) {
+ query = query.eq('business_id', business_id);
+ }
 
-    if (issue_date_from) {
-      query = query.gte('issue_date', issue_date_from);
-    }
+ if (issue_date_from) {
+ query = query.gte('issue_date', issue_date_from);
+ }
 
-    if (issue_date_to) {
-      query = query.lte('issue_date', issue_date_to);
-    }
+ if (issue_date_to) {
+ query = query.lte('issue_date', issue_date_to);
+ }
 
-    if (due_date_from) {
-      query = query.gte('due_date', due_date_from);
-    }
+ if (due_date_from) {
+ query = query.gte('due_date', due_date_from);
+ }
 
-    if (due_date_to) {
-      query = query.lte('due_date', due_date_to);
-    }
+ if (due_date_to) {
+ query = query.lte('due_date', due_date_to);
+ }
 
-    if (search) {
-      query = query.or(`invoice_number.ilike.%${search}%,clients.company_name.ilike.%${search}%`);
-    }
+ if (search) {
+ query = query.or(`invoice_number.ilike.%${search}%,clients.company_name.ilike.%${search}%`);
+ }
 
-    const { data: invoices, error, count } = await query;
+ const { data: invoices, error, count } = await query;
 
-    if (error) {
-      console.error('Database error:', error);
-      return NextResponse.json({ error: 'Failed to fetch invoices' }, { status: 500 });
-    }
+ if (error) {
+ console.error('Database error:', error);
+ return NextResponse.json({ error: 'Failed to fetch invoices' }, { status: 500 });
+ }
 
-    // Fetch aggregate statistics for the filtered result (ignoring pagination)
-    let statsQuery = supabase
-      .from('invoices')
-      .select('status, total_amount')
-      .eq('user_id', user.id);
+ // Fetch aggregate statistics for the filtered result (ignoring pagination)
+ let statsQuery = supabase
+ .from('invoices')
+ .select('status, total_amount')
+ .eq('user_id', user.id);
 
-    if (status) statsQuery = statsQuery.eq('status', status);
-    if (client_id) statsQuery = statsQuery.eq('client_id', client_id);
-    if (business_id) statsQuery = statsQuery.eq('business_id', business_id);
-    if (issue_date_from) statsQuery = statsQuery.gte('issue_date', issue_date_from);
-    if (issue_date_to) statsQuery = statsQuery.lte('issue_date', issue_date_to);
-    if (due_date_from) statsQuery = statsQuery.gte('due_date', due_date_from);
-    if (due_date_to) statsQuery = statsQuery.lte('due_date', due_date_to);
-    
-    // Note: complex search filters might need more logic here if they affect stats
-    // For now, we'll fetch the filtered set of statuses/amounts
-    const { data: allResultsForStats } = await statsQuery;
+ if (status) statsQuery = statsQuery.eq('status', status);
+ if (client_id) statsQuery = statsQuery.eq('client_id', client_id);
+ if (business_id) statsQuery = statsQuery.eq('business_id', business_id);
+ if (issue_date_from) statsQuery = statsQuery.gte('issue_date', issue_date_from);
+ if (issue_date_to) statsQuery = statsQuery.lte('issue_date', issue_date_to);
+ if (due_date_from) statsQuery = statsQuery.gte('due_date', due_date_from);
+ if (due_date_to) statsQuery = statsQuery.lte('due_date', due_date_to);
+ 
+ // Note: complex search filters might need more logic here if they affect stats
+ // For now, we'll fetch the filtered set of statuses/amounts
+ const { data: allResultsForStats } = await statsQuery;
 
-    const stats = (allResultsForStats || []).reduce((acc, inv) => {
-      if (inv.status === 'paid') acc.totalRevenue += inv.total_amount;
-      if (inv.status === 'sent' || inv.status === 'overdue') acc.pendingAmount += inv.total_amount;
-      if (inv.status === 'overdue') acc.overdueCount += 1;
-      return acc;
-    }, { totalRevenue: 0, pendingAmount: 0, overdueCount: 0 });
+ const stats = (allResultsForStats || []).reduce((acc, inv) => {
+ if (inv.status === 'paid') acc.totalRevenue += inv.total_amount;
+ if (inv.status === 'sent' || inv.status === 'overdue') acc.pendingAmount += inv.total_amount;
+ if (inv.status === 'overdue') acc.overdueCount += 1;
+ return acc;
+ }, { totalRevenue: 0, pendingAmount: 0, overdueCount: 0 });
 
-    const totalPages = Math.ceil((count || 0) / limit);
+ const totalPages = Math.ceil((count || 0) / limit);
 
-    return NextResponse.json({
-      invoices,
-      stats: {
-        ...stats,
-        totalCount: count || 0,
-      },
-      pagination: {
-        page,
-        limit,
-        total: count,
-        totalPages,
-        hasNext: page < totalPages,
-        hasPrev: page > 1,
-      },
-    });
-  } catch (error) {
-    console.error('Unexpected error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-  }
+ return NextResponse.json({
+ invoices,
+ stats: {
+ ...stats,
+ totalCount: count || 0,
+ },
+ pagination: {
+ page,
+ limit,
+ total: count,
+ totalPages,
+ hasNext: page < totalPages,
+ hasPrev: page > 1,
+ },
+ });
+ } catch (error) {
+ console.error('Unexpected error:', error);
+ return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+ }
 }
 
 export async function POST(request: NextRequest) {
-  try {
-    const { supabase } = createClient(request);
+ try {
+ const { supabase } = createClient(request);
 
-    // Get authenticated user
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+ // Get authenticated user
+ const { data: { user }, error: authError } = await supabase.auth.getUser();
+ if (authError || !user) {
+ return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+ }
 
-    // Check usage limit
-    const usageCheck = await subService.checkUsageLimit(supabase, user.id, 'invoices_created');
-    if (!usageCheck.allowed) {
-      return NextResponse.json({ 
-        error: 'Invoice limit reached', 
-        details: usageCheck.reason,
-        current: usageCheck.current,
-        limit: usageCheck.limit,
-        allowPayg: usageCheck.allowPayg
-      }, { status: 403 });
-    }
+ // Check usage limit
+ const usageCheck = await subService.checkUsageLimit(supabase, user.id, 'invoices_created');
+ if (!usageCheck.allowed) {
+ return NextResponse.json({ 
+ error: 'Invoice limit reached', 
+ details: usageCheck.reason,
+ current: usageCheck.current,
+ limit: usageCheck.limit,
+ allowPayg: usageCheck.allowPayg
+ }, { status: 403 });
+ }
 
-    // Parse and validate request body
-    const body = await request.json();
-    const validationResult = createInvoiceSchema.safeParse(body);
+ // Parse and validate request body
+ const body = await request.json();
+ const validationResult = createInvoiceSchema.safeParse(body);
 
-    if (!validationResult.success) {
-      return NextResponse.json({ error: 'Invalid input', details: validationResult.error.issues }, { status: 400 });
-    }
+ if (!validationResult.success) {
+ return NextResponse.json({ error: 'Invalid input', details: validationResult.error.issues }, { status: 400 });
+ }
 
-    const invoiceData = validationResult.data;
+ const invoiceData = validationResult.data;
 
-    // Verify client belongs to user
-    const { data: client, error: clientError } = await supabase
-      .from('clients')
-      .select('id')
-      .eq('id', invoiceData.client_id)
-      .eq('user_id', user.id)
-      .single();
+ // Verify client belongs to user
+ const { data: client, error: clientError } = await supabase
+ .from('clients')
+ .select('id')
+ .eq('id', invoiceData.client_id)
+ .eq('user_id', user.id)
+ .single();
 
-    if (clientError || !client) {
-      return NextResponse.json({ error: 'Client not found or access denied' }, { status: 404 });
-    }
+ if (clientError || !client) {
+ return NextResponse.json({ error: 'Client not found or access denied' }, { status: 404 });
+ }
 
-    // Create invoice
-    // Use RPC for atomic creation
-    const { items, ...invoiceFields } = invoiceData;
+ // Create invoice
+ // Use RPC for atomic creation
+ const { items, ...invoiceFields } = invoiceData;
 
-    // Call the RPC function
-    const { data: invoiceId, error } = await supabase.rpc('create_invoice_full', {
-      p_invoice_data: invoiceFields,
-      p_items_data: items,
-    });
+ // Call the RPC function
+ const { data: invoiceId, error } = await supabase.rpc('create_invoice_full', {
+ p_invoice_data: invoiceFields,
+ p_items_data: items,
+ });
 
-    if (error) {
-      console.error('Database error in create_invoice_full:', error);
-      return NextResponse.json({ error: 'Failed to create invoice' }, { status: 500 });
-    }
+ if (error) {
+ console.error('Database error in create_invoice_full:', error);
+ return NextResponse.json({ error: 'Failed to create invoice' }, { status: 500 });
+ }
 
-    // Increment usage
-    await subService.incrementUsage(supabase, user.id, 'invoices_created');
-    await subService.logActivity(supabase, user.id, 'invoice_created', invoiceId as string, { 
-      invoice_number: invoiceFields.invoice_number,
-      total_amount: invoiceFields.total_amount
-    });
+ // Increment usage
+ await subService.incrementUsage(supabase, user.id, 'invoices_created');
+ await subService.logActivity(supabase, user.id, 'invoice_created', invoiceId as string, { 
+ invoice_number: invoiceFields.invoice_number,
+ total_amount: invoiceFields.total_amount
+ });
 
-    return NextResponse.json({ id: invoiceId, ...invoiceFields, items }, { status: 201 });
-  } catch (error) {
-    console.error('Unexpected error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-  }
+ return NextResponse.json({ id: invoiceId, ...invoiceFields, items }, { status: 201 });
+ } catch (error) {
+ console.error('Unexpected error:', error);
+ return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+ }
 }

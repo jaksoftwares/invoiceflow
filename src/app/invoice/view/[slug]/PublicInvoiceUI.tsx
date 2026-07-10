@@ -59,11 +59,11 @@ export default function PublicInvoiceUI({
                     {businessProfile.logo_url ? (
                       <img src={businessProfile.logo_url} alt={businessProfile.name} className="w-full h-full object-contain p-2" />
                     ) : (
-                      <div className="font-black text-2xl uppercase tracking-tighter">{businessProfile.name?.charAt(0)}</div>
+                      <div className="font-bold text-2xl uppercase tracking-tighter">{businessProfile.name?.charAt(0)}</div>
                     )}
                 </div>
                 <div>
-                    <h2 className="text-base font-black text-slate-900 uppercase tracking-tighter leading-tight">{businessProfile.name || `Official ${displayType}`}</h2>
+                    <h2 className="text-base font-bold text-slate-900 uppercase tracking-tighter leading-tight">{businessProfile.name || `Official ${displayType}`}</h2>
                     <div className="flex items-center gap-2 mt-1">
                       <p className="text-[10px] text-primary font-bold uppercase tracking-[0.2em] opacity-70">Secured Portal</p>
                     </div>
@@ -73,12 +73,12 @@ export default function PublicInvoiceUI({
             <div className="flex items-center gap-3 w-full sm:w-auto">
                  <button 
                   onClick={handleDownload}
-                  className="flex items-center justify-center gap-2 px-5 py-3 bg-slate-50 text-slate-600 text-[11px] font-black uppercase tracking-widest rounded-2xl hover:bg-slate-100 transition-all active:scale-95 border border-slate-200/50"
+                  className="flex items-center justify-center gap-2 px-5 py-3 bg-slate-50 text-slate-600 text-[11px] font-bold uppercase tracking-widest rounded-2xl hover:bg-slate-100 transition-all active:scale-95 border border-slate-200/50"
                  >
                     <Icon name="ArrowDownTrayIcon" size={16} />
                     <span>Download</span>
                  </button>
-                 <button className="flex-1 sm:flex-none px-10 py-3 bg-primary text-white text-[11px] font-black uppercase tracking-widest rounded-2xl hover:bg-primary/90 transition-all shadow-elevation-3 active:scale-95">
+                 <button className="flex-1 sm:flex-none px-10 py-3 bg-primary text-white text-[11px] font-bold uppercase tracking-widest rounded-2xl hover:bg-primary/90 transition-all shadow-elevation-3 active:scale-95">
                     Pay KES {invoice.total_amount?.toLocaleString()}
                  </button>
             </div>
@@ -109,9 +109,9 @@ export default function PublicInvoiceUI({
             
             <div className="text-center space-y-2">
               <p className="text-[11px] text-slate-400 font-medium">
-                  Official Statement Secured by <span className="font-black text-slate-900 tracking-tighter">InvoiceFlow.</span>
+                  Official Statement Secured by <span className="font-bold text-slate-900 tracking-tighter">InvoiceFlow.</span>
               </p>
-              <div className="flex items-center justify-center gap-4 text-[9px] font-black text-slate-300 uppercase tracking-widest">
+              <div className="flex items-center justify-center gap-4 text-[9px] font-bold text-slate-300 uppercase tracking-widest">
                 <span>End-to-end Encrypted</span>
                 <span>•</span>
                 <span>Verified Issuer</span>
