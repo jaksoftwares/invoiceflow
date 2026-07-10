@@ -46,7 +46,7 @@ export default function TemplateShowcase() {
         <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none" />
 
         {/* Marquee Container */}
-        <div className="flex w-max animate-marquee hover:[animation-play-state:paused] items-center">
+        <div className={`flex w-max animate-marquee hover:[animation-play-state:paused] items-center ${selectedImage ? '[animation-play-state:paused]' : ''}`}>
           {duplicatedTemplates.map((template, index) => (
             <div 
               key={index} 
