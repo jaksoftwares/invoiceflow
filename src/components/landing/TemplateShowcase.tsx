@@ -3,22 +3,31 @@
 import Image from 'next/image';
 
 const TEMPLATES = [
-  {
-    title: 'Professional Invoice',
-    image: '/assets/images/screenshot1.png',
-  },
-  {
-    title: 'Corporate Quotation',
-    image: '/assets/images/screenshot2.png',
-  },
-  {
-    title: 'Minimal Receipt',
-    image: '/assets/images/screenshot3.png',
-  },
-  {
-    title: 'Detailed Statement',
-    image: '/assets/images/screenshot4.png',
-  }
+  { title: 'Modern Invoice', image: '/document-templates/invoice1.png' },
+  { title: 'Corporate Invoice', image: '/document-templates/invoice2.png' },
+  { title: 'Clean Invoice', image: '/document-templates/invoice3.png' },
+  { title: 'Standard Invoice', image: '/document-templates/invoice4.png' },
+  { title: 'Creative Invoice', image: '/document-templates/invoice5.png' },
+  { title: 'Bold Invoice', image: '/document-templates/invoice6.png' },
+  { title: 'Minimal Invoice', image: '/document-templates/invoice7.png' },
+
+  { title: 'Professional Quote', image: '/document-templates/quotation1.png' },
+  { title: 'Simple Quote', image: '/document-templates/quotation2.png' },
+  { title: 'Standard Quote', image: '/document-templates/quotation3.png' },
+  { title: 'Clean Quote', image: '/document-templates/quotation4.png' },
+  { title: 'Corporate Quote', image: '/document-templates/quotation5.png' },
+
+  { title: 'Standard Receipt', image: '/document-templates/receipt1.png' },
+  { title: 'Clean Receipt', image: '/document-templates/receipt2.png' },
+  { title: 'Modern Receipt', image: '/document-templates/receipt3.png' },
+  { title: 'Creative Receipt', image: '/document-templates/receipt4.png' },
+  { title: 'Minimal Receipt', image: '/document-templates/receipt5.png' },
+  { title: 'Corporate Receipt', image: '/document-templates/receipt6.png' },
+  { title: 'Bold Receipt', image: '/document-templates/receipt7.png' },
+  { title: 'Simple Receipt', image: '/document-templates/receipt8.png' },
+  { title: 'Elegant Receipt', image: '/document-templates/receipt9.png' },
+  { title: 'Detailed Receipt', image: '/document-templates/receipt10.png' },
+  { title: 'Classic Receipt', image: '/document-templates/receipt11.png' },
 ];
 
 export default function TemplateShowcase() {
