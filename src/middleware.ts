@@ -60,29 +60,34 @@ export async function middleware(request: NextRequest) {
  return redirectResponse
  }
 
- if ((isAuthPage || isOnboardingPage) && user) {
- // Check onboarding status
- const { data: profile } = await supabase
- .from('profiles')
- .select('onboarding_status')
- .eq('id', user.id)
- .single()
+  if ((isAuthPage || isOnboardingPage) && user) {
+    // Check onboarding status
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('onboarding_status, role')
+      .eq('id', user.id)
+      .single()
 
- const isFullyOnboarded = profile?.onboarding_status === 'active'
+    const isFullyOnboarded = profile?.onboarding_status === 'active'
+    const isAdmin = profile?.role === 'admin' || profile?.role === 'superadmin'
 
- if (isOnboardingPage && isFullyOnboarded) {
- return NextResponse.redirect(new URL('/dashboard', request.url))
- }
+    if (isOnboardingPage && isFullyOnboarded) {
+      const target = isAdmin ? '/admin' : '/dashboard'
+      return NextResponse.redirect(new URL(target, request.url))
+    }
 
- if (isAuthPage) {
- const target = isFullyOnboarded ? '/dashboard' : '/onboarding'
- const authRedirect = NextResponse.redirect(new URL(target, request.url))
- response.cookies.getAll().forEach(cookie => {
- authRedirect.cookies.set(cookie.name, cookie.value)
- })
- return authRedirect
- }
- }
+    if (isAuthPage) {
+      let target = isFullyOnboarded ? '/dashboard' : '/onboarding'
+      if (isAdmin) {
+        target = '/admin'
+      }
+      const authRedirect = NextResponse.redirect(new URL(target, request.url))
+      response.cookies.getAll().forEach(cookie => {
+        authRedirect.cookies.set(cookie.name, cookie.value)
+      })
+      return authRedirect
+    }
+  }
 
  // If user is on protected path but not fully onboarded
  if (isProtectedPath && user) {

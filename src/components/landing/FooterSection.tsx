@@ -11,10 +11,10 @@ const footerLinks = {
  { name: 'Screenshots', href: '#screenshots' },
  ],
  company: [
- { name: 'About', href: '#' },
- { name: 'Blog', href: '#' },
- { name: 'Careers', href: '#' },
- { name: 'Contact', href: '#' },
+ { name: 'About', href: 'https://dovepeakdigital.com/about' },
+ { name: 'Blog', href: 'https://dovepeakdigital.com/blog' },
+ { name: 'Careers', href: 'https://dovepeakdigital.com/careers' },
+ { name: 'Contact', href: 'https://dovepeakdigital.com/contact' },
  ],
  support: [
  { name: 'Help Center', href: '#' },
@@ -23,10 +23,10 @@ const footerLinks = {
  { name: 'Community', href: '#' },
  ],
  legal: [
- { name: 'Privacy Policy', href: '#' },
- { name: 'Terms of Service', href: '#' },
- { name: 'Cookie Policy', href: '#' },
- { name: 'GDPR', href: '#' },
+ { name: 'Privacy Policy', href: '/legal/privacy' },
+ { name: 'Terms of Service', href: '/legal/terms' },
+ { name: 'Cookie Policy', href: '/legal/cookies' },
+ { name: 'GDPR', href: '/legal/gdpr' },
  ],
 };
 
@@ -85,7 +85,11 @@ export default function FooterSection() {
  <ul className="space-y-4">
  {footerLinks.company.map((link) => (
  <li key={link.name}>
- <Link href={link.href} className="text-gray-500 font-medium hover:text-indigo-600 transition-colors">
+ <Link 
+   href={link.href} 
+   className="text-gray-500 font-medium hover:text-indigo-600 transition-colors"
+   {...(link.href.startsWith('http') ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+ >
  {link.name}
  </Link>
  </li>

@@ -13,10 +13,15 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
  if (!user) redirect('/auth/login');
 
- const adminEmails = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase());
- if (!adminEmails.includes(user.email?.toLowerCase() ?? '')) {
- redirect('/dashboard');
- }
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+
+  if (profile?.role !== 'admin' && profile?.role !== 'superadmin') {
+    redirect('/dashboard');
+  }
 
  return <AdminShell user={{ email: user.email!, id: user.id }}>{children}</AdminShell>;
 }
