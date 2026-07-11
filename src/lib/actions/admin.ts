@@ -6,15 +6,20 @@ import { revalidatePath } from 'next/cache';
 
 // ─── Auth Guard ────────────────────────────────────────────────────────────────
 async function requireAdmin() {
- const supabase = createClient();
- const { data: { user } } = await supabase.auth.getUser();
- if (!user) throw new Error('Unauthorized');
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Unauthorized');
 
- const adminEmails = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase());
- if (!adminEmails.includes(user.email?.toLowerCase() ?? '')) {
- throw new Error('Forbidden: Admin access required');
- }
- return user;
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+
+  if (profile?.role !== 'admin' && profile?.role !== 'superadmin') {
+    throw new Error('Forbidden: Admin access required');
+  }
+  return user;
 }
 
 // ─── Platform Overview Stats ───────────────────────────────────────────────────
